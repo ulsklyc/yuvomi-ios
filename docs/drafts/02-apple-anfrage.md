@@ -14,7 +14,7 @@ Hello,
 
 I am preparing a free iOS app and would like to understand, before I submit, whether my individual developer account is the right account for it.
 
-**What the app is.** Yuvomi is an open-source (MIT), self-hosted family planner. Each household runs it on its own server. The iOS app would be a native SwiftUI client that connects to the server address the user enters, in the same way as existing clients for Home Assistant, Nextcloud or Jellyfin.
+**What the app is.** Yuvomi is an open-source (MIT), self-hosted family planner, and the app will be published under the same license. Each household runs it on its own server. The iOS app would be a native SwiftUI client that connects to the server address the user enters, in the same way as existing clients for Home Assistant, Nextcloud or Jellyfin.
 
 **What I do and do not provide.**
 

@@ -1,6 +1,6 @@
 # Entwürfe: öffentliche Position zum iOS-Client
 
-Stand 01.11.2026, geprüft gegen `ulsklyc/yuvomi` bei `f7dbd295b` (v2.83.0). Nichts davon ist veröffentlicht oder im Server-Repo geändert. Die Texte selbst sind Englisch wie die Doku des Projekts und verwenden nach den Repo-Regeln `-` statt Gedankenstrichen.
+Stand 01.11.2026. **SPEC, SCOPE und ROADMAP sind mit [ulsklyc/yuvomi#2457](https://github.com/ulsklyc/yuvomi/pull/2457) gemergt**, die Abschnitte 1 bis 3 sind also erledigt. Offen sind der Kommentar auf #255, Eintrag 18 und die Spec-Ergänzung. Die Texte selbst sind Englisch wie die Doku des Projekts und verwenden nach den Repo-Regeln `-` statt Gedankenstrichen.
 
 ## Reihenfolge
 
@@ -14,7 +14,7 @@ Stand 01.11.2026, geprüft gegen `ulsklyc/yuvomi` bei `f7dbd295b` (v2.83.0). Nic
 
 `ROADMAP.md` wird laut Kopf der Datei "on the interface train" angefasst, also am besten mit einem Mittwochs- oder Sonntags-Release. `README.md:83` und `docs/index.html` sagen "no app store" nur über die PWA. Das bleibt wahr und ändert sich nicht.
 
-`yuvomi-ios` ist zurzeit privat, deshalb verlinkt keiner der Texte das Repo.
+`yuvomi-ios` ist zurzeit privat und wird mit dem ersten lauffähigen Slice öffentlich, spätestens vor dem externen TestFlight. Bis dahin verlinkt keiner der Texte das Repo.
 
 ---
 
@@ -87,15 +87,28 @@ Die Nummer unmittelbar vor dem Merge prüfen, zurzeit endet die Datei bei 17.
 >
 > The question came up as a Flutter app beside the web app (#255), as a bridge to Apple Health (#639) and as tapping an NFC tag (#914), and the answer came out the same each time: the API is the contract, the bridge is a client. A native iOS client is that shape at full size. It is allowed to be useful without being complete, so a new feature is never owed twice, and it can go away without taking anything with it.
 >
-> What this rules out on the server is the slow version of a second app: a route only the client can use, a field shaped for one screen, or a credential with powers the web app does not have. A device credential is a person acting on their own device with their own rights. It expires after 90 days without use, like a session, it ends with the same acts that end a session, and it cannot issue another credential. Platform is a value in a field, not a code path.
+> What this rules out on the server is the slow version of a second app: a route only the client can use, a field shaped for one screen, or a credential with powers the web app does not have. A signed-in device is a person on their own device, with less reach than a browser session rather than more. Its device credential expires after 90 days without use, like a session, ends with the same acts that end a session, cannot issue another credential and cannot pass `requireAdmin`, so a lost phone never reaches the running of the household. An admin can sign a member out of all devices, but not see which devices they use or when ([entry 1](#1-privacy-beats-admin-convenience)). Platform is a value in a field, not a code path.
 >
 > ### Where the rule lives
 >
-> - `server/auth.js`: `POST /api/v1/auth/device-tokens` and the pairing routes, in the same rule as every sign-in (`canSignIn`).
+> - `server/auth.js`: `POST /api/v1/auth/devices` and the pairing routes, in the same rule as every sign-in (`canSignIn`).
+> - `server/middleware/require-admin.js`: the refusal for a device credential.
 > - `apiTokenUsableSql()`: the one place that says when a credential still counts.
 > - `invalidateUserSessions()`: the one way a session ends also ends the devices.
-> - `test:device-tokens`, `test:device-pairing`.
+> - `test:signed-in-devices`, `test:device-pairing`.
 >
 > ### What would reopen it
 >
 > A need that cannot be met through `/api/v1` at all. A hosted push relay does not reopen this entry; it is a decision about running a service, and it is made in its own thread.
+
+---
+
+## 6. `docs/SPEC.md`, Ergänzungen (kommen mit S2 und S3)
+
+Definition unter "API Tokens", heute "Named Bearer / X-API-Key tokens for non-interactive external integrations. Admin-only creation and revocation.":
+
+> Named Bearer / X-API-Key tokens. An integration token (`kind = 'integration'`) serves a non-interactive external integration; creating and revoking one is admin-only. A device credential (`kind = 'device'`) belongs to a signed-in device, is issued only by that person's own browser session or a pairing code, and never appears in the token list.
+
+Neuer Begriff, direkt danach:
+
+> **Signed-in device:** a person's own phone running a native client. Its secret is the device credential, never called a device token, which on Apple platforms means something else. It acts as that person, expires after 90 days without use, and ends with the same acts that end a session. It cannot issue another credential and cannot pass `requireAdmin`. An admin can sign a member out of all devices without seeing which devices they use. It is not a paired display, which is an account of its own.
