@@ -203,6 +203,24 @@ Die Spec wächst um rund 14 Operationen pro Woche, ein einmaliges Aufräumen hie
 - **App, Sicherheit:** `yuvomi://` ist nicht exklusiv, eine fremde App kann das Schema registrieren und den Code abfangen. Jede Website kann außerdem einen Link mit fremdem `server` bauen. Die App zeigt deshalb vor dem Einlösen die Server-Adresse und lässt sie bestätigen. Vor dem TestFlight-Start ist zu prüfen, ob der Weg für dasselbe Gerät besser ein Universal Link wird. Selbst gehostete Domains können das nur eingeschränkt, das ist also offen.
 - **Bekannt, nicht aus S3:** `POST /displays/pair` wandelt einen Nicht-String als `code` ungeprüft um und kann daran mit 500 scheitern. Das ist ein kleiner eigener Fix.
 
+## Abweichungen beim Bau (S5)
+
+- **Zweite Suite, neu:** `test:openapi-client-responses` fährt alle 39 Operationen gegen einen echten Server und prüft Typ, Format, Muster, `oneOf`-Zweig und Felder ohne Schema. Fehlerantworten und Bodies prüft sie nicht.
+- **`date-time` heißt, was `.iso8601` in Swift liest:** Sekunden und Zone, keine Bruchteile. `housekeeping.presentSince` und `lastVisit` tragen Millisekunden und haben deshalb kein `format`. Die App parst sie selbst.
+- **`/reminders/pending` hat kein `fires_at`:** `remind_at` kommt dort in mehreren Formen, die App nutzt `/upcoming`.
+- **`to` in `GET /calendar`** ist ohne Parameter immer der 31., auch im November. Die App schickt `from` und `to` selbst.
+- **Generator offen:** Der Swift OpenAPI Generator ist noch nicht gelaufen, die Entscheidung aus S5 steht also aus. Zu prüfen sind `CalendarDateOrDateTime` (`oneOf` aus drei Strings, nur per `pattern` getrennt, Form durch `test:openapi-structure` festgelegt), `oneOf` mit `null` an Pflichtfeldern wie `CalendarEvent.end_datetime`, `enum` mit `null`, Boolean-`enum` und `DELETE` mit optionalem Body. Der Generator lässt sich per `filter` auf die 39 Operationen begrenzen.
+
+**Serverfehler, gefunden beim Bau, nicht behoben.** Alle stammen aus der Zeit vor Phase 0. Unabhängig gemessen:
+
+- `GET /calendar` und `/calendar/upcoming` liefern für Serien in `reminder_anchor_start` das letzte Vorkommen im Fenster statt des Serienbeginns (`server/services/calendar-occurrence-overrides.js`, `server/routes/calendar/helpers.js`). `public/pages/calendar.js` rechnet Erinnerungen darauf, das betrifft also die PWA. Vorrang.
+- `PATCH /shopping/items/{id}` antwortet mit `category: null` und `name: 5` 500.
+- `POST /tasks` antwortet mit `category: null` und `title: 5` 500, `PUT /tasks/{id}` mit `title: null` ebenso.
+- `PUT /tasks/{id}` speichert `title: ''`, gegen `minLength: 1` in der Spec.
+- `DELETE /shopping/{listId}/items/checked` antwortet bei unbekannter Liste 200 statt 404. Der Test hält das fest und muss beim Fix mit.
+
+Nur von je einem Agenten gemeldet, noch nicht unabhängig bestätigt: weitere 500er durch fehlende Typprüfung bei `PATCH /shopping/items/{id}` und `POST`/`PUT /calendar`, fehlende Längenprüfung im PATCH, `is_checked: 'false'` hakt ab, leere Datumswerte bei `POST /tasks` landen als `''` in der Antwort und verletzen `format: date`, `toLocalDateKey()` statt `todayKey()` in `server/routes/tasks.js:980` und `server/mcp/tools.js:67`.
+
 ## Fertig, wenn
 
 - [ ] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential, ein SSO-only-Konto mit nur einem Gerät per App-Link.
