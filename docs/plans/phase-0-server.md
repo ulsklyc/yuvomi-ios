@@ -145,6 +145,10 @@ CREATE TABLE device_pairing_codes (
 - Die Liste ist ein Abzug. Abgeleitete Typen baut der Server laufend neu.
 - Wer die PWA mit Web Push nutzt, bekommt eine Erinnerung doppelt. Der Server weiß nichts von lokal geplanten Benachrichtigungen. Für v1 hinnehmbar, in den App-Einstellungen erklären.
 - Ein Verwerfen an einem anderen Gerät erreicht das Telefon erst beim nächsten Abruf.
+- Die App plant beim Abhaken selbst ab. `/upcoming` lässt erledigte und abgelegte Aufgaben zwar aus, das wirkt aber erst beim nächsten Abruf.
+- Die App rechnet das Fenster mit 14 × 86400 Sekunden. `Calendar.date(byAdding: .day, value: 14)` ergibt über die Zeitumstellung im Herbst eine Stunde mehr, und der Server antwortet 400.
+- Ein gelöschtes erstes Vorkommen einer Serie feuert noch, weil die Erinnerung am Master hängt und `calendar_event_exceptions` nicht geprüft wird. `/pending` und die Zustellung haben dieselbe Lücke.
+- Abgesagte Termine gibt es als Zustand nicht, `STATUS:CANCELLED` wird nicht ausgewertet. Ein abgesagter, nicht gelöschter Termin erinnert also weiter.
 
 **Dateien:** `server/routes/reminders.js:209`, `server/openapi/paths/reminders.js`. **Test `test:reminders-upcoming`:** Fensterränder, Zeitzone mit `TZ=UTC` zusätzlich, `fires_at` für naive Zeilen und Zeilen mit Offset, fremde und private Zeilen fehlen, Token ohne Scope, abgeschaltetes Modul, `types` erweitert nichts. `test:reminders-routes` bleibt unverändert grün, das belegt die Extraktion.
 
