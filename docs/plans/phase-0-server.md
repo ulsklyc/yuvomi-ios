@@ -193,6 +193,16 @@ Die Spec wächst um rund 14 Operationen pro Woche, ein einmaliges Aufräumen hie
 - **S2, Admin-Abmeldung:** `POST /users/:id/devices/sign-out` beendet auch die Browser-Sitzungen, weil das Telefon die PWA tragen kann, und antwortet ohne Zahl.
 - **S2, Zähler:** `ended` in `/logout-others` zählt Geräte mit.
 
+## Abweichungen beim Bau (S3)
+
+- **Aufteilung:** Der Server-Teil geht als eigener PR auf die Server-Spur. Der PWA-Abschnitt "Angemeldete Geräte" und die 27 Locales folgen als eigener PR kurz vor dem TestFlight-Start, Entscheidung vom 01.11.2026. Vorher führte der Knopf zu einer App, die es noch nicht gibt, und ein Schalter wäre toter Code. Bis dahin lässt sich die Kopplung über die API prüfen. Der Punkt "SSO-only per App-Link" unter "Fertig, wenn" hängt deshalb am PWA-PR.
+- **Entwertung, neu:** Abmelden und `invalidateUserSessions()` entwerten auch offene Kopplungscodes. Sonst läge danach noch bis zu fünf Minuten ein gültiger Schlüssel in der Welt.
+- **Herkunft:** höchstens 170 Zeichen in kodierter Form, weil `qrcode.js` nur bis Version 10 reicht. Verlangt wird die blanke Origin, ein Pfad ergibt 400.
+- **Absage:** `reason: invalid_pairing_code` für unbekannt, abgelaufen, benutzt und für Konten, die kein Gerät mehr haben dürfen. Die App kann das so von einem ungültigen Rumpf unterscheiden, und ein ungültiger Rumpf verbraucht den Code nicht.
+- **App:** `POST /devices/pair/redeem` ohne `Authorization`-Header senden, ein gültiges Credential ergibt dort 403.
+- **App, Sicherheit:** `yuvomi://` ist nicht exklusiv, eine fremde App kann das Schema registrieren und den Code abfangen. Jede Website kann außerdem einen Link mit fremdem `server` bauen. Die App zeigt deshalb vor dem Einlösen die Server-Adresse und lässt sie bestätigen. Vor dem TestFlight-Start ist zu prüfen, ob der Weg für dasselbe Gerät besser ein Universal Link wird. Selbst gehostete Domains können das nur eingeschränkt, das ist also offen.
+- **Bekannt, nicht aus S3:** `POST /displays/pair` wandelt einen Nicht-String als `code` ungeprüft um und kann daran mit 500 scheitern. Das ist ein kleiner eigener Fix.
+
 ## Fertig, wenn
 
 - [ ] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential, ein SSO-only-Konto mit nur einem Gerät per App-Link.
