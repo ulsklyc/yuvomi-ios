@@ -179,6 +179,16 @@ Die Spec wächst um rund 14 Operationen pro Woche, ein einmaliges Aufräumen hie
 
 ---
 
+## Abweichungen beim Bau (S1, S2)
+
+- **S1:** `client_api` startet bei `0`, nicht bei `1`. Die `1` kommt erst, wenn die Routen aus S2 bis S4 draußen sind, sonst behauptet ein Server einen Vertrag, den er nicht hält. Die App verlangt mindestens `1`.
+- **S2, Admin-Sperre:** Sie sitzt nicht in `isAdminRequest()`, sondern in `requireAuth`, das `authRole = 'member'` setzt. `isAdminRequest()` entscheidet an rund hundert Stellen auch Leseregeln, und so sind die Inline-Prüfungen auf `authRole` gleich mit abgedeckt.
+- **S2, Rechte-Auflösung:** `authRole` allein reichte nicht, weil Capabilities die Rolle aus der Datenbank lesen. `userForRequest()` und `actingAsMember` in `server/permissions.js` stufen auch dort herab. Bekannte Lücke: `server/services/fasting.js` liest die Rolle ohne Anfragebezug, das ist vor Phase 3 zu prüfen.
+- **S2, Integrations-Tokens:** Geräte-Routen weisen sie über `refuseIntegrationToken` ab (Grund `session_required`), sonst läse ein Admin über `subject_user_id` fremde Geräte.
+- **S2, neu:** Allowlist `DEVICE_AUTH_ROUTES` am Eingang von `/auth`. Ohne sie käme ein Credential an `/2fa/disable`, `/me/profile` und `/me/password`.
+- **S2, Admin-Abmeldung:** `POST /users/:id/devices/sign-out` beendet auch die Browser-Sitzungen, weil das Telefon die PWA tragen kann, und antwortet ohne Zahl.
+- **S2, Zähler:** `ended` in `/logout-others` zählt Geräte mit.
+
 ## Fertig, wenn
 
 - [ ] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential, ein SSO-only-Konto mit nur einem Gerät per App-Link.
