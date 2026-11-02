@@ -1,7 +1,9 @@
 // swift-tools-version: 6.4
 
 // Module und Abhängigkeitsrichtung: docs/plans/phase-1-slice-1.md, Abschnitt "Projektaufbau".
-// UI-Module -> YuvomiCore -> YuvomiAPI. Die generierten Typen verlassen YuvomiAPI nicht.
+// UI-Module -> YuvomiCore <- YuvomiAPI. Der Kern kennt weder Generator noch Runtime;
+// YuvomiAPI setzt seine Protokolle mit dem generierten Client um, die App verbindet beides.
+// Die generierten Typen verlassen YuvomiAPI nicht.
 
 import PackageDescription
 
@@ -11,14 +13,28 @@ let package = Package(
     platforms: [.iOS(.v27)],
     products: [
         .library(name: "YuvomiCore", targets: ["YuvomiCore"]),
+        .library(name: "YuvomiAPI", targets: ["YuvomiAPI"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "LoginFeature", targets: ["LoginFeature"]),
         .library(name: "TasksFeature", targets: ["TasksFeature"]),
         .library(name: "YuvomiFixtures", targets: ["YuvomiFixtures"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.13.3"),
+        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.4.0"),
+        .package(url: "https://github.com/apple/swift-http-types", from: "1.0.0"),
+    ],
     targets: [
-        .target(name: "YuvomiAPI"),
-        .target(name: "YuvomiCore", dependencies: ["YuvomiAPI"]),
+        .target(name: "YuvomiCore"),
+        .target(
+            name: "YuvomiAPI",
+            dependencies: [
+                "YuvomiCore",
+                .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
+            ],
+            exclude: ["openapi-generator-config.yaml"]
+        ),
         .target(name: "DesignSystem"),
         .target(name: "LoginFeature", dependencies: ["YuvomiCore", "DesignSystem"]),
         .target(name: "TasksFeature", dependencies: ["YuvomiCore", "DesignSystem"]),
@@ -27,13 +43,17 @@ let package = Package(
         // Target-Ordners ein, deshalb zeigt das Target direkt auf Fixtures/.
         .target(
             name: "YuvomiFixtures",
-            dependencies: ["YuvomiAPI"],
+            dependencies: [
+                .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ],
             path: "Fixtures",
             exclude: ["README.md", "check-fixtures.mjs", "dump-fixtures.mjs"],
             sources: ["Swift"],
             resources: [.copy("demo")]
         ),
         .testTarget(name: "YuvomiCoreTests", dependencies: ["YuvomiCore", "YuvomiFixtures"]),
+        .testTarget(name: "YuvomiAPITests", dependencies: ["YuvomiAPI", "YuvomiFixtures"]),
     ],
     swiftLanguageModes: [.v6]
 )

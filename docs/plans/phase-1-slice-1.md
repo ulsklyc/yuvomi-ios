@@ -25,16 +25,16 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 
 - **XcodeGen:** `project.yml` ist eingecheckt, die `.xcodeproj` wird erzeugt und steht in `.gitignore`. XcodeGen ist lokal installiert und wird in der CI per Homebrew geholt.
 - **SPM-Paket im Repo-Wurzelverzeichnis:** `Package.swift` liegt oben, damit `Fixtures/` als Ressourcen-Target eingebunden werden kann. SPM erlaubt Ressourcen nur innerhalb des Paketordners. `Package.resolved` ist eingecheckt.
-- **Module**, Abhängigkeit nur von oben nach unten:
+- **Module.** Der Kern kennt weder Generator noch Runtime. `YuvomiAPI` setzt die Protokolle des Kerns mit dem generierten Client um, die App verbindet beides (seit A2, siehe dort):
 
 | Modul | Inhalt | Darf benutzen |
 |---|---|---|
-| `YuvomiAPI` | generierter Code, fünf `typeOverrides`, Transport-Aufbau | OpenAPI Runtime, URLSession-Transport |
-| `YuvomiCore` | Domain-Modelle, Fassade, Session, Keychain, Versionsprüfung | `YuvomiAPI` |
+| `YuvomiCore` | Domain-Modelle, Protokolle für den Serverzugriff, Session, Keychain, Versionsprüfung | - |
+| `YuvomiAPI` | generierter Code, fünf `typeOverrides`, Umsetzung der Kern-Protokolle | `YuvomiCore`, OpenAPI Runtime, URLSession-Transport |
 | `DesignSystem` | Farben, Abstände, wiederkehrende Views | - |
 | `LoginFeature` | Serveradresse, Passwort, 2FA, SSO-Hinweis | `YuvomiCore`, `DesignSystem` |
 | `TasksFeature` | Aufgabenliste, nur lesend | `YuvomiCore`, `DesignSystem` |
-| `YuvomiFixtures` | JSON aus `Fixtures/demo`, Fixture-Transport | `YuvomiAPI` |
+| `YuvomiFixtures` | JSON aus `Fixtures/demo`, Fixture-Transport | OpenAPI Runtime, HTTP Types |
 
   Das App-Target unter `App/` ist nur der Einstieg: Es baut die Abhängigkeiten zusammen und wählt den Screen. Später sollen Widgets und Erweiterungen über `group.cloud.yuvomi` dazukommen. Sie binden dann `YuvomiCore` ein und brauchen die Oberfläche nicht.
 - **Fassade:** Die generierten Typen bleiben `internal` in `YuvomiAPI`. Nach außen gehen nur eigene Modelle hinter einem Protokoll. Grund sind die Macken aus S5: Bei `oneOf` mit `null` verschwinden 11 Eigenschaften still, und `CalendarDateOrDateTime` prüft kein Muster. Repariert wird an einer Stelle, und keine View hängt am Generator.
@@ -44,9 +44,9 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 ### Generator
 
 - **Ablauf per Skript, Code eingecheckt:** `scripts/generate-api.sh` ruft den Swift OpenAPI Generator 1.14.3 aus dem Werkzeug-Paket `Tools/` auf, mit der Runtime 1.13.3 aus dem Spike. Das Skript bricht bei jeder Generator-Warnung ab. Die Warnung zu `oneOf` mit `null` ist genau die, die im Spike Eigenschaften verschwinden ließ. Der erzeugte Code liegt unter `Sources/YuvomiAPI/Generated/`.
-- **Konfiguration:** `filter` auf die 39 Operationen aus S5, `namingStrategy: idiomatic`, `accessModifier: internal`, `typeOverrides` für die fünf Eingaben mit `unset`/`clear`/`set`. Die handgeschriebenen Typen liegen in `Sources/YuvomiAPI/Overrides/`.
-- **Spec:** Eine gepinnte Kopie liegt in `Spec/` mit dem Server-Tag im Dateinamen oder Kopf. Neu kommt sie nur über ein Skript mit ausdrücklichem Tag, zum Beispiel `scripts/update-spec.sh v2.84.0`. So ist jede Spec-Änderung ein eigener Commit.
-- **CI-Check:** Die CI erzeugt den Code neu und bricht ab, wenn `git diff` nicht leer ist. Dasselbe gilt bei einer Warnung.
+- **Konfiguration** in `Sources/YuvomiAPI/openapi-generator-config.yaml`: `namingStrategy: idiomatic`, `accessModifier: internal`, `typeOverrides` für die fünf Eingaben mit `unset`/`clear`/`set`. Die handgeschriebenen Typen liegen in `Sources/YuvomiAPI/Overrides/`.
+- **Spec:** Eine gepinnte Kopie liegt in `Spec/openapi.json`, der Server-Tag steht in `info.version`. Neu kommt sie nur über ein Skript mit ausdrücklichem Tag, zum Beispiel `scripts/update-spec.sh v2.84.0`. So ist jede Spec-Änderung ein eigener Commit. Das Skript kürzt die Spec auf die 39 Operationen und alles, was sie über `$ref` erreichen (`scripts/prune-spec.mjs`).
+- **CI-Check:** Die CI erzeugt den Code neu und bricht ab, wenn er vom eingecheckten Stand abweicht. Dasselbe gilt bei einer Warnung.
 
 ### Anmeldung und Server
 
@@ -134,6 +134,15 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 - **Test-Targets:** Im Gerüst gibt es nur `YuvomiCoreTests` mit einem Rauchtest für die Fixtures. Die übrigen Module bekommen ihr Test-Target mit ihrem ersten Code.
 - **Ausgangssprache:** Englisch (`developmentLanguage`, `defaultLocalization`). Deutsch kommt als Übersetzung in den String Catalog.
 - **CI:** `.github/workflows/ci.yml` läuft auf dem Preview-Image `xcode-27`. `macos-26` hat nur Xcode 26.x und kann gegen iOS 27 nicht bauen (geprüft im ersten Lauf, 02.11.2026). Der Workflow nimmt das neueste vorhandene Xcode 27, ohne einen Pfad festzuschreiben. Sobald es ein reguläres Image gibt, kommt der Wechsel weg vom Preview. Generator-Check und Spec-Prüfung kommen mit A2 dazu.
+
+## Abweichungen beim Bau (A2)
+
+- **Abhängigkeitsrichtung umgedreht:** Bisher hieß es „UI → Core → API“. Damit hätte `YuvomiCore` den generierten Client aufrufen müssen, obwohl dessen Typen `internal` in `YuvomiAPI` bleiben. Jetzt definiert `YuvomiCore` Modelle und Protokolle, `YuvomiAPI` setzt sie um, und die App verbindet beides (Ports and Adapters). Der Kern hängt so an keinem Generator, und Widgets können ihn später ohne Netzwerkschicht einbinden.
+- **Gekürzte Spec statt `filter`:** `update-spec.sh` kürzt die Spec schon beim Holen auf die 39 Operationen. Die Liste kommt aus `test/openapi-client-operations.js` desselben Tags, also aus derselben Quelle, die der Server-Guard prüft. `Spec/openapi.json` ist damit 290 KB statt 1,1 MB groß, und ein Diff zeigt nur, was die App betrifft. Einen `filter` in der Konfiguration braucht es nicht mehr. Geholt wird per `codeload.github.com`, ein lokaler Checkout des Server-Repos ist dafür nicht nötig.
+- **Overrides mit Modulnamen:** In `typeOverrides` steht `YuvomiAPI.TaskCreateInput` statt `TaskCreateInput`. Sonst schreibt der Generator `typealias TaskCreateInput = TaskCreateInput` in `Components.Schemas`, und das verweist auf sich selbst.
+- **Overrides im Detail:** Felder, die `null` annehmen, sind ein `Patch<Wert>` mit `unset`, `clear` und `set`. Die übrigen sind Optionals und werden bei `nil` weggelassen. `assigned_to` und `tags` gehen immer als Liste. `start_datetime` und `end_datetime` sind `String`, die App formatiert sie selbst. Damit entfällt das Enum `CalendarDateOrDateTime`, das kein Muster prüft (S5).
+- **`product` ist ein Enum** mit dem einzigen Fall `yuvomi`. Ein fremder Wert scheitert also schon beim Dekodieren. Die Versionsprüfung in A3 muss diesen Fehler als „kein Yuvomi-Server“ melden, nicht als Netzwerkfehler.
+- **Gemessen:** 0 Generator-Warnungen. Alle 21 Fixtures dekodieren über den generierten Client. `PUT /calendar/{id}` sendet `{"end_datetime":null,"assigned_to":[2,3]}`. Die Gegenprobe hält: Ein eingebauter `oneOf`-Zweig mit `null` erzeugt die Warnung `Schema "null" is not supported`, und das Skript bricht mit Exit 1 ab.
 
 ## Geklärte Fakten (02.11.2026)
 
