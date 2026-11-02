@@ -21,11 +21,14 @@ public struct KeychainError: Error, Hashable, Sendable {
 /// spätere Widgets das Credential bekommen; nur auf diesem Gerät, also weder im
 /// iCloud-Schlüsselbund noch in einem Backup (Q13).
 public struct KeychainCredentialStore: CredentialStore {
+    /// Die Gruppe aus `keychain-access-groups` in `project.yml`, mit Team-Präfix.
+    public static let sharedAccessGroup = "8C2HRWK28S.cloud.yuvomi"
+
     public let service: String
     let accessGroup: String?
 
-    /// - Parameter accessGroup: Geteilte Gruppe für App und Erweiterungen. `nil` in Tests,
-    ///   weil eine Gruppe ein signiertes Target mit Entitlement braucht.
+    /// - Parameter accessGroup: Geteilte Gruppe für App und Erweiterungen, also
+    ///   `sharedAccessGroup`. Mit `nil` landet der Eintrag in der ersten Gruppe des Targets.
     public init(service: String = "cloud.yuvomi.device-credential", accessGroup: String?) {
         self.service = service
         self.accessGroup = accessGroup
@@ -74,5 +77,27 @@ public struct KeychainCredentialStore: CredentialStore {
             query[kSecAttrAccessGroup as String] = accessGroup
         }
         return query
+    }
+}
+
+/// `CredentialStore` im Speicher, für Tests und Vorschauen.
+public final class InMemoryCredentialStore: CredentialStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var credentials: [URL: String] = [:]
+
+    public init(_ credentials: [URL: String] = [:]) {
+        self.credentials = credentials
+    }
+
+    public func credential(for server: URL) throws -> String? {
+        lock.withLock { credentials[server] }
+    }
+
+    public func save(_ credential: String, for server: URL) throws {
+        lock.withLock { credentials[server] = credential }
+    }
+
+    public func delete(for server: URL) throws {
+        lock.withLock { credentials[server] = nil }
     }
 }
