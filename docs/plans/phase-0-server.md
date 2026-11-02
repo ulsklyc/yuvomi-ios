@@ -183,7 +183,7 @@ Die Spec wächst um rund 14 Operationen pro Woche, ein einmaliges Aufräumen hie
 
 **Stand 2026-11-02:**
 
-- Die Subdomain heißt `review.yuvomi.cloud`, der VPS läuft bei IONOS. Bestellung und DNS liegen beim User, die Checkliste steht in [s6-vps-checkliste.md](s6-vps-checkliste.md). Die Einrichtung folgt, sobald der Server per SSH erreichbar ist.
+- Die Subdomain heißt `review.yuvomi.cloud`, der VPS läuft bei IONOS. Die Instanz läuft seit dem 02.11.2026 auf `2.84.0` mit HTTPS und Seed-Daten, alle Konten haben zufällige Passwörter. Einzelheiten und offene Punkte stehen in [s6-vps-checkliste.md](s6-vps-checkliste.md).
 - **Icon, fertig:** `design/app-icon/AppIcon-1024.png`. Abweichung: `scripts/generate-icons.js` kennt keine 1024 px. Das Icon entsteht deshalb mit `design/app-icon/make-icon.mjs` aus denselben SVG-Bausteinen, randlos statt mit Rundung, weil iOS die Maske selbst legt.
 - **Fixtures, fertig:** `Fixtures/demo/`, 21 Antworten plus `_meta.json` aus einer lokalen Seed-Instanz auf `v2.84.0`, Persona `alex`, Lesewege über ein Geräte-Credential. Alle 21 passen zum Antwort-Schema der Spec. Abweichung: Sie kommen aus einer lokalen Instanz statt von der Review-Instanz, damit die App-Entwicklung nicht auf den VPS wartet. Neu ziehen geht laut `Fixtures/README.md`.
 
@@ -255,7 +255,7 @@ Nur von je einem Agenten gemeldet, noch nicht unabhängig bestätigt: weitere 50
 - [ ] Alle Wege aus S2 Regel 4 beenden Geräte, Integrations-Tokens bleiben.
 - [ ] `GET /reminders/upcoming` liefert für die vier Module nur Sichtbares.
 - [ ] `test:openapi-client-contract` ist grün.
-- [ ] Ein Release ist draußen, und die Review-Instanz läuft darauf.
+- [x] Ein Release ist draußen, und die Review-Instanz läuft darauf (`v2.84.0`, `review.yuvomi.cloud`, 2026-11-02).
 
 ## Vor TestFlight
 
