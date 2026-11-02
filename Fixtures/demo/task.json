@@ -1,0 +1,67 @@
+{
+  "data": {
+    "id": 7,
+    "title": "Sign school permission slip",
+    "description": "Field trip to the science museum",
+    "category": "school",
+    "priority": "urgent",
+    "status": "open",
+    "due_date": "2026-11-03",
+    "due_time": null,
+    "assigned_to": 2,
+    "created_by": 2,
+    "is_recurring": 0,
+    "recurrence_rule": null,
+    "parent_task_id": null,
+    "created_at": "2026-11-02T13:44:15Z",
+    "updated_at": "2026-11-02T13:44:15Z",
+    "start_date": null,
+    "external_uid": null,
+    "external_source": "local",
+    "external_account_id": null,
+    "points": 0,
+    "visibility": "all",
+    "external_object_url": null,
+    "outbound_dirty": 0,
+    "outbound_attempts": 0,
+    "recurrence_origin_id": null,
+    "recurrence_from_completion": 0,
+    "archived_at": null,
+    "target_caldav_account_id": null,
+    "target_caldav_list_url": null,
+    "countdown": 0,
+    "locked": 0,
+    "recurrence_series_id": null,
+    "sort_order": null,
+    "seen_on_server": 0,
+    "assigned_name": "Linda Johnson",
+    "assigned_color": "#DB2777",
+    "assigned_avatar": null,
+    "assigned_users": [
+      {
+        "id": 2,
+        "display_name": "Linda Johnson",
+        "color": "#DB2777",
+        "avatar_data": null
+      }
+    ],
+    "subtasks": [],
+    "document_count": 1,
+    "documents": [
+      {
+        "id": 4,
+        "name": "Field Trip Permission Slip",
+        "category": "school",
+        "original_name": "permission_slip.pdf",
+        "mime_type": "application/pdf",
+        "file_size": 48000,
+        "storage_backend": "local",
+        "linked_at": "2026-11-02T13:44:15Z"
+      }
+    ],
+    "tags": [
+      "school",
+      "urgent"
+    ]
+  }
+}

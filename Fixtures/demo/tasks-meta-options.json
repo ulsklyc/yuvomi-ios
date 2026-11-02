@@ -1,0 +1,122 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "display_name": "Alex Johnson",
+      "avatar_color": "#2563EB",
+      "sort_order": null
+    },
+    {
+      "id": 3,
+      "display_name": "Emma Johnson",
+      "avatar_color": "#EC4899",
+      "sort_order": null
+    },
+    {
+      "id": 4,
+      "display_name": "Leo Johnson",
+      "avatar_color": "#F97316",
+      "sort_order": null
+    },
+    {
+      "id": 2,
+      "display_name": "Linda Johnson",
+      "avatar_color": "#DB2777",
+      "sort_order": null
+    }
+  ],
+  "priorities": [
+    "none",
+    "low",
+    "medium",
+    "high",
+    "urgent"
+  ],
+  "statuses": [
+    "open",
+    "in_progress",
+    "done",
+    "archived"
+  ],
+  "categories": [
+    {
+      "key": "household",
+      "name": null,
+      "label_key": "tasks.categoryHousehold",
+      "sort_order": 0
+    },
+    {
+      "key": "school",
+      "name": null,
+      "label_key": "tasks.categorySchool",
+      "sort_order": 1
+    },
+    {
+      "key": "shopping",
+      "name": null,
+      "label_key": "tasks.categoryShopping",
+      "sort_order": 2
+    },
+    {
+      "key": "repair",
+      "name": null,
+      "label_key": "tasks.categoryRepair",
+      "sort_order": 3
+    },
+    {
+      "key": "health",
+      "name": null,
+      "label_key": "tasks.categoryHealth",
+      "sort_order": 4
+    },
+    {
+      "key": "finance",
+      "name": null,
+      "label_key": "tasks.categoryFinance",
+      "sort_order": 5
+    },
+    {
+      "key": "leisure",
+      "name": null,
+      "label_key": "tasks.categoryLeisure",
+      "sort_order": 6
+    },
+    {
+      "key": "misc",
+      "name": null,
+      "label_key": "tasks.categoryMisc",
+      "sort_order": 7
+    }
+  ],
+  "tags": [
+    {
+      "tag": "kids",
+      "count": 4
+    },
+    {
+      "tag": "paperwork",
+      "count": 4
+    },
+    {
+      "tag": "car",
+      "count": 2
+    },
+    {
+      "tag": "school",
+      "count": 2
+    },
+    {
+      "tag": "urgent",
+      "count": 2
+    },
+    {
+      "tag": "garden",
+      "count": 1
+    },
+    {
+      "tag": "holiday",
+      "count": 1
+    }
+  ],
+  "default_points": 0
+}

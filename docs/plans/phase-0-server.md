@@ -181,6 +181,12 @@ Die Spec wächst um rund 14 Operationen pro Woche, ein einmaliges Aufräumen hie
 - **Icon:** 1024 px ohne Alpha aus `icon.svg` über `scripts/generate-icons.js`.
 - **Demo-Fixtures:** JSON-Abzüge der MVP-Antworten aus der Seed-Instanz, Ablage im App-Repo.
 
+**Stand 2026-11-02:**
+
+- Die Subdomain heißt `review.yuvomi.cloud`, der VPS läuft bei IONOS. Bestellung und DNS liegen beim User, die Checkliste steht in [s6-vps-checkliste.md](s6-vps-checkliste.md). Die Einrichtung folgt, sobald der Server per SSH erreichbar ist.
+- **Icon, fertig:** `design/app-icon/AppIcon-1024.png`. Abweichung: `scripts/generate-icons.js` kennt keine 1024 px. Das Icon entsteht deshalb mit `design/app-icon/make-icon.mjs` aus denselben SVG-Bausteinen, randlos statt mit Rundung, weil iOS die Maske selbst legt.
+- **Fixtures, fertig:** `Fixtures/demo/`, 21 Antworten plus `_meta.json` aus einer lokalen Seed-Instanz auf `v2.84.0`, Persona `alex`, Lesewege über ein Geräte-Credential. Alle 21 passen zum Antwort-Schema der Spec. Abweichung: Sie kommen aus einer lokalen Instanz statt von der Review-Instanz, damit die App-Entwicklung nicht auf den VPS wartet. Neu ziehen geht laut `Fixtures/README.md`.
+
 ---
 
 ## Abweichungen beim Bau (S1, S2)

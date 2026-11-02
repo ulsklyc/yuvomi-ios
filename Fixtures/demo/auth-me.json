@@ -1,0 +1,95 @@
+{
+  "user": {
+    "id": 1,
+    "username": "alex",
+    "display_name": "Alex Johnson",
+    "avatar_color": "#2563EB",
+    "avatar_data": null,
+    "role": "admin",
+    "family_role": "dad",
+    "access_scope": "family",
+    "phone": null,
+    "email": null,
+    "birth_date": "1986-02-08",
+    "birth_year_unknown": false,
+    "created_at": "2026-11-02T13:44:15Z",
+    "deactivated_at": null,
+    "sort_order": null,
+    "is_household_member": true,
+    "onboarding_pending": true,
+    "changelog_seen": {
+      "version": null,
+      "latest": null
+    },
+    "sso_only": false
+  },
+  "permissions": {
+    "admin": false,
+    "modules": {
+      "calendar": "write",
+      "tasks": "write",
+      "notes": "write",
+      "contacts": "write",
+      "meals": "write",
+      "shopping": "write",
+      "pantry": "write",
+      "inventory": "write",
+      "budget": "write",
+      "documents": "write",
+      "housekeeping": "write",
+      "waste": "write",
+      "rewards": "write",
+      "health": "write",
+      "schedule": "write"
+    },
+    "widgets": {
+      "tasks": "allow",
+      "calendar": "allow",
+      "meals": "allow",
+      "shopping": "allow",
+      "birthdays": "allow",
+      "budget": "allow",
+      "rewards": "allow",
+      "health": "allow",
+      "cycle": "allow",
+      "fasting": "allow",
+      "nutrition": "allow",
+      "housekeeping": "allow",
+      "schedule": "allow",
+      "waste": "allow",
+      "pantry": "allow",
+      "notes": "allow",
+      "family": "allow",
+      "weather": "allow",
+      "clock": "allow",
+      "metrics": "allow",
+      "countdown": "allow",
+      "quicklinks": "allow"
+    },
+    "capabilities": {
+      "notes_manage_household_categories": "none",
+      "health_use_fasting": "allow",
+      "housekeeping_view_amounts": "allow",
+      "calendar_edit_others": "allow",
+      "notes_edit_others": "allow",
+      "inventory_edit_others": "allow",
+      "inventory_view_prices": "allow",
+      "tasks_reorder_family": "allow"
+    }
+  },
+  "householdSize": 4,
+  "initialsRoster": [
+    "Alex Johnson",
+    "Linda Johnson",
+    "Emma Johnson",
+    "Leo Johnson",
+    "Maria Silva"
+  ],
+  "othersCanRead": [
+    "calendar",
+    "documents",
+    "tasks"
+  ],
+  "gravatarAvailable": false,
+  "gravatarHost": null
+}
