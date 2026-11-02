@@ -1,0 +1,5 @@
+{
+  "enabled": false,
+  "password_login_enabled": true,
+  "guest_password_login_enabled": false
+}
