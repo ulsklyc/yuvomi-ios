@@ -22,6 +22,20 @@ Stand 02.11.2026. Bestellen, bezahlen und den DNS-Eintrag setzen machst du. Die 
 - Die IP-Adresse und den SSH-Benutzer (meist `root`). Ein Passwort gehört nicht in den Chat.
 - Ein `ssh <benutzer>@<ip>` muss von diesem Mac aus ohne Passwortabfrage gehen.
 
+## Eingerichtet am 02.11.2026
+
+- **Server:** Debian 13, 1 vCPU, 1,8 GB RAM, Docker 26.1 und Compose 2.26 aus den Debian-Paketen. `review.yuvomi.cloud` zeigt per `A`-Eintrag auf den VPS, einen `AAAA`-Eintrag gibt es nicht.
+- **`/opt/yuvomi-review/`:**
+  - `compose.yml` mit `ghcr.io/ulsklyc/yuvomi:${YUVOMI_VERSION}`, nur intern erreichbar, davor `caddy:2.10` auf 80 und 443.
+  - `Caddyfile` mit Let's-Encrypt-Zertifikat, automatischer Weiterleitung von HTTP auf HTTPS und `X-Robots-Tag: noindex, nofollow`.
+  - `.env` mit Rechten 600. `SESSION_SECRET` und `DB_ENCRYPTION_KEY` sind zufällig auf dem Server entstanden, dazu kommen `BASE_URL`, `SESSION_SECURE=true`, `TRUST_PROXY=1` und tägliche Backups, von denen 7 bleiben.
+- **Daten:** `scripts/seed-demo.js --locale en` aus `v2.84.0`, gefahren in einem einmaligen Container, das Image bleibt unverändert. Danach haben alle fünf Konten ein zufälliges Passwort statt `demo1234`, keines nutzt 2FA. Die Liste liegt nur auf dem VPS in `/root/review-credentials.txt` (600). Für die Review ist `alex` vorgesehen.
+- **Update:** `/opt/yuvomi-review/update.sh 2.85.0` zieht das Image, setzt die Version in `.env`, startet neu, wartet auf `healthy` und zeigt `/api/v1/version`.
+- **Geprüft von außen:** HTTPS 200 mit gültigem Zertifikat bis 31.01.2027, `client_api: 1`, `noindex`, HTTP antwortet mit 308 auf HTTPS. Port 3000 ist zu. `demo1234` ergibt 401, das neue Passwort 200.
+- **Offen:**
+  - SSH erlaubt noch die Anmeldung mit Passwort (`passwordauthentication yes`).
+  - Die Firewall im IONOS-Panel ist von hier aus nicht prüfbar.
+
 ## Was Claude dann einrichtet
 
 - Docker und das offizielle Image `ghcr.io/ulsklyc/yuvomi`, auf eine Version gepinnt.
