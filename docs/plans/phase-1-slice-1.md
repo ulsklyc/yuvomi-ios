@@ -39,11 +39,11 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
   Das App-Target unter `App/` ist nur der Einstieg: Es baut die Abhängigkeiten zusammen und wählt den Screen. Später sollen Widgets und Erweiterungen über `group.cloud.yuvomi` dazukommen. Sie binden dann `YuvomiCore` ein und brauchen die Oberfläche nicht.
 - **Fassade:** Die generierten Typen bleiben `internal` in `YuvomiAPI`. Nach außen gehen nur eigene Modelle hinter einem Protokoll. Grund sind die Macken aus S5: Bei `oneOf` mit `null` verschwinden 11 Eigenschaften still, und `CalendarDateOrDateTime` prüft kein Muster. Repariert wird an einer Stelle, und keine View hängt am Generator.
 - **Sprache und Zustand:** Swift 6 mit strikter Prüfung der Nebenläufigkeit. Der Zustand liegt in `@Observable`-Klassen pro Screen. Es gibt keine Drittanbieter-Architektur.
-- **Ziel:** iOS 26, Bundle-ID `cloud.yuvomi.ios`, Team `8C2HRWK28S`. Für den Simulator ist keine Signierung nötig.
+- **Ziel:** iOS 27, Bundle-ID `cloud.yuvomi.ios`, Team `8C2HRWK28S`. Für den Simulator ist keine Signierung nötig. Bis 02.11.2026 galt iOS 26, siehe „Abweichungen beim Bau (A1)“.
 
 ### Generator
 
-- **Ablauf per Skript, Code eingecheckt:** `scripts/generate-api.sh` ruft den Swift OpenAPI Generator 1.14.3 auf, mit der Runtime 1.13.3 aus dem Spike. Das Skript bricht bei jeder Generator-Warnung ab. Die Warnung zu `oneOf` mit `null` ist genau die, die im Spike Eigenschaften verschwinden ließ. Der erzeugte Code liegt unter `Sources/YuvomiAPI/Generated/`.
+- **Ablauf per Skript, Code eingecheckt:** `scripts/generate-api.sh` ruft den Swift OpenAPI Generator 1.14.3 aus dem Werkzeug-Paket `Tools/` auf, mit der Runtime 1.13.3 aus dem Spike. Das Skript bricht bei jeder Generator-Warnung ab. Die Warnung zu `oneOf` mit `null` ist genau die, die im Spike Eigenschaften verschwinden ließ. Der erzeugte Code liegt unter `Sources/YuvomiAPI/Generated/`.
 - **Konfiguration:** `filter` auf die 39 Operationen aus S5, `namingStrategy: idiomatic`, `accessModifier: internal`, `typeOverrides` für die fünf Eingaben mit `unset`/`clear`/`set`. Die handgeschriebenen Typen liegen in `Sources/YuvomiAPI/Overrides/`.
 - **Spec:** Eine gepinnte Kopie liegt in `Spec/` mit dem Server-Tag im Dateinamen oder Kopf. Neu kommt sie nur über ein Skript mit ausdrücklichem Tag, zum Beispiel `scripts/update-spec.sh v2.84.0`. So ist jede Spec-Änderung ein eigener Commit.
 - **CI-Check:** Die CI erzeugt den Code neu und bricht ab, wenn `git diff` nicht leer ist. Dasselbe gilt bei einer Warnung.
@@ -70,7 +70,7 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 
 ### Tests und Vorschau
 
-- **Swift Testing** (`@Test`, `#expect`), ein Test-Target pro Modul. Ausgeführt wird per `xcodebuild test` im iOS-26-Simulator, lokal wie in der CI.
+- **Swift Testing** (`@Test`, `#expect`), ein Test-Target pro Modul. Ausgeführt wird per `xcodebuild test` im iOS-27-Simulator, lokal wie in der CI.
 - **Keychain** steckt hinter einem Protokoll. Unit-Tests nutzen einen Fake im Speicher. Ein einzelner Integrationstest prüft den echten Keychain im Simulator.
 - **Fixture-Transport:** Ein eigener `ClientTransport` liefert die JSON-Dateien aus `Fixtures/demo` aus. Vorschauen und Tests laufen dadurch durch den generierten Decoder und die Fassade. Ein Test dekodiert alle 21 Fixtures.
 - **TDD** für die Versionsprüfung, den Anmeldeablauf und den Umgang mit 401.
@@ -92,7 +92,7 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 
 **A1, Gerüst:**
 - `Package.swift` mit den sechs Modulen, noch fast leer.
-- `project.yml` mit App-Target, iOS 26, ATS-Eintrag und Keychain Access Group.
+- `project.yml` mit App-Target, iOS 27 und ATS-Eintrag.
 - `App/` mit Einstieg und App-Icon aus `design/app-icon/`.
 - `.gitignore` und der erste CI-Workflow.
 - Fertig, wenn ein leerer Test im Simulator grün ist, lokal und in der CI.
@@ -127,11 +127,19 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 - CI grün.
 - Danach schaltet der User das Repo öffentlich.
 
-## Vor dem ersten Code zu klären (Fakten, keine Entscheidungen)
+## Abweichungen beim Bau (A1)
 
-- Wie kommt die Spec aus `v2.84.0`: als Datei im Tag oder über einen Endpunkt des laufenden Servers? Das prägt `update-spec.sh`.
-- Wie sieht die Konfiguration von `typeOverrides` in Generator 1.14.3 genau aus? Vor A2 per Context7 nachlesen. Dasselbe gilt für Runtime und URLSession-Transport.
-- Welche Felder liefert `GET /auth/oidc/config` für „Passwort-Login abgeschaltet“?
+- **iOS 27 statt iOS 26 als Minimum**, entschieden am 02.11.2026. iOS 27 ist seit dem Herbst draußen, und bis zur ersten öffentlichen Version wird der Großteil der Geräte damit laufen. Wer nicht aktualisieren kann, nutzt die PWA, wie schon bei der Grenze iOS 26. Dazu kommt ein praktischer Grund: Installiert ist nur die iOS-27-Laufzeit. Mit iOS 26 als Minimum hätte die App eine Untergrenze, auf der sie nie getestet wird. Neue SwiftUI-APIs stehen ohne `if #available` zur Verfügung. Dafür braucht `Package.swift` `swift-tools-version: 6.4`, `.v27` gibt es erst ab dieser Version.
+- **Keychain Access Group und App Group** kommen mit A3 statt A1. Sie brauchen Entitlements und eine Signierung, und erst A3 hat einen Test, der sie prüft.
+- **Test-Targets:** Im Gerüst gibt es nur `YuvomiCoreTests` mit einem Rauchtest für die Fixtures. Die übrigen Module bekommen ihr Test-Target mit ihrem ersten Code.
+- **Ausgangssprache:** Englisch (`developmentLanguage`, `defaultLocalization`). Deutsch kommt als Übersetzung in den String Catalog.
+- **CI:** `.github/workflows/ci.yml` läuft auf dem Preview-Image `xcode-27`. `macos-26` hat nur Xcode 26.x und kann gegen iOS 27 nicht bauen (geprüft im ersten Lauf, 02.11.2026). Der Workflow nimmt das neueste vorhandene Xcode 27, ohne einen Pfad festzuschreiben. Sobald es ein reguläres Image gibt, kommt der Wechsel weg vom Preview. Generator-Check und Spec-Prüfung kommen mit A2 dazu.
+
+## Geklärte Fakten (02.11.2026)
+
+- **Herkunft der Spec:** Die Spec liegt im Server-Repo nicht als Datei. `buildOpenApiSpec()` in `server/openapi.js` erzeugt sie zur Laufzeit, ausgeliefert wird sie nur an Admins unter `/api/v1/openapi.json`. Ohne Server geht es aber auch: Die Funktion läuft ohne `node_modules`, sobald `server/`, `public/` und `package.json` aus dem Tag vorliegen. Geprüft mit `v2.84.0`: 501 Pfade, `info.version` ist `2.84.0`. `update-spec.sh <tag>` holt diese drei Teile deshalb per `git archive` aus dem Tag, ruft die Funktion mit Node auf und schreibt das Ergebnis nach `Spec/`. Admin-Zugang und laufender Server sind dafür nicht nötig. Die Pfade beginnen mit `/api/v1/`, die Basis-URL der App ist also die reine Serveradresse.
+- **Generator-Aufruf:** Der Generator läuft per CLI aus einem eigenen Werkzeug-Paket `Tools/` mit `exact: "1.14.3"` und eingechecktem `Package.resolved`, aufgerufen mit `swift run --package-path Tools swift-openapi-generator generate --config … --output-directory … Spec/…`. `typeOverrides` hat das Format `typeOverrides: schemas: { <Schemaname>: <Swift-Typ> }`. Der Schlüssel ist der letzte Teil von `#/components/schemas/…`, der Wert ein Typ, der im selben Modul liegt. `accessModifier: internal` ist der Standard und wird trotzdem ausdrücklich gesetzt.
+- **SSO-only:** `GET /auth/oidc/config` liefert `enabled`, `password_login_enabled` und `guest_password_login_enabled`. Bei `password_login_enabled == false` zeigt die App den Hinweis statt des Formulars. `guest_password_login_enabled` spielt keine Rolle, weil Gäste nach S2 kein Credential bekommen.
 
 ## Fertig, wenn
 
