@@ -7,3 +7,4 @@ DerivedData/
 *.xcresult
 # Ebenfalls aus project.yml (info:)
 App/Info.plist
+App/Yuvomi.entitlements
