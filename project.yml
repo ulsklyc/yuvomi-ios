@@ -1,0 +1,60 @@
+# Quelle des Xcode-Projekts. Erzeugen mit: xcodegen generate
+# Die .xcodeproj ist nicht eingecheckt (siehe .gitignore).
+name: Yuvomi
+options:
+  bundleIdPrefix: cloud.yuvomi
+  deploymentTarget:
+    iOS: "27.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: 8C2HRWK28S
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  Yuvomi:
+    path: .
+targets:
+  Yuvomi:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    dependencies:
+      - package: Yuvomi
+        product: YuvomiCore
+      - package: Yuvomi
+        product: LoginFeature
+      - package: Yuvomi
+        product: TasksFeature
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cloud.yuvomi.ios
+        PRODUCT_NAME: Yuvomi
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_CFBundleDisplayName: Yuvomi
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        LOCALIZATION_PREFERS_STRING_CATALOGS: true
+    info:
+      path: App/Info.plist
+      properties:
+        # HTTPS überall, ohne TLS nur im lokalen Netz (localhost, LAN-IPs, .local).
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+schemes:
+  Yuvomi:
+    build:
+      targets:
+        Yuvomi: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - package: Yuvomi/YuvomiCoreTests
