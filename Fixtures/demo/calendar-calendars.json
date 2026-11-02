@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Yuvomi",
+      "color": "#007AFF",
+      "is_default": true,
+      "sort_order": 0,
+      "feed_token": null,
+      "feed_url": null,
+      "event_count": 24,
+      "uploads_to_icloud": false
+    }
+  ],
+  "sources": [
+    {
+      "key": "local:1",
+      "name": "Yuvomi",
+      "color": "#007AFF"
+    }
+  ]
+}
