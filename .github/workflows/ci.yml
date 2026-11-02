@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Hauptversion wie lokal (Xcode 27.2); das Ziel iOS 27 braucht das iOS-27-SDK.
+  XCODE_MAJOR: "27"
+
+jobs:
+  test:
+    # macos-26 hat nur Xcode 26.x; Xcode 27 gibt es bisher nur im Preview-Image xcode-27.
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode wählen
+        run: |
+          # Neuestes installiertes Xcode der Hauptversion; die Pfade der Runner-Images wechseln.
+          XCODE_APP=$(ls -d /Applications/Xcode_${XCODE_MAJOR}*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -z "$XCODE_APP" ]; then
+            echo "Kein Xcode $XCODE_MAJOR auf diesem Runner. Vorhanden:"
+            ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+
+      - name: XcodeGen
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Tests im Simulator
+        run: |
+          # Erstes verfügbares iPhone der neuesten iOS-Laufzeit, statt einen Gerätenamen zu raten.
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
+          echo "Simulator: $UDID"
+          xcodebuild test \
+            -project Yuvomi.xcodeproj \
+            -scheme Yuvomi \
+            -destination "id=$UDID"
