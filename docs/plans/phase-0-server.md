@@ -232,14 +232,32 @@ Die Spec wächst um rund 14 Operationen pro Woche, ein einmaliges Aufräumen hie
 
 Nur von je einem Agenten gemeldet, noch nicht unabhängig bestätigt: weitere 500er durch fehlende Typprüfung bei `PATCH /shopping/items/{id}` und `POST`/`PUT /calendar`, fehlende Längenprüfung im PATCH, `is_checked: 'false'` hakt ab, leere Datumswerte bei `POST /tasks` landen als `''` in der Antwort und verletzen `format: date`, `toLocalDateKey()` statt `todayKey()` in `server/routes/tasks.js:980` und `server/mcp/tools.js:67`.
 
+## Restplan, Entscheidungen vom 2026-11-02
+
+- **Validierungs-PR vor dem Release:** Er behebt die bestätigten Serverfehler oben. Die nur einmal gemeldeten Fehler werden zuerst gemessen und dann behoben oder verworfen. Die Typprüfungen kommen gezielt in `tasks.js`, `shopping.js` und `calendar.js`, mit den vorhandenen Helfern aus `server/middleware/validate.js`, jeder Fall mit Regressionstest. Die Helfer selbst bleiben unverändert, weil rund 20 Routen und die PWA an ihnen hängen.
+- **`PUT /reminders`** im selben PR: zuerst mit einem Test messen, ob der Gelesen-Status zurückgesetzt wird, dann beheben. Sonst bringt `/upcoming` alte Erinnerungen zurück, sobald jemand in der PWA eine Serie speichert.
+- **Release:** Das nächste Release bringt diese Fixes und `client_api: 1`. Der PWA-Teil von S3 ändert keine Route und gehört nicht zum Vertrag. Das Release selbst braucht weiter eine ausdrückliche Freigabe.
+- **Serien-Lücke:** Gelöschte erste Vorkommen erinnern weiter, das gilt für `/upcoming`, `/pending` und die Zustellung. Das ist kein Blocker für Phase 0, es läuft als ulsklyc/yuvomi#2470.
+- **S6:** Kommt direkt nach dem Release, weil die Fixtures schon für die App-Entwicklung gebraucht werden. Der VPS läuft bei IONOS.
+- **Apple-Anfrage:** ist abgeschickt, die Antwort steht aus.
+
 ## Fertig, wenn
 
-- [ ] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential, ein SSO-only-Konto mit nur einem Gerät per App-Link.
+- [ ] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential.
 - [ ] Personal, Displays, Gäste und Ehemalige bekommen keines, und kein Credential erreicht eine Admin-Route.
 - [ ] Alle Wege aus S2 Regel 4 beenden Geräte, Integrations-Tokens bleiben.
 - [ ] `GET /reminders/upcoming` liefert für die vier Module nur Sichtbares.
 - [ ] `test:openapi-client-contract` ist grün.
 - [ ] Ein Release ist draußen, und die Review-Instanz läuft darauf.
+
+## Vor TestFlight
+
+Diese Punkte hängen nicht am Server-Vertrag und halten Phase 0 deshalb nicht auf.
+
+- [ ] Der PWA-PR mit dem Abschnitt „Angemeldete Geräte“ und den 27 Locales ist gemergt.
+- [ ] Ein SSO-only-Konto mit nur einem Gerät kommt per App-Link zu einem Credential.
+- [ ] Entschieden ist, ob dasselbe Gerät per Universal Link oder per `yuvomi://` gekoppelt wird.
+- [ ] Die Antwort auf die Apple-Anfrage steht in den Review-Notes.
 
 ## Nachzuziehen in der Yuvomi-Doku
 

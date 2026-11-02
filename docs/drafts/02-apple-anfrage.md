@@ -1,6 +1,6 @@
 # Entwurf: Anfrage an Apple Developer Support
 
-Stand 01.11.2026, nicht abgeschickt. Der Text geht an den Developer Support über [developer.apple.com/contact](https://developer.apple.com/contact/), angemeldet mit dem Konto, unter dem die App erscheinen soll.
+Stand 02.11.2026: abgeschickt, Antwort steht aus. Der Text geht an den Developer Support über [developer.apple.com/contact](https://developer.apple.com/contact/), angemeldet mit dem Konto, unter dem die App erscheinen soll.
 
 Ziel ist eine schriftliche Einordnung zu Guideline 5.1.1 (ix), bevor die App eingereicht wird. Der Support kann die spätere Review-Entscheidung wahrscheinlich nicht verbindlich vorwegnehmen. Eine Antwort ist deshalb eine gute Grundlage, aber keine Garantie, und sie gehört später in die Review-Notes.
 
