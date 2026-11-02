@@ -58,9 +58,23 @@ jobs:
 
       - name: Tests im Simulator
         run: |
-          # Erstes verfügbares iPhone der neuesten iOS-Laufzeit, statt einen Gerätenamen zu raten.
+          # Letztes verfügbares iPhone einer iOS-Laufzeit, statt einen Gerätenamen zu raten.
           UDID=$(xcrun simctl list devices available -j \
-            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid // empty')
+          # Manche Runner-Exemplare des Preview-Images haben kein fertiges Gerät: dann eines anlegen.
+          if [ -z "$UDID" ]; then
+            RUNTIME=$(xcrun simctl list runtimes available -j \
+              | jq -r '[.runtimes[] | select(.platform == "iOS")] | last | .identifier // empty')
+            DEVICE_TYPE=$(xcrun simctl list devicetypes -j \
+              | jq -r '[.devicetypes[] | select(.name | startswith("iPhone"))] | last | .identifier // empty')
+            if [ -z "$RUNTIME" ] || [ -z "$DEVICE_TYPE" ]; then
+              echo "Keine iOS-Laufzeit oder kein iPhone-Gerätetyp auf diesem Runner."
+              xcrun simctl list runtimes
+              exit 1
+            fi
+            UDID=$(xcrun simctl create "CI iPhone" "$DEVICE_TYPE" "$RUNTIME")
+            echo "Angelegt: $DEVICE_TYPE auf $RUNTIME"
+          fi
           echo "Simulator: $UDID"
           xcodebuild test \
             -project Yuvomi.xcodeproj \

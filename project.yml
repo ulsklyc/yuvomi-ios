@@ -47,6 +47,23 @@ targets:
         # HTTPS überall, ohne TLS nur im lokalen Netz (localhost, LAN-IPs, .local).
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+  # Tests, die die App als Host brauchen, etwa für den Keychain: Paket-Tests laufen im
+  # Simulator ohne Entitlements und bekommen dort errSecMissingEntitlement (-34018).
+  YuvomiHostedTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/HostedTests
+    dependencies:
+      - target: Yuvomi
+      - package: Yuvomi
+        product: YuvomiCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: cloud.yuvomi.ios.hosted-tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Yuvomi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Yuvomi"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   Yuvomi:
     build:
@@ -59,3 +76,4 @@ schemes:
       targets:
         - package: Yuvomi/YuvomiCoreTests
         - package: Yuvomi/YuvomiAPITests
+        - YuvomiHostedTests

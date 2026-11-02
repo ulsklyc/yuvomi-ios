@@ -11,10 +11,12 @@ public struct FixtureTransport: ClientTransport {
     public struct Response: Sendable {
         public var status: HTTPResponse.Status
         public var body: Data
+        public var contentType: String
 
-        public init(status: HTTPResponse.Status = .ok, body: Data) {
+        public init(status: HTTPResponse.Status = .ok, body: Data, contentType: String = "application/json; charset=utf-8") {
             self.status = status
             self.body = body
+            self.contentType = contentType
         }
 
         /// Eine Datei aus `Fixtures/demo`, `name` ohne Endung.
@@ -97,7 +99,7 @@ public struct FixtureTransport: ClientTransport {
         }
 
         var fields = HTTPFields()
-        fields[.contentType] = "application/json; charset=utf-8"
+        fields[.contentType] = response.contentType
         return (HTTPResponse(status: response.status, headerFields: fields), HTTPBody(response.body))
     }
 
