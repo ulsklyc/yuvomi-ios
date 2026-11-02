@@ -144,6 +144,26 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 - **`product` ist ein Enum** mit dem einzigen Fall `yuvomi`. Ein fremder Wert scheitert also schon beim Dekodieren. Die Versionsprüfung in A3 muss diesen Fehler als „kein Yuvomi-Server“ melden, nicht als Netzwerkfehler.
 - **Gemessen:** 0 Generator-Warnungen. Alle 21 Fixtures dekodieren über den generierten Client. `PUT /calendar/{id}` sendet `{"end_datetime":null,"assigned_to":[2,3]}`. Die Gegenprobe hält: Ein eingebauter `oneOf`-Zweig mit `null` erzeugt die Warnung `Schema "null" is not supported`, und das Skript bricht mit Exit 1 ab.
 
+## Abweichungen beim Bau (A3)
+
+- **Seams**, vor dem ersten Test abgestimmt:
+  1. `ServerCheck.run(address:)` im Kern, mit einem Fake für den Port `ServerProbe`.
+  2. Die Adapter `YuvomiServerProbe` und `YuvomiTasks` über den Fixture-Transport.
+  3. `KeychainCredentialStore` gegen den echten Keychain.
+- **Adressregel:** Ohne Schema gilt https. Ein eingetipptes http bleibt. Ein Pfad bleibt, der Schrägstrich am Ende fällt weg. Schema und Host werden klein geschrieben, damit derselbe Server immer denselben Keychain-Eintrag trifft.
+- **`/version` liest der Adapter selbst**, über denselben Transport und mit lauter optionalen Feldern. Im generierten Typ sind `product` und `client_api` Pflicht. Ein alter oder fremder Server wäre dort nur ein Dekodierfehler, und `ServerCheck` könnte „zu alt“ und „kein Yuvomi“ nicht unterscheiden. Die Regel lautet:
+
+  | `/version` liefert | Ergebnis |
+  |---|---|
+  | `product == "yuvomi"` und `client_api >= 1` | bereit |
+  | `product == "yuvomi"` und `client_api` 0 oder fehlend | zu alt |
+  | kein `product`, aber `app_name` (Yuvomi vor v2.83.0) | zu alt |
+  | anderes `product`, gar nichts davon, HTML oder ein anderer Status | kein Yuvomi |
+- **Fehler werden danach eingeordnet, ob eine Antwort kam.** Ohne Antwort gilt der Server als nicht erreichbar, mit Antwort als unerwartet. Eine Unterscheidung nach `DecodingError` reicht nicht: Ein Router, der mit `text/html` antwortet, löst im generierten Client einen anderen Fehler aus und hätte sonst „nicht erreichbar“ ergeben.
+- **Keychain-Tests brauchen die App als Host:** Paket-Tests bekommen im Simulator `errSecMissingEntitlement` (-34018). Sie liegen deshalb in `Tests/HostedTests`, im Xcode-Target `YuvomiHostedTests` aus `project.yml`. Die Access Group ist dort `nil`.
+- **Access Group und App Group** kommen mit A4. Erst dort benutzt die App den Keychain wirklich, und erst dann gibt es Entitlements. Ebenso der Keychain-Fake im Speicher: Ihn braucht erst der Anmeldeablauf.
+- **`CalendarDay`** steht für `due_date` statt `Date`. Ein `Date` ist ein Zeitpunkt, und je nach Zeitzone des Geräts landete derselbe Tag sonst auf dem Vortag.
+
 ## Geklärte Fakten (02.11.2026)
 
 - **Herkunft der Spec:** Die Spec liegt im Server-Repo nicht als Datei. `buildOpenApiSpec()` in `server/openapi.js` erzeugt sie zur Laufzeit, ausgeliefert wird sie nur an Admins unter `/api/v1/openapi.json`. Ohne Server geht es aber auch: Die Funktion läuft ohne `node_modules`, sobald `server/`, `public/` und `package.json` aus dem Tag vorliegen. Geprüft mit `v2.84.0`: 501 Pfade, `info.version` ist `2.84.0`. `update-spec.sh <tag>` holt diese drei Teile deshalb per `git archive` aus dem Tag, ruft die Funktion mit Node auf und schreibt das Ergebnis nach `Spec/`. Admin-Zugang und laufender Server sind dafür nicht nötig. Die Pfade beginnen mit `/api/v1/`, die Basis-URL der App ist also die reine Serveradresse.
