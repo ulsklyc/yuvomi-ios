@@ -41,6 +41,13 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         LOCALIZATION_PREFERS_STRING_CATALOGS: true
+    # Geteilte Keychain-Gruppe für App und spätere Widgets. Zur Laufzeit heißt sie
+    # "8C2HRWK28S.cloud.yuvomi". Die App Group group.cloud.yuvomi kommt erst mit den Widgets.
+    entitlements:
+      path: App/Yuvomi.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)cloud.yuvomi
     info:
       path: App/Info.plist
       properties:

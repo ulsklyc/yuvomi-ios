@@ -49,4 +49,23 @@ import YuvomiCore
         let attributes = try #require(result as? [String: Any])
         #expect(attributes[kSecAttrAccessible as String] as? String == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
     }
+
+    /// Das Entitlement aus `project.yml` greift: Der Eintrag landet in der Gruppe, die
+    /// später auch Widgets lesen.
+    @Test func sharedAccessGroupIsAvailableToTheApp() throws {
+        let shared = KeychainCredentialStore(service: store.service, accessGroup: KeychainCredentialStore.sharedAccessGroup)
+        try shared.save("ydc_home", for: home)
+        defer { try? shared.delete(for: home) }
+
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: store.service,
+            kSecAttrAccount as String: home.absoluteString,
+            kSecReturnAttributes as String: true,
+        ]
+        var result: CFTypeRef?
+        #expect(SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess)
+        let attributes = try #require(result as? [String: Any])
+        #expect(attributes[kSecAttrAccessGroup as String] as? String == KeychainCredentialStore.sharedAccessGroup)
+    }
 }
