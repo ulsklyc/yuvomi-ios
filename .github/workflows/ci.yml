@@ -34,6 +34,23 @@ jobs:
           sudo xcode-select -s "$XCODE_APP"
           xcodebuild -version
 
+      - name: Generator zwischenspeichern
+        uses: actions/cache@v4
+        with:
+          path: Tools/.build
+          key: tools-${{ runner.os }}-${{ hashFiles('Tools/Package.resolved') }}-${{ env.XCODE_MAJOR }}
+
+      - name: Generator-Check
+        run: |
+          # Bricht bei jeder Generator-Warnung ab (im Skript) und wenn der eingecheckte
+          # Code nicht zu Spec/openapi.json und der Konfiguration passt.
+          scripts/generate-api.sh
+          if [ -n "$(git status --porcelain -- Sources/YuvomiAPI/Generated)" ]; then
+            echo "Sources/YuvomiAPI/Generated passt nicht zur Spec. scripts/generate-api.sh laufen lassen und committen."
+            git status --short -- Sources/YuvomiAPI/Generated
+            exit 1
+          fi
+
       - name: XcodeGen
         run: |
           brew install xcodegen

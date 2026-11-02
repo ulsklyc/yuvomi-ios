@@ -1,0 +1,19 @@
+# Konfiguration für scripts/generate-api.sh. Die Spec ist schon auf die 39 Operationen
+# des Clients gekürzt (scripts/prune-spec.mjs), ein `filter` ist deshalb nicht nötig.
+generate:
+  - types
+  - client
+accessModifier: internal
+namingStrategy: idiomatic
+additionalFileComments:
+  - "Erzeugt von scripts/generate-api.sh aus Spec/openapi.json. Nicht von Hand ändern."
+# Eingaben, in denen `null` etwas anderes bedeutet als ein fehlendes Feld oder die eine
+# Liste brauchen. Handgeschrieben in Sources/YuvomiAPI/Overrides/; mit Modulnamen, weil der
+# Generator sonst `typealias X = X` in Components.Schemas schreibt.
+typeOverrides:
+  schemas:
+    TaskCreateInput: YuvomiAPI.TaskCreateInput
+    TaskUpdateInput: YuvomiAPI.TaskUpdateInput
+    CalendarEventCreateInput: YuvomiAPI.CalendarEventCreateInput
+    CalendarEventUpdateInput: YuvomiAPI.CalendarEventUpdateInput
+    ShoppingItemUpdateInput: YuvomiAPI.ShoppingItemUpdateInput

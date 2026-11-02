@@ -58,3 +58,4 @@ schemes:
       config: Debug
       targets:
         - package: Yuvomi/YuvomiCoreTests
+        - package: Yuvomi/YuvomiAPITests
