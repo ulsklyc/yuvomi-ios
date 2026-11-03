@@ -24,6 +24,9 @@ public enum SignInError: Error, Hashable, Sendable {
     case invalidCredentials
     /// 2FA- oder Wiederherstellungscode falsch, oder der Anmeldeversuch ist abgelaufen.
     case invalidCode
+    /// Kopplungscode unbekannt, abgelaufen, schon benutzt, oder das Konto darf kein Gerät
+    /// mehr haben. Der Server unterscheidet das absichtlich nicht (`invalid_pairing_code`).
+    case invalidPairingCode
     /// Das Konto darf sich hier nicht anmelden oder bekommt kein Device Credential
     /// (deaktiviert, Personal, Gast, Display; S2).
     case notAllowed

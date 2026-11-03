@@ -128,7 +128,8 @@ extension LoginModel.Problem {
     init(_ error: SignInError) {
         switch error {
         case .invalidCredentials: self = .invalidCredentials
-        case .invalidCode: self = .invalidCode
+        // Gekoppelt wird erst ab B3, bis dahin erreicht dieser Fall das Modell nicht.
+        case .invalidCode, .invalidPairingCode: self = .invalidCode
         case .notAllowed: self = .notAllowed
         case .rateLimited: self = .rateLimited
         case .unreachable: self = .unreachable
