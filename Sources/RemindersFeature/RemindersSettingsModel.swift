@@ -43,12 +43,14 @@ public final class RemindersSettingsModel {
         source = permission
         self.defaults = defaults
         self.onChange = onChange
+        wantsReminders = defaults.object(forKey: Self.wantsKey) as? Bool ?? true
     }
 
-    /// Ohne gespeicherten Wunsch gilt „an“: Wer iOS erlaubt hat, will Erinnerungen.
+    /// Ohne gespeicherten Wunsch gilt „an“: Wer iOS erlaubt hat, will Erinnerungen. Gespeichert
+    /// statt berechnet, sonst bemerkt `@Observable` den Wechsel nicht und der Schalter zeichnet
+    /// sich nicht neu. Nur das Modell schreibt den Wunsch, deshalb liest es ihn einmal in `init`.
     private var wantsReminders: Bool {
-        get { defaults.object(forKey: Self.wantsKey) as? Bool ?? true }
-        set { defaults.set(newValue, forKey: Self.wantsKey) }
+        didSet { defaults.set(wantsReminders, forKey: Self.wantsKey) }
     }
 
     public func load() async {
@@ -68,12 +70,14 @@ public final class RemindersSettingsModel {
 
     /// Der Schalter „Erinnerungen auf diesem iPhone“.
     public func setOn(_ on: Bool) async {
-        if on {
-            await turnOn()
-        } else {
-            wantsReminders = false
-            onChange(false)
-        }
+        if on { await turnOn() } else { switchOff() }
+    }
+
+    /// Ausschalten fragt iOS nichts und läuft deshalb synchron. Der Schalter liest gleich nach
+    /// dem Tippen den neuen Wert und springt nicht kurz zurück.
+    public func switchOff() {
+        wantsReminders = false
+        onChange(false)
     }
 
     private func dismissCard() {

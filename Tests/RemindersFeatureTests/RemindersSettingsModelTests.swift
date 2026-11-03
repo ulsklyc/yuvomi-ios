@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import Testing
 @testable import RemindersFeature
 
@@ -97,6 +98,17 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
         await settings.setOn(true)
         #expect(settings.isOn)
         #expect(changes == [false, true])
+    }
+
+    /// Der Schalter zeichnet sich neu, wenn er umschaltet. Sonst stünde er nach „aus“ weiter auf
+    /// „an“, obwohl die Erinnerungen schon abgeräumt sind.
+    @Test func switchingOffIsObservable() async {
+        let settings = model(FakePermission(.allowed))
+        await settings.load()
+        await confirmation { changed in
+            withObservationTracking { _ = settings.isOn } onChange: { changed() }
+            await settings.setOn(false)
+        }
     }
 
     /// Nach einem Nein fragt iOS nicht noch einmal. Der Schalter bleibt aus, der Abschnitt
