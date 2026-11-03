@@ -48,6 +48,8 @@ public struct FixtureTransport: ClientTransport {
         "getSignInOptions": ("auth-oidc-config", .ok),
         "signInWithPassword": ("auth-login", .ok),
         "addSignedInDevice": ("auth-devices-create", .created),
+        // Dasselbe Schema wie beim Ausstellen nach dem Login (SignedInDeviceCreateResponse).
+        "redeemPairingCode": ("auth-devices-create", .created),
         "getCurrentUser": ("auth-me", .ok),
         "listSignedInDevices": ("auth-devices", .ok),
         "getDashboard": ("dashboard", .ok),
