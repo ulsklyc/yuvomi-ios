@@ -166,13 +166,48 @@ Stand 03.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q12) auf Basis von
 - **Englische Buttons** in Title Case wie das vorhandene „Sign In“: „Scan QR Code“, „Sign In with a Code Instead“.
 - **Sichtprüfung im Simulator** gegen einen lokalen Server `v2.84.0` (Demo-Seed `de`, Port 3901), auf Deutsch und Englisch: Link mit http, Bestätigung, abgelehnter Code mit Meldung in der Code-Eingabe, „Abbrechen“ zur Adresse, Passwort-Schritt mit „Stattdessen mit Code anmelden“, eingefügter Code gruppiert. Dazu die Bestätigung bei Dynamic Type `accessibility-extra-large`, nichts abgeschnitten. Die Bestätigung mit https und der Scan-Button sind nur in den Vorschauen zu sehen.
 
+## Abweichungen beim Bau (B5)
+
+- **Kamera in der ersten Frage abgelehnt:** Bisher fragte die VisionKit-Hülle selbst und startete danach `startScanning()` mit `try?`. Nach „Nicht erlauben“ blieb das Blatt schwarz, oben stand VisionKits „Verlangsamen.“ und unten weiter „Richte die Kamera auf den QR-Code …“. Jetzt hat `QRCodeScanner` dafür `requestAccess() async -> Bool`. `ScannerSheet` fragt per `.task` und zeigt bei `false` eine `ContentUnavailableView` „Kein Zugriff auf die Kamera“ mit „Einstellungen öffnen“ und dem Hinweis auf den Code. Ohne Logik im Modell, deshalb ohne Unit-Test (A5): geprüft per neuer Vorschau „Scanner, Kamera abgelehnt“ und am iPhone. Abgestimmt nach der Audit-Runde.
+- **Code per Skript:** `POST /auth/logout` entwertet offene Kopplungscodes (`server/auth.js`, gegen den offenen Code am geteilten Rechner). Das Hilfsskript für den Lauf darf die Browser-Sitzung nach dem Erzeugen deshalb nicht abmelden. Der erste Versuch scheiterte genau daran, die Meldung der App war richtig.
+
+## Lauf (B5, 03.11.2026)
+
+Server `v2.84.0` aus dem Haupt-Checkout, Demo-Seed `de`, Port 3901. Codes per `POST /api/v1/auth/devices/pair` aus einer Browser-Sitzung. Nach jedem Fall `api_tokens` und `sessions` abgefragt.
+
+**Simulator** (iPhone 17, Deutsch, hell), Server auf `127.0.0.1`:
+
+| Fall | Ergebnis | `api_tokens` |
+|---|---|---|
+| 1. Link per `simctl openurl` (emma) | Bestätigung mit `http://localhost:3901` und Warnung, Anmelden, Aufgabenliste | neu: emma, `kind = device`, `platform = ios` |
+| 2. Abmelden, Code abtippen (leo) | über „Stattdessen mit Code anmelden“, getippt als `VGP9G 9WMWE`, Liste | emma widerrufen (Abmelden), neu: leo, `device`/`ios` |
+| 3. Benutzter Code | Code-Schritt mit „Code ungültig oder abgelaufen. Erzeuge in der Web-App einen neuen.“ | kein neues Token |
+| 4. Link bei bestehender Anmeldung (leo-Code, angemeldet als emma) | Hinweis „Bereits angemeldet“, Liste bleibt | unverändert, leos Code bleibt offen |
+| 5. Link im 2FA-Schritt (emma mit 2FA, Link für leo) | Bestätigung statt 2FA-Schritt, dann Liste | neu: leo, `device`/`ios` |
+
+- **Sitzungen:** In `sessions` liegt nach keinem Fall eine angemeldete Sitzung der App, nur die des Skripts. Aus Fall 5 bleibt die Sitzung des Passwort-Schritts mit `pendingTwoFactor` liegen, ohne `userId`. Sie gibt keinen Zugang und verfällt nach fünf Minuten (B3: `pendingFlow = nil`).
+- **Pull-to-refresh nach Widerruf** (offen aus A6): leos Token in der Datenbank widerrufen, dann gewischt. Die App fällt zum Login zurück. Mit `swipe` über 1,5 Sekunden kam der Wisch an, ein schneller `touch_path` nicht.
+- **Eingabe im Simulator:** Die `text`-Aktion kam wie in B4 nicht an. Getippt wurde über die Bildschirmtastatur, nach `set_keyboard show`. Schnelle Tipps direkt nach einem Wechsel der Tastaturebene gingen verloren, mit Pausen kam alles an. Das ist der Simulator, nicht die Gruppierung.
+
+**iPhone** (KlyPhone, iPhone18,4, Dunkelmodus, signiert mit Team `8C2HRWK28S`), Server auf `192.168.178.64`:
+
+| Weg | Ergebnis | `api_tokens` |
+|---|---|---|
+| Scan in der App (linda) | Button schon vor der ersten Kamerafrage, Frage mit deutschem Text, Freigabe, fremder QR zeigt den Hinweis und VoiceOver sagt ihn an, Kopplungs-QR führt zur Bestätigung, Liste | neu: linda, `device`/`ios`, eigene `device_id` |
+| Kamera-App (alex), App vorher beendet | Banner „In Yuvomi öffnen“, Kaltstart direkt in die Bestätigung, Liste | neu: alex, `device`/`ios` |
+| Link aus Safari (linda) | „Diese Seite in ‚Yuvomi‘ öffnen?“, Bestätigung, Liste | neu: linda, `device`/`ios` |
+| Kamera in den Einstellungen aus | „QR-Code scannen“ fehlt im Adress- und im Code-Schritt | – |
+| Erste Frage abgelehnt (App neu installiert) | vorher schwarzes Blatt, nach der Korrektur „Kein Zugriff auf die Kamera“ mit „Einstellungen öffnen“, das zur Yuvomi-Seite führt; danach scannt die Kamera wieder | – |
+
+- **Audit** (impeccable, nativ): Texte über Textstile, Farben semantisch, Orange nur am Schloss, Bestätigung als Element zusammengefasst. Gefunden und behoben nur die abgelehnte erste Frage. Die Bestätigung hell und mit großer Schrift kommt aus dem Simulator (hier und B4), dunkel vom iPhone.
+
 ## Fertig, wenn
 
-- [ ] Ein Mitglied koppelt im Simulator per Link und per abgetipptem Code und sieht seine Aufgaben.
-- [ ] Auf einem iPhone gelingt die Kopplung per Scan in der App und per Kamera-App.
-- [ ] Vor dem Einlösen eines Links oder QR zeigt die App den Server und wartet auf die Bestätigung.
-- [ ] Ein ungültiger, abgelaufener oder benutzter Code führt zur Code-Eingabe mit klarer Meldung.
-- [ ] Ein Link bei bestehender Anmeldung ändert nichts an der Sitzung.
-- [ ] Die Anfrage zum Einlösen trägt nie einen `Authorization`-Header.
-- [ ] Ein SSO-only-Server führt direkt zur Code-Eingabe statt zum Hinweis.
+- [x] Ein Mitglied koppelt im Simulator per Link und per abgetipptem Code und sieht seine Aufgaben (Lauf B5, Fälle 1 und 2).
+- [x] Auf einem iPhone gelingt die Kopplung per Scan in der App und per Kamera-App (Lauf B5, dazu der Link aus Safari).
+- [x] Vor dem Einlösen eines Links oder QR zeigt die App den Server und wartet auf die Bestätigung (Simulator und iPhone, alle drei Wege).
+- [x] Ein ungültiger, abgelaufener oder benutzter Code führt zur Code-Eingabe mit klarer Meldung. Live gesehen: benutzt. Der Server antwortet für alle drei gleich (`invalid_pairing_code`), das prüfen die Tests aus B2 und B3.
+- [x] Ein Link bei bestehender Anmeldung ändert nichts an der Sitzung (Lauf B5, Fall 4, und `IncomingLink`-Tests aus B3).
+- [x] Die Anfrage zum Einlösen trägt nie einen `Authorization`-Header (`PairingRedeemerTests.redeemsTheCodeWithoutAuthorization`, B2).
+- [x] Ein SSO-only-Server führt direkt zur Code-Eingabe statt zum Hinweis (`LoginModelTests.serverWithoutPasswordLoginAsksForAPairingCode`). Live nicht gesehen: Der Demo-Seed hat kein OIDC.
 - [ ] Alle neuen Texte liegen auf Deutsch und Englisch im String Catalog, CI ist grün.
