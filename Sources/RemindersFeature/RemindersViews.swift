@@ -21,19 +21,25 @@ public struct ReminderCard: View {
                 Text("reminders.card.message", bundle: .module)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                HStack {
-                    Button { Task { await model.allowFromCard() } } label: {
-                        Text("reminders.card.allow", bundle: .module)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Button { model.notNow() } label: {
-                        Text("reminders.card.notNow", bundle: .module)
-                    }
-                    .buttonStyle(.bordered)
+                // Nebeneinander, solange es passt. Bei großer Schrift untereinander statt gequetscht.
+                ViewThatFits(in: .horizontal) {
+                    HStack { buttons }
+                    VStack(alignment: .leading) { buttons }
                 }
             }
             .padding(.vertical, 4)
         }
+    }
+
+    @ViewBuilder private var buttons: some View {
+        Button { Task { await model.allowFromCard() } } label: {
+            Text("reminders.card.allow", bundle: .module)
+        }
+        .buttonStyle(.borderedProminent)
+        Button { model.notNow() } label: {
+            Text("reminders.card.notNow", bundle: .module)
+        }
+        .buttonStyle(.bordered)
     }
 }
 
@@ -48,7 +54,9 @@ public struct RemindersSettingsSection: View {
 
     public var body: some View {
         Section {
-            Toggle(isOn: Binding(get: { model.isOn }, set: { on in Task { await model.setOn(on) } })) {
+            Toggle(isOn: Binding(get: { model.isOn }, set: { on in
+                if on { Task { await model.setOn(true) } } else { model.switchOff() }
+            })) {
                 Text("reminders.toggle", bundle: .module)
             }
             .disabled(model.permission == .denied || model.isAsking)
