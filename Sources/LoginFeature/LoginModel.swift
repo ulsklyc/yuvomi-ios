@@ -141,6 +141,13 @@ public final class LoginModel {
         await takeQueuedLink()
     }
 
+    /// Ein QR aus dem Scanner. `false` heißt: kein Kopplungslink, der Scanner bleibt offen.
+    public func openScannedCode(_ text: String) async -> Bool {
+        guard let url = URL(string: text), PairingLink(url: url) != nil else { return false }
+        await openPairingLink(url)
+        return true
+    }
+
     public func confirmPairing() async {
         guard !isWorking, case .confirmPairing(let server, _, let code) = step else { return }
         await redeem(code, at: server)
