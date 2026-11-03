@@ -150,6 +150,14 @@ Ohne Unit-Test bleiben Views, Delegate, Verdrahtung und der Hintergrund-Abgleich
 - **Herkunft beim Lesen:** Der Adapter lässt jede Zeile außer `task` und `event` fallen, auch wenn ein Server `types` übergeht. Ein fehlender `entity_title` wird ein leerer Titel, die Mitteilung zeigt dann nur die Überschrift.
 - **Aus dem Code-Review, später:** Die gekürzte Spec könnte `types` gleich auf `task` und `event` einengen und die Felder anderer Herkünfte weglassen (`scripts/prune-spec.mjs`, neuer Generatorlauf). Dann ließe sich eine andere Herkunft gar nicht erst anfragen. Nicht in diesem Slice. Für C5: Ein abgebrochener Lauf kommt als „nicht erreichbar“ zurück und darf nichts anzeigen.
 
+## Abweichungen beim Bau (C3)
+
+- **Seam 3 ohne öffentliche UN-Typen:** `SystemNotificationScheduler.request(for:locale:)` ist `internal`, der Test liest ihn über `@testable import`. So verlässt `UNNotificationRequest` das Modul nicht.
+- **Testdatum 2099:** Ein einmaliger Kalender-Trigger in der Vergangenheit gibt kein `nextTriggerDate()` mehr. Getestet wird deshalb die Nacht der Umstellung auf Sommerzeit 2099, 01:30 UTC, unter vier Zeitzonen des Geräts. Ohne Zone an den Komponenten werden drei davon rot.
+- **Globale Zeitzone im Test:** Der Test setzt `NSTimeZone.default`. Die Suite läuft seriell, und die übrigen Suiten in `RemindersFeatureTests` geben keine Zeitzone vor. Sollte ein späterer Test dort `TimeZone.current` lesen, muss er in eine eigene serielle Suite.
+- **Eine Sekunde Luft im Adapter:** Was beim Planen weniger als eine Sekunde entfernt ist, plant der Adapter nicht. Den Vorlauf von fünf Sekunden prüft der Kern vor dem Abruf.
+- **Bewusst nicht:** Fehler von `add` melden (die Erlaubnis prüft der Abschnitt „Erinnerungen“), parallele Aufrufe von `add` (höchstens 60 je Abgleich), Bruchteile von Sekunden (`fires_at` hat laut Spec ganze Sekunden).
+
 ## Fertig, wenn
 
 - [ ] Eine in der Web-App gesetzte Erinnerung an eine Aufgabe und an einen Termin erscheint zur Zeit als Mitteilung, bei geschlossener App und im Vordergrund.
