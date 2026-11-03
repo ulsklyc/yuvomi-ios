@@ -179,6 +179,17 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 - **Wiederherstellen:** `SessionState.restore(server:)` liest das Credential zur Server-URL. Wo sich die App die Server-URL merkt, entscheidet A5. Lässt sich der Keychain nicht lesen, gilt das als nicht angemeldet.
 - **Keychain Access Group** `$(AppIdentifierPrefix)cloud.yuvomi` steht als Entitlement in `project.yml`, zur Laufzeit `KeychainCredentialStore.sharedAccessGroup`. Ein gehosteter Test prüft, dass ein Eintrag dort landet. Die **App Group** `group.cloud.yuvomi` kommt erst mit den Widgets, vorher liest sie niemand.
 
+## Abweichungen beim Bau (A5)
+
+- **Seams**, vor dem ersten Test abgestimmt: die Screen-Modelle `LoginModel` und `TaskListModel` (`@Observable`), getestet mit Fakes für die Ports. Die Views prüfen Vorschau und Simulator, ohne Snapshot-Tests.
+- **Vorschauen über den Adapter:** `LoginFeature` und `TasksFeature` hängen zusätzlich an `YuvomiAPI` und `YuvomiFixtures`, nur für die `#Preview`s mit `FixtureTransport`. Die Screen-Modelle kennen weiter nur den Kern. Dadurch liegen die Fixture-Dateien auch im App-Bundle. Stört das vor der ersten Veröffentlichung, wandern die Vorschauen in ein eigenes Vorschau-Modul.
+- **Aufgabenliste:** Abschnitte Überfällig, Heute, Demnächst, Ohne Datum; erledigte Aufgaben ausgeblendet. Innerhalb eines Tages zuerst ganztägige, dann nach Uhrzeit. Pull-to-refresh behält bei einem Fehler die alte Liste und zeigt einen Hinweis darüber. Ein 401 meldet über `SessionState.handle(.unauthorized)` ab.
+- **Anmeldung:** Nach falschem Passwort oder Code bleibt der Schritt stehen, das Feld wird geleert, der Benutzername bleibt. Zurück vom Code führt zum Passwort, mit neuem Gateway und damit neuer Cookie-Sitzung.
+- **Serveradresse** liegt in `UserDefaults` (Schlüssel `server`), gesetzt nach erfolgreicher Anmeldung. Sie dient für `restore` beim Start und füllt nach dem Abmelden das Adressfeld vor. Mit den Widgets wandert sie in die Defaults der App Group.
+- **Texte:** Ein String Catalog pro Feature-Modul mit sprechenden Schlüsseln (`login.problem.tooOld`), Englisch und Deutsch. Damit iOS die deutschen Texte aus den Paketen nimmt, nennt `Info.plist` beide Sprachen in `CFBundleLocalizations`; ohne diese Liste blieb die App im Simulator auf Englisch.
+- **DesignSystem** enthält nur `ProblemLabel` und `PrimaryButton`.
+- **Nach dem Codex-Review zu PR #5:** `SessionState.handle(_:from:)` nimmt die Sitzung der Anfrage mit; eine späte 401-Antwort aus einer alten Sitzung meldet die neue nicht ab. „Zurück“ und erneutes Absenden (auch über die Tastatur) wirken nicht, solange eine Anfrage läuft. Kalendertage rechnet `CalendarDay` im Kern immer gregorianisch um (`init(_:timeZone:)`, `start(timeZone:)`), auch wenn das Gerät etwa den buddhistischen Kalender nutzt.
+
 ## Geklärte Fakten (02.11.2026)
 
 - **Herkunft der Spec:** Die Spec liegt im Server-Repo nicht als Datei. `buildOpenApiSpec()` in `server/openapi.js` erzeugt sie zur Laufzeit, ausgeliefert wird sie nur an Admins unter `/api/v1/openapi.json`. Ohne Server geht es aber auch: Die Funktion läuft ohne `node_modules`, sobald `server/`, `public/` und `package.json` aus dem Tag vorliegen. Geprüft mit `v2.84.0`: 501 Pfade, `info.version` ist `2.84.0`. `update-spec.sh <tag>` holt diese drei Teile deshalb per `git archive` aus dem Tag, ruft die Funktion mit Node auf und schreibt das Ergebnis nach `Spec/`. Admin-Zugang und laufender Server sind dafür nicht nötig. Die Pfade beginnen mit `/api/v1/`, die Basis-URL der App ist also die reine Serveradresse.

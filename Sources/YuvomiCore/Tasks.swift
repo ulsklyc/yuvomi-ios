@@ -25,6 +25,24 @@ public struct CalendarDay: Hashable, Sendable, Comparable {
         self.init(year: year, month: month, day: day)
     }
 
+    /// Der Tag, auf den `date` in dieser Zeitzone fällt. Immer im gregorianischen Kalender,
+    /// wie `due_date`: Mit `Calendar.current` ergäbe ein buddhistischer Kalender das Jahr 2569.
+    public init(_ date: Date, timeZone: TimeZone = .current) {
+        let parts = Self.gregorian(timeZone).dateComponents([.year, .month, .day], from: date)
+        self.init(year: parts.year!, month: parts.month!, day: parts.day!)
+    }
+
+    /// Mitternacht dieses Tages in der Zeitzone, etwa zum Formatieren in der Oberfläche.
+    public func start(timeZone: TimeZone = .current) -> Date? {
+        Self.gregorian(timeZone).date(from: DateComponents(year: year, month: month, day: day))
+    }
+
+    private static func gregorian(_ timeZone: TimeZone) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
+    }
+
     public static func < (lhs: CalendarDay, rhs: CalendarDay) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }
