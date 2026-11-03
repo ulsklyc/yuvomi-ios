@@ -5,13 +5,18 @@ import YuvomiCore
 import YuvomiFixtures
 
 /// Offene Aufgaben, nach Fälligkeit gruppiert. Nur lesend.
-public struct TaskListView: View {
+///
+/// `banner` steht über den Abschnitten, etwa die Karte für Erinnerungen. Was darin steht,
+/// entscheidet die App, die Liste kennt Erinnerungen nicht.
+public struct TaskListView<Banner: View>: View {
     let model: TaskListModel
-    let onSignOut: () async -> Void
+    let onOpenSettings: () -> Void
+    let banner: Banner
 
-    public init(model: TaskListModel, onSignOut: @escaping () async -> Void) {
+    public init(model: TaskListModel, onOpenSettings: @escaping () -> Void, @ViewBuilder banner: () -> Banner) {
         self.model = model
-        self.onSignOut = onSignOut
+        self.onOpenSettings = onOpenSettings
+        self.banner = banner()
     }
 
     public var body: some View {
@@ -20,14 +25,8 @@ public struct TaskListView: View {
                 .navigationTitle(Text("tasks.title", bundle: .module))
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            Button(role: .destructive) {
-                                Task { await onSignOut() }
-                            } label: {
-                                Label { Text("tasks.signOut", bundle: .module) } icon: { Image(systemName: "rectangle.portrait.and.arrow.right") }
-                            }
-                        } label: {
-                            Label { Text("tasks.account", bundle: .module) } icon: { Image(systemName: "person.crop.circle") }
+                        Button(action: onOpenSettings) {
+                            Label { Text("tasks.settings", bundle: .module) } icon: { Image(systemName: "gearshape") }
                         }
                     }
                 }
@@ -53,20 +52,21 @@ public struct TaskListView: View {
                 if let problem = model.refreshProblem {
                     ProblemLabel(Text(problem.message, bundle: .module))
                 }
-                ForEach(sections) { section in
-                    Section {
-                        ForEach(section.tasks) { TaskRow(task: $0, showsDate: section.kind != .today) }
-                    } header: {
-                        Text(section.kind.title, bundle: .module)
-                    }
-                }
-            }
-            .overlay {
+                banner
+                // In der Liste statt darüber, sonst läge der Hinweis über dem Banner.
                 if sections.isEmpty {
                     ContentUnavailableView {
                         Label { Text("tasks.empty.title", bundle: .module) } icon: { Image(systemName: "checkmark.circle") }
                     } description: {
                         Text("tasks.empty.message", bundle: .module)
+                    }
+                    .listRowBackground(Color.clear)
+                }
+                ForEach(sections) { section in
+                    Section {
+                        ForEach(section.tasks) { TaskRow(task: $0, showsDate: section.kind != .today) }
+                    } header: {
+                        Text(section.kind.title, bundle: .module)
                     }
                 }
             }
@@ -138,6 +138,8 @@ extension TaskListModel.Problem {
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: {}
         ),
-        onSignOut: {}
-    )
+        onOpenSettings: {}
+    ) {
+        EmptyView()
+    }
 }

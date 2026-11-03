@@ -1,4 +1,5 @@
 import LoginFeature
+import RemindersFeature
 import SwiftUI
 import TasksFeature
 import UIKit
@@ -14,13 +15,22 @@ struct YuvomiApp: App {
         WindowGroup {
             Group {
                 if let session = app.session.current {
-                    TaskListView(model: app.taskList(for: session), onSignOut: { await app.session.signOut() })
-                        .id(session)
+                    TaskListView(model: app.taskList(for: session), onOpenSettings: { app.showsSettings = true }) {
+                        ReminderCard(model: app.reminderSettings)
+                    }
+                    .task { await app.reminderSettings.load() }
+                    .sheet(isPresented: $app.showsSettings) {
+                        SettingsView(session: session, reminders: app.reminderSettings, onSignOut: { await app.session.signOut() })
+                    }
+                    .id(session)
                 } else {
                     LoginView(model: app.login())
                 }
             }
             .animation(.default, value: app.session.current)
+            // Endet die Sitzung bei offenem Blatt (Widerruf), darf es nach der nächsten
+            // Anmeldung nicht von selbst wieder aufgehen.
+            .onChange(of: app.session.current) { app.showsSettings = false }
             .onOpenURL { url in Task { await app.open(url) } }
             .alert(Text("app.pairing.alreadySignedIn.title"), isPresented: $app.showsAlreadySignedIn) {
                 Button("app.pairing.alreadySignedIn.ok", role: .cancel) {}
@@ -40,6 +50,9 @@ final class AppModel {
     private var taskListModel: (session: Session, model: TaskListModel)?
     /// Ein Kopplungslink kam, während schon jemand angemeldet ist (Q3).
     var showsAlreadySignedIn = false
+    var showsSettings = false
+    /// Karte und Schalter für Erinnerungen. Gilt für das Gerät, nicht für das Konto.
+    let reminderSettings = RemindersSettingsModel(permission: SystemNotificationPermission(), onChange: { _ in })
 
     /// Die Serveradresse ist kein Geheimnis und liegt in den UserDefaults. Mit den Widgets
     /// wandert sie in die Defaults der App Group.
