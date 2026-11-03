@@ -209,5 +209,5 @@ Server `v2.84.0` aus dem Haupt-Checkout, Demo-Seed `de`, Port 3901. Codes per `P
 - [x] Ein ungültiger, abgelaufener oder benutzter Code führt zur Code-Eingabe mit klarer Meldung. Live gesehen: benutzt. Der Server antwortet für alle drei gleich (`invalid_pairing_code`), das prüfen die Tests aus B2 und B3.
 - [x] Ein Link bei bestehender Anmeldung ändert nichts an der Sitzung (Lauf B5, Fall 4, und `IncomingLink`-Tests aus B3).
 - [x] Die Anfrage zum Einlösen trägt nie einen `Authorization`-Header (`PairingRedeemerTests.redeemsTheCodeWithoutAuthorization`, B2).
-- [x] Ein SSO-only-Server führt direkt zur Code-Eingabe statt zum Hinweis (`LoginModelTests.serverWithoutPasswordLoginAsksForAPairingCode`). Live nicht gesehen: Der Demo-Seed hat kein OIDC.
-- [ ] Alle neuen Texte liegen auf Deutsch und Englisch im String Catalog, CI ist grün.
+- [x] Ein SSO-only-Server führt direkt zur Code-Eingabe statt zum Hinweis (`LoginModelTests.serverWithoutPasswordLoginAsksForAPairingCode`). Live nicht gesehen: Der Demo-Seed hat kein OIDC. In B6 lief ein Server ohne Passwort-Login, belegt ist dort der App-Link (phase-0-server.md, B6); der direkte Sprung zur Code-Eingabe blieb ungesehen.
+- [x] Alle neuen Texte liegen auf Deutsch und Englisch im String Catalog, CI ist grün.
