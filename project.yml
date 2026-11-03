@@ -32,6 +32,8 @@ targets:
         product: LoginFeature
       - package: Yuvomi
         product: TasksFeature
+      - package: Yuvomi
+        product: RemindersFeature
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cloud.yuvomi.ios

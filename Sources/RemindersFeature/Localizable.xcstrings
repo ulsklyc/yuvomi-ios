@@ -1,18 +1,191 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "reminders.card.allow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Reminders"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen erlauben"
+          }
+        }
+      }
+    },
+    "reminders.card.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yuvomi reminds you of your tasks and events, even when the app is closed."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yuvomi erinnert dich an deine Aufgaben und Termine, auch wenn die App geschlossen ist."
+          }
+        }
+      }
+    },
+    "reminders.card.notNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Now"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht jetzt"
+          }
+        }
+      }
+    },
+    "reminders.card.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders on this iPhone?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen auf diesem iPhone?"
+          }
+        }
+      }
+    },
+    "reminders.denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications for Yuvomi are turned off in iOS Settings."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitteilungen für Yuvomi sind in den Einstellungen von iOS ausgeschaltet."
+          }
+        }
+      }
+    },
+    "reminders.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This iPhone schedules your reminders for the next 14 days, at most 60. It fetches new ones when you open the app and now and then in the background. If the Yuvomi web app also sends you notifications, each reminder arrives twice."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses iPhone plant deine Erinnerungen für die nächsten 14 Tage, höchstens 60. Neue holt es beim Öffnen der App und ab und zu im Hintergrund. Schickt dir auch die Web-App von Yuvomi Mitteilungen, kommt jede Erinnerung doppelt."
+          }
+        }
+      }
+    },
     "reminders.notification.event": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Event" } },
-        "de": { "stringUnit": { "state": "translated", "value": "Termin" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Event"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termin"
+          }
+        }
       }
     },
     "reminders.notification.task": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Task" } },
-        "de": { "stringUnit": { "state": "translated", "value": "Aufgabe" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabe"
+          }
+        }
+      }
+    },
+    "reminders.openSettings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen öffnen"
+          }
+        }
+      }
+    },
+    "reminders.section.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen"
+          }
+        }
+      }
+    },
+    "reminders.toggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders on This iPhone"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen auf diesem iPhone"
+          }
+        }
       }
     }
   },
