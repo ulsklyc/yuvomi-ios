@@ -66,3 +66,18 @@ public struct PairingFlow: Sendable {
         return Session(server: server, credential: credential)
     }
 }
+
+/// Was mit einem Link passiert, den iOS der App zustellt.
+///
+/// Bei bestehender Anmeldung wird nicht gekoppelt: Ein fremder Link soll keine Sitzung
+/// ersetzen. Der Code verfällt nach fünf Minuten von selbst.
+public enum IncomingLink: Hashable, Sendable {
+    /// Weiter an die Anmeldung, die den Link prüft und den Server bestätigen lässt.
+    case pairing(URL)
+    /// Hinweis zeigen, dass zum Koppeln erst abgemeldet werden muss.
+    case refusedWhileSignedIn
+
+    public init(url: URL, current: Session?) {
+        self = current == nil ? .pairing(url) : .refusedWhileSignedIn
+    }
+}

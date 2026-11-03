@@ -21,7 +21,8 @@ public struct LoginView: View {
                 switch model.step {
                 case .address: addressStep
                 case .password(_, let appName): passwordStep(appName: appName)
-                case .ssoOnly(let appName): ssoOnlyStep(appName: appName)
+                // Bis B4 steht hier noch der alte Hinweis statt der Code-Eingabe.
+                case .pairing(_, let appName), .confirmPairing(_, let appName, _): ssoOnlyStep(appName: appName)
                 case .code: codeStep
                 }
             }
@@ -131,8 +132,10 @@ extension LoginModel.Problem {
         case .unreachable: "login.problem.unreachable"
         case .notYuvomi: "login.problem.notYuvomi"
         case .tooOld: "login.problem.tooOld"
+        case .invalidPairingLink: "login.problem.invalidPairingLink"
         case .invalidCredentials: "login.problem.invalidCredentials"
         case .invalidCode: "login.problem.invalidCode"
+        case .invalidPairingCode: "login.problem.invalidPairingCode"
         case .notAllowed: "login.problem.notAllowed"
         case .rateLimited: "login.problem.rateLimited"
         case .credentialNotStored: "login.problem.credentialNotStored"
@@ -150,6 +153,13 @@ extension LoginModel.Problem {
             SignInFlow(
                 server: server,
                 gateway: YuvomiSignInGateway(server: server, device: DeviceInfo(name: "iPhone", deviceID: "preview"), transport: transport),
+                store: InMemoryCredentialStore()
+            )
+        },
+        makePairing: { _ in
+            PairingFlow(
+                server: server,
+                redeemer: YuvomiPairingRedeemer(server: server, device: DeviceInfo(name: "iPhone", deviceID: "preview"), transport: transport),
                 store: InMemoryCredentialStore()
             )
         },
