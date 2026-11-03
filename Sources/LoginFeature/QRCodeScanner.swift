@@ -9,7 +9,11 @@ import VisionKit
 @MainActor public protocol QRCodeScanner {
     /// Ob „QR-Code scannen“ erscheint.
     var isAvailable: Bool { get }
-    /// Die Kameraansicht. `onCode` bekommt den Inhalt jedes neu erkannten QR-Codes.
+    /// Fragt nach der Kamera, falls iOS noch nicht gefragt hat. `false` heißt abgelehnt:
+    /// Das Blatt zeigt dann den Weg in die Einstellungen statt einer schwarzen Kamera.
+    func requestAccess() async -> Bool
+    /// Die Kameraansicht, erst nach `requestAccess()`. `onCode` bekommt den Inhalt jedes neu
+    /// erkannten QR-Codes.
     func makeView(onCode: @escaping @MainActor (String) -> Void) -> AnyView
 }
 
@@ -23,6 +27,14 @@ public struct VisionKitScanner: QRCodeScanner {
     public var isAvailable: Bool {
         DataScannerViewController.isSupported
             && (DataScannerViewController.isAvailable || AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined)
+    }
+
+    public func requestAccess() async -> Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .notDetermined: await AVCaptureDevice.requestAccess(for: .video)
+        case .authorized: true
+        default: false
+        }
     }
 
     public func makeView(onCode: @escaping @MainActor (String) -> Void) -> AnyView {
@@ -40,12 +52,8 @@ private struct DataScannerView: UIViewControllerRepresentable {
             isHighlightingEnabled: true
         )
         scanner.delegate = context.coordinator
-        Task {
-            if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-                _ = await AVCaptureDevice.requestAccess(for: .video)
-            }
-            try? scanner.startScanning()
-        }
+        // Erst nach dem Einhängen starten, wie vorher hinter der Freigabe.
+        Task { try? scanner.startScanning() }
         return scanner
     }
 
