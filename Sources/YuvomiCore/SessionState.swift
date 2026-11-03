@@ -41,9 +41,10 @@ public final class SessionState {
     }
 
     /// Für Fehler aus jedem Aufruf mit dem Credential: Ein 401 heißt, es ist widerrufen.
-    /// Andere Fehler ändern an der Anmeldung nichts.
-    public func handle(_ error: APIError) {
-        guard error == .unauthorized, let session = current else { return }
+    /// Andere Fehler ändern an der Anmeldung nichts, ebenso späte Antworten aus einer
+    /// Sitzung, die inzwischen abgemeldet oder ersetzt ist.
+    public func handle(_ error: APIError, from session: Session) {
+        guard error == .unauthorized, session == current else { return }
         forget(session)
     }
 

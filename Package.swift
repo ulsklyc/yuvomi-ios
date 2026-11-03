@@ -36,8 +36,18 @@ let package = Package(
             exclude: ["openapi-generator-config.yaml"]
         ),
         .target(name: "DesignSystem"),
-        .target(name: "LoginFeature", dependencies: ["YuvomiCore", "DesignSystem"]),
-        .target(name: "TasksFeature", dependencies: ["YuvomiCore", "DesignSystem"]),
+        // YuvomiAPI und YuvomiFixtures nur für die Vorschauen: Sie zeigen echte
+        // v2.84.0-Antworten durch den echten Decoder. Die Screens selbst kennen nur den Kern.
+        .target(
+            name: "LoginFeature",
+            dependencies: ["YuvomiCore", "DesignSystem", "YuvomiAPI", "YuvomiFixtures"],
+            resources: [.process("Localizable.xcstrings")]
+        ),
+        .target(
+            name: "TasksFeature",
+            dependencies: ["YuvomiCore", "DesignSystem", "YuvomiAPI", "YuvomiFixtures"],
+            resources: [.process("Localizable.xcstrings")]
+        ),
         // Die Antworten aus Fixtures/demo liegen außerhalb von Sources/, weil das
         // Abzugsskript sie dort ablegt. SPM bindet Ressourcen nur innerhalb des
         // Target-Ordners ein, deshalb zeigt das Target direkt auf Fixtures/.
@@ -54,6 +64,8 @@ let package = Package(
         ),
         .testTarget(name: "YuvomiCoreTests", dependencies: ["YuvomiCore", "YuvomiFixtures"]),
         .testTarget(name: "YuvomiAPITests", dependencies: ["YuvomiAPI", "YuvomiFixtures"]),
+        .testTarget(name: "LoginFeatureTests", dependencies: ["LoginFeature", "YuvomiCore"]),
+        .testTarget(name: "TasksFeatureTests", dependencies: ["TasksFeature", "YuvomiCore"]),
     ],
     swiftLanguageModes: [.v6]
 )
