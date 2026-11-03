@@ -30,6 +30,17 @@ final class FakeGateway: SignInGateway, @unchecked Sendable {
     func verifySecondFactor(code: String) async throws(SignInError) -> String { try codeResult.get() }
 }
 
+/// Port-Fake: was der Server auf einen Kopplungscode antwortet.
+final class FakeRedeemer: PairingRedeeming, @unchecked Sendable {
+    var result: Result<String, SignInError> = .success("ydc_paired")
+    private(set) var codes: [String] = []
+
+    func redeem(code: String) async throws(SignInError) -> String {
+        codes.append(code)
+        return try result.get()
+    }
+}
+
 /// Merkt sich, welche Sitzung an die App ging.
 @MainActor final class SignedIn {
     var sessions: [Session] = []
@@ -39,7 +50,12 @@ final class FakeGateway: SignInGateway, @unchecked Sendable {
     let server = URL(string: "https://yuvomi.example.com")!
 
     func model(probe: FakeProbe = FakeProbe()) -> LoginModel {
-        LoginModel(check: ServerCheck(probe: probe), makeFlow: { _ in fatalError("kein Anmeldeversuch erwartet") }, onSignedIn: { _ in })
+        LoginModel(
+            check: ServerCheck(probe: probe),
+            makeFlow: { _ in fatalError("kein Anmeldeversuch erwartet") },
+            makePairing: { _ in fatalError("keine Kopplung erwartet") },
+            onSignedIn: { _ in }
+        )
     }
 
     @Test func checkedAddressLeadsToThePasswordForm() async {
@@ -52,13 +68,13 @@ final class FakeGateway: SignInGateway, @unchecked Sendable {
         #expect(login.problem == nil)
     }
 
-    @Test func serverWithoutPasswordLoginShowsTheSSOHint() async {
+    @Test func serverWithoutPasswordLoginAsksForAPairingCode() async {
         let login = model(probe: FakeProbe(options: .success(SignInOptions(passwordLoginEnabled: false))))
         login.address = "yuvomi.example.com"
 
         await login.submitAddress()
 
-        #expect(login.step == .ssoOnly(appName: "Familie Muster"))
+        #expect(login.step == .pairing(server: server, appName: "Familie Muster"))
     }
 
     @Test(arguments: [
@@ -83,6 +99,7 @@ final class FakeGateway: SignInGateway, @unchecked Sendable {
         let login = LoginModel(
             check: ServerCheck(probe: FakeProbe()),
             makeFlow: { SignInFlow(server: $0, gateway: gateway, store: InMemoryCredentialStore()) },
+            makePairing: { _ in fatalError("keine Kopplung erwartet") },
             onSignedIn: { signedIn.sessions.append($0) }
         )
         login.address = "yuvomi.example.com"
@@ -211,5 +228,268 @@ final class FakeGateway: SignInGateway, @unchecked Sendable {
         await login.submitCode()
 
         #expect(login.problem == nil)
+    }
+
+    // MARK: Kopplung
+
+    /// Ein Modell mit Gateway und Redeemer, das noch bei der Adresse steht.
+    func pairingModel(
+        probe: FakeProbe = FakeProbe(),
+        gateway: FakeGateway = FakeGateway(),
+        redeemer: FakeRedeemer,
+        signedIn: SignedIn
+    ) -> LoginModel {
+        LoginModel(
+            check: ServerCheck(probe: probe),
+            makeFlow: { SignInFlow(server: $0, gateway: gateway, store: InMemoryCredentialStore()) },
+            makePairing: { PairingFlow(server: $0, redeemer: redeemer, store: InMemoryCredentialStore()) },
+            onSignedIn: { signedIn.sessions.append($0) }
+        )
+    }
+
+    static let ssoOnly = FakeProbe(options: .success(SignInOptions(passwordLoginEnabled: false)))
+
+    @Test func typedPairingCodeSignsIn() async {
+        let redeemer = FakeRedeemer()
+        let signedIn = SignedIn()
+        let login = pairingModel(probe: Self.ssoOnly, redeemer: redeemer, signedIn: signedIn)
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+
+        login.pairingCode = "acde-34fg hj"
+        await login.submitPairingCode()
+
+        #expect(redeemer.codes == ["ACDE34FGHJ"])
+        #expect(signedIn.sessions == [Session(server: server, credential: "ydc_paired")])
+    }
+
+    /// Ein ungültiger Code ist verbraucht oder falsch: Feld leeren. Bei Netzfehlern und
+    /// zu vielen Versuchen bleibt er stehen, damit ein zweiter Versuch ohne neuen Code geht.
+    @Test(arguments: [
+        (SignInError.invalidPairingCode, LoginModel.Problem.invalidPairingCode, ""),
+        (.rateLimited, .rateLimited, "ACDE34FGHJ"),
+        (.unreachable, .unreachable, "ACDE34FGHJ"),
+    ])
+    func refusedPairingCodeStaysOnTheCode(error: SignInError, expected: LoginModel.Problem, remaining: String) async {
+        let redeemer = FakeRedeemer()
+        redeemer.result = .failure(error)
+        let signedIn = SignedIn()
+        let login = pairingModel(probe: Self.ssoOnly, redeemer: redeemer, signedIn: signedIn)
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+
+        login.pairingCode = "ACDE34FGHJ"
+        await login.submitPairingCode()
+
+        #expect(login.step == .pairing(server: server, appName: "Familie Muster"))
+        #expect(login.problem == expected)
+        #expect(login.pairingCode == remaining)
+        #expect(signedIn.sessions.isEmpty)
+    }
+
+    @Test func passwordStepOffersThePairingCodeAndBackReturnsToIt() async {
+        let login = pairingModel(redeemer: FakeRedeemer(), signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+
+        login.startPairing()
+        #expect(login.step == .pairing(server: server, appName: "Familie Muster"))
+
+        login.pairingCode = "ACDE"
+        login.back()
+        #expect(login.step == .password(server: server, appName: "Familie Muster"))
+        #expect(login.pairingCode == "")
+    }
+
+    @Test func backFromPairingWithoutPasswordLoginReturnsToTheAddress() async {
+        let login = pairingModel(probe: Self.ssoOnly, redeemer: FakeRedeemer(), signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+
+        login.back()
+
+        #expect(login.step == .address)
+    }
+
+    @Test(arguments: ["", "  ", " - "])
+    func emptyPairingCodeIsNotSent(input: String) async {
+        let redeemer = FakeRedeemer()
+        let login = pairingModel(probe: Self.ssoOnly, redeemer: redeemer, signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+        login.pairingCode = input
+
+        #expect(!login.canSubmitPairingCode)
+        await login.submitPairingCode()
+
+        #expect(redeemer.codes.isEmpty)
+    }
+
+    // MARK: Link und QR
+
+    let link = URL(string: "yuvomi://pair?server=https%3A%2F%2Fyuvomi.example.com&code=ACDE34FGHJ")!
+
+    /// Erst nach der Bestätigung geht der Code an den Server: `yuvomi://` ist nicht exklusiv,
+    /// und jede Seite kann einen Link mit fremdem Server bauen (S3).
+    @Test func linkAsksToConfirmTheServerBeforeRedeeming() async {
+        let redeemer = FakeRedeemer()
+        let signedIn = SignedIn()
+        let login = pairingModel(redeemer: redeemer, signedIn: signedIn)
+
+        await login.openPairingLink(link)
+
+        #expect(login.step == .confirmPairing(server: server, appName: "Familie Muster", code: "ACDE34FGHJ"))
+        #expect(redeemer.codes.isEmpty)
+
+        await login.confirmPairing()
+
+        #expect(redeemer.codes == ["ACDE34FGHJ"])
+        #expect(signedIn.sessions == [Session(server: server, credential: "ydc_paired")])
+    }
+
+    @Test func invalidLinkStaysOnTheAddressWithAProblem() async {
+        let login = pairingModel(redeemer: FakeRedeemer(), signedIn: SignedIn())
+
+        await login.openPairingLink(URL(string: "yuvomi://pair?code=ACDE34FGHJ")!)
+
+        #expect(login.step == .address)
+        #expect(login.problem == .invalidPairingLink)
+    }
+
+    /// Der Server aus dem Link wird geprüft wie eine eingetippte Adresse und steht danach
+    /// im Feld, damit die Meldung zu sehen ist, auf welchen Server sie sich bezieht.
+    @Test func linkToAServerThatFailsTheCheckShowsTheSameProblem() async {
+        let login = pairingModel(
+            probe: FakeProbe(version: .success(ServerVersion(product: "yuvomi", clientAPI: 0, appName: "x"))),
+            redeemer: FakeRedeemer(),
+            signedIn: SignedIn()
+        )
+
+        await login.openPairingLink(link)
+
+        #expect(login.step == .address)
+        #expect(login.problem == .tooOld)
+        #expect(login.address == "https://yuvomi.example.com")
+    }
+
+    /// Q9: Egal woher der Code kam, nach `invalid_pairing_code` geht es zur Code-Eingabe
+    /// für denselben Server. Von dort geht ein neuer Scan oder das Abtippen.
+    @Test func refusedLinkCodeLeadsToTheCodeEntry() async {
+        let redeemer = FakeRedeemer()
+        redeemer.result = .failure(.invalidPairingCode)
+        let login = pairingModel(redeemer: redeemer, signedIn: SignedIn())
+        await login.openPairingLink(link)
+
+        await login.confirmPairing()
+
+        #expect(login.step == .pairing(server: server, appName: "Familie Muster"))
+        #expect(login.problem == .invalidPairingCode)
+        #expect(login.pairingCode == "")
+    }
+
+    @Test func otherFailuresStayOnTheConfirmation() async {
+        let redeemer = FakeRedeemer()
+        redeemer.result = .failure(.rateLimited)
+        let login = pairingModel(redeemer: redeemer, signedIn: SignedIn())
+        await login.openPairingLink(link)
+
+        await login.confirmPairing()
+
+        #expect(login.step == .confirmPairing(server: server, appName: "Familie Muster", code: "ACDE34FGHJ"))
+        #expect(login.problem == .rateLimited)
+    }
+
+    @Test func cancellingTheConfirmationReturnsToTheAddress() async {
+        let redeemer = FakeRedeemer()
+        let login = pairingModel(redeemer: redeemer, signedIn: SignedIn())
+        await login.openPairingLink(link)
+
+        login.back()
+
+        #expect(login.step == .address)
+        #expect(login.address == "https://yuvomi.example.com")
+        #expect(redeemer.codes.isEmpty)
+    }
+
+    /// Q8: Der Link gewinnt. Der offene 2FA-Versuch ist danach weg, „Abbrechen“ in der
+    /// Bestätigung führt zur Adresse und nicht zurück zum Code.
+    @Test func linkDuringTheSecondFactorReplacesTheSignIn() async {
+        let gateway = FakeGateway()
+        gateway.passwordResult = .success(.needsSecondFactor)
+        let login = pairingModel(gateway: gateway, redeemer: FakeRedeemer(), signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+        login.username = "alex"
+        login.password = "demo1234"
+        await login.submitPassword()
+        #expect(login.step == .code)
+
+        await login.openPairingLink(link)
+        #expect(login.step == .confirmPairing(server: server, appName: "Familie Muster", code: "ACDE34FGHJ"))
+
+        login.back()
+        #expect(login.step == .address)
+        login.code = "123456"
+        await login.submitCode()
+        #expect(login.step == .address)
+    }
+
+    /// Läuft gerade eine Anfrage, wird der Link danach angenommen.
+    @Test func linkWhileSigningInIsTakenAfterTheAnswer() async {
+        let gateway = FakeGateway()
+        gateway.passwordResult = .success(.needsSecondFactor)
+        let login = pairingModel(gateway: gateway, redeemer: FakeRedeemer(), signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+        login.username = "alex"
+        login.password = "demo1234"
+        gateway.whileWaiting = { await login.openPairingLink(self.link) }
+
+        await login.submitPassword()
+
+        #expect(login.step == .confirmPairing(server: server, appName: "Familie Muster", code: "ACDE34FGHJ"))
+    }
+
+    /// Meldet die laufende Anfrage schon an, verfällt der Link: Er ersetzt keine Sitzung (Q3).
+    @Test func linkWhileSigningInIsDroppedOnceSignedIn() async {
+        let gateway = FakeGateway()
+        let redeemer = FakeRedeemer()
+        let signedIn = SignedIn()
+        let login = pairingModel(gateway: gateway, redeemer: redeemer, signedIn: signedIn)
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+        login.username = "alex"
+        login.password = "demo1234"
+        gateway.whileWaiting = { await login.openPairingLink(self.link) }
+
+        await login.submitPassword()
+
+        #expect(signedIn.sessions == [Session(server: server, credential: "ydc_new")])
+        #expect(login.step == .password(server: server, appName: "Familie Muster"))
+        #expect(redeemer.codes.isEmpty)
+    }
+
+    /// Codex-Hinweis zu PR #11: Zugangsdaten für Server A dürfen nach einem Link zu Server B
+    /// nicht im Formular bleiben, sonst gingen sie nach einer erneuten Prüfung an B.
+    @Test(arguments: [
+        ("yuvomi://pair?server=https%3A%2F%2Fother.example.com&code=ACDE34FGHJ", FakeProbe()),
+        ("yuvomi://pair?server=https%3A%2F%2Fother.example.com&code=ACDE34FGHJ", FakeProbe(version: .failure(.unreachable))),
+        ("yuvomi://pair?code=ACDE34FGHJ", FakeProbe()),
+    ])
+    func linkClearsTheEnteredCredentials(link: String, probe: FakeProbe) async {
+        let login = pairingModel(probe: probe, redeemer: FakeRedeemer(), signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+        login.username = "alex"
+        login.password = "demo1234"
+        login.code = "123456"
+        login.pairingCode = "ACDE"
+
+        await login.openPairingLink(URL(string: link)!)
+
+        #expect(login.username == "")
+        #expect(login.password == "")
+        #expect(login.code == "")
+        #expect(login.pairingCode == "")
     }
 }

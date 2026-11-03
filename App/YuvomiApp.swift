@@ -21,6 +21,12 @@ struct YuvomiApp: App {
                 }
             }
             .animation(.default, value: app.session.current)
+            .onOpenURL { url in Task { await app.open(url) } }
+            .alert(Text("app.pairing.alreadySignedIn.title"), isPresented: $app.showsAlreadySignedIn) {
+                Button("app.pairing.alreadySignedIn.ok", role: .cancel) {}
+            } message: {
+                Text("app.pairing.alreadySignedIn.message")
+            }
         }
     }
 }
@@ -32,6 +38,8 @@ final class AppModel {
     private let store = KeychainCredentialStore(accessGroup: KeychainCredentialStore.sharedAccessGroup)
     private var loginModel: LoginModel?
     private var taskListModel: (session: Session, model: TaskListModel)?
+    /// Ein Kopplungslink kam, während schon jemand angemeldet ist (Q3).
+    var showsAlreadySignedIn = false
 
     /// Die Serveradresse ist kein Geheimnis und liegt in den UserDefaults. Mit den Widgets
     /// wandert sie in die Defaults der App Group.
@@ -52,6 +60,9 @@ final class AppModel {
             makeFlow: { server in
                 SignInFlow(server: server, gateway: YuvomiSignInGateway(server: server, device: Self.device), store: store)
             },
+            makePairing: { server in
+                PairingFlow(server: server, redeemer: YuvomiPairingRedeemer(server: server, device: Self.device), store: store)
+            },
             onSignedIn: { [weak self] session in
                 UserDefaults.standard.set(session.server, forKey: Self.serverKey)
                 self?.loginModel = nil
@@ -62,6 +73,14 @@ final class AppModel {
         model.address = UserDefaults.standard.url(forKey: Self.serverKey)?.absoluteString ?? ""
         loginModel = model
         return model
+    }
+
+    /// Links von iOS: `yuvomi://pair` aus der Web-App oder von der Kamera-App.
+    func open(_ url: URL) async {
+        switch IncomingLink(url: url, current: session.current) {
+        case .pairing(let url): await login().openPairingLink(url)
+        case .refusedWhileSignedIn: showsAlreadySignedIn = true
+        }
     }
 
     func taskList(for session: Session) -> TaskListModel {
