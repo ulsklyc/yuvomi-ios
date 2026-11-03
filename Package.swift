@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "LoginFeature", targets: ["LoginFeature"]),
         .library(name: "TasksFeature", targets: ["TasksFeature"]),
+        .library(name: "RemindersFeature", targets: ["RemindersFeature"]),
         .library(name: "YuvomiFixtures", targets: ["YuvomiFixtures"]),
     ],
     dependencies: [
@@ -48,6 +49,13 @@ let package = Package(
             dependencies: ["YuvomiCore", "DesignSystem", "YuvomiAPI", "YuvomiFixtures"],
             resources: [.process("Localizable.xcstrings")]
         ),
+        // Mitteilungen auf dem Gerät, Erlaubnis und Einstellungen. Kennt UserNotifications,
+        // der Kern nicht.
+        .target(
+            name: "RemindersFeature",
+            dependencies: ["YuvomiCore", "DesignSystem"],
+            resources: [.process("Localizable.xcstrings")]
+        ),
         // Die Antworten aus Fixtures/demo liegen außerhalb von Sources/, weil das
         // Abzugsskript sie dort ablegt. SPM bindet Ressourcen nur innerhalb des
         // Target-Ordners ein, deshalb zeigt das Target direkt auf Fixtures/.
@@ -66,6 +74,7 @@ let package = Package(
         .testTarget(name: "YuvomiAPITests", dependencies: ["YuvomiAPI", "YuvomiFixtures"]),
         .testTarget(name: "LoginFeatureTests", dependencies: ["LoginFeature", "YuvomiCore"]),
         .testTarget(name: "TasksFeatureTests", dependencies: ["TasksFeature", "YuvomiCore"]),
+        .testTarget(name: "RemindersFeatureTests", dependencies: ["RemindersFeature", "YuvomiCore"]),
     ],
     swiftLanguageModes: [.v6]
 )

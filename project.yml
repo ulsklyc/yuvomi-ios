@@ -97,4 +97,5 @@ schemes:
         - package: Yuvomi/YuvomiAPITests
         - package: Yuvomi/LoginFeatureTests
         - package: Yuvomi/TasksFeatureTests
+        - package: Yuvomi/RemindersFeatureTests
         - YuvomiHostedTests
