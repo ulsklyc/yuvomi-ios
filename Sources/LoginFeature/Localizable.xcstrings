@@ -69,6 +69,23 @@
         }
       }
     },
+    "login.address.scanFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The QR code from the web app already contains the server address."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der QR-Code aus der Web-App enthält die Serveradresse schon."
+          }
+        }
+      }
+    },
     "login.back": {
       "extractionState": "manual",
       "localizations": {
@@ -82,6 +99,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zurück"
+          }
+        }
+      }
+    },
+    "login.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
           }
         }
       }
@@ -154,6 +188,125 @@
         }
       }
     },
+    "login.confirmPairing.encrypted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted connection"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verschlüsselte Verbindung"
+          }
+        }
+      }
+    },
+    "login.confirmPairing.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only sign in if you created the code yourself in your Yuvomi web app."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melde dich nur an, wenn du den Code selbst in deiner Yuvomi-Web-App erzeugt hast."
+          }
+        }
+      }
+    },
+    "login.confirmPairing.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to this server?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei diesem Server anmelden?"
+          }
+        }
+      }
+    },
+    "login.confirmPairing.unencrypted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unencrypted connection"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unverschlüsselte Verbindung"
+          }
+        }
+      }
+    },
+    "login.confirmPairing.unencrypted.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Others on the same network can read along. Only continue on a network you trust."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andere im selben Netz können mitlesen. Fahre nur in einem Netz fort, dem du vertraust."
+          }
+        }
+      }
+    },
+    "login.pairing.code": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing code"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopplungscode"
+          }
+        }
+      }
+    },
+    "login.pairing.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create the code in the Yuvomi web app under Settings > Account > Signed-in devices. It is valid for 5 minutes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den Code erzeugst du in der Yuvomi-Web-App unter Einstellungen > Konto > Angemeldete Geräte. Er gilt 5 Minuten."
+          }
+        }
+      }
+    },
     "login.password": {
       "extractionState": "manual",
       "localizations": {
@@ -167,6 +320,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Passwort"
+          }
+        }
+      }
+    },
+    "login.password.usePairingCode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In with a Code Instead"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stattdessen mit Code anmelden"
           }
         }
       }
@@ -375,6 +545,57 @@
         }
       }
     },
+    "login.scan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan QR Code"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Code scannen"
+          }
+        }
+      }
+    },
+    "login.scan.foreign": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not a Yuvomi pairing code."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ist kein Kopplungscode von Yuvomi."
+          }
+        }
+      }
+    },
+    "login.scan.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Point the camera at the QR code in the web app."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richte die Kamera auf den QR-Code in der Web-App."
+          }
+        }
+      }
+    },
     "login.signIn": {
       "extractionState": "manual",
       "localizations": {
@@ -388,23 +609,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anmelden"
-          }
-        }
-      }
-    },
-    "login.ssoOnly.message": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This server only allows sign-in through your organization's login. Pairing with the web app is coming in a later version."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dieser Server erlaubt nur die Anmeldung über das Login deiner Organisation. Das Koppeln mit der Web-App kommt in einer späteren Version."
           }
         }
       }

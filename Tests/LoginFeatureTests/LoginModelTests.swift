@@ -492,4 +492,38 @@ final class FakeRedeemer: PairingRedeeming, @unchecked Sendable {
         #expect(login.code == "")
         #expect(login.pairingCode == "")
     }
+
+    // MARK: Scanner
+
+    /// Ein QR aus der Web-App enthält genau den Kopplungslink und läuft denselben Weg.
+    @Test func scannedPairingLinkAsksToConfirmTheServer() async {
+        let login = pairingModel(redeemer: FakeRedeemer(), signedIn: SignedIn())
+
+        let accepted = await login.openScannedCode(self.link.absoluteString)
+
+        #expect(accepted)
+        #expect(login.step == .confirmPairing(server: server, appName: "Familie Muster", code: "ACDE34FGHJ"))
+    }
+
+    /// Fremde QR-Codes beenden den Scan nicht: Man richtet die Kamera einfach neu aus, und
+    /// was schon eingegeben ist, bleibt stehen.
+    @Test(arguments: [
+        "https://yuvomi.example.com",
+        "Kein Link, nur Text",
+        "yuvomi://pair?code=ACDE34FGHJ",
+        "",
+    ])
+    func foreignQRCodeLeavesTheStepAsItIs(text: String) async {
+        let login = pairingModel(probe: Self.ssoOnly, redeemer: FakeRedeemer(), signedIn: SignedIn())
+        login.address = "yuvomi.example.com"
+        await login.submitAddress()
+        login.pairingCode = "ACDE"
+
+        let accepted = await login.openScannedCode(text)
+
+        #expect(!accepted)
+        #expect(login.step == .pairing(server: server, appName: "Familie Muster"))
+        #expect(login.problem == nil)
+        #expect(login.pairingCode == "ACDE")
+    }
 }

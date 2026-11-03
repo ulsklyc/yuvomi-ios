@@ -35,6 +35,18 @@ public enum PairingCode {
     public static func normalize(_ input: String) -> String {
         input.filter { !$0.isWhitespace && $0 != "-" }.uppercased()
     }
+
+    /// Zum Abtippen in Fünfergruppen, etwa „ACDEF GHJK3“. Der Server ignoriert die
+    /// Leerzeichen; die Länge entscheidet er, deshalb wird nichts abgeschnitten.
+    public static func grouped(_ input: String) -> String {
+        var groups: [Substring] = []
+        var rest = Substring(normalize(input))
+        while !rest.isEmpty {
+            groups.append(rest.prefix(5))
+            rest = rest.dropFirst(5)
+        }
+        return groups.joined(separator: " ")
+    }
 }
 
 /// Port zum Einlösen eines Kopplungscodes. Umgesetzt in YuvomiAPI.

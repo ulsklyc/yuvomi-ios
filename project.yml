@@ -64,6 +64,8 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: cloud.yuvomi.ios.pair
             CFBundleURLSchemes: [yuvomi]
+        # Für den QR-Scanner beim Koppeln. Die deutsche Fassung steht in App/InfoPlist.xcstrings.
+        NSCameraUsageDescription: The camera scans the QR code from the Yuvomi web app to sign in this iPhone.
   # Tests, die die App als Host brauchen, etwa für den Keychain: Paket-Tests laufen im
   # Simulator ohne Entitlements und bekommen dort errSecMissingEntitlement (-34018).
   YuvomiHostedTests:
