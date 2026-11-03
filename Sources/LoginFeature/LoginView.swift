@@ -286,12 +286,14 @@ private struct ScannerSheet: View {
     @Binding var isPresented: Bool
     @State private var sawForeignCode = false
     @State private var isHandling = false
+    /// `nil`, solange iOS fragt.
+    @State private var hasCamera: Bool?
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
-            scanner.makeView { text in handle(text) }
-                .overlay(alignment: .bottom) { hint }
-                .overlay { if isHandling { ProgressView().controlSize(.large) } }
+            camera
+                .task { hasCamera = await scanner.requestAccess() }
                 .navigationTitle(Text("login.scan", bundle: .module))
                 .navigationBarTitleDisplayMode(.inline)
                 // Läuft die Serverprüfung für einen gescannten Link, entscheidet ihre Antwort
@@ -303,6 +305,32 @@ private struct ScannerSheet: View {
                             .disabled(isHandling)
                     }
                 }
+        }
+    }
+
+    @ViewBuilder private var camera: some View {
+        switch hasCamera {
+        case true?:
+            scanner.makeView { text in handle(text) }
+                .overlay(alignment: .bottom) { hint }
+                .overlay { if isHandling { ProgressView().controlSize(.large) } }
+        case false?:
+            // Abgelehnt: Ohne diesen Zustand bliebe die Kamera schwarz und der Hinweis
+            // verlangte trotzdem, sie auf den Code zu richten.
+            ContentUnavailableView {
+                Label { Text("login.scan.noCamera", bundle: .module) } icon: { Image(systemName: "video.slash") }
+            } description: {
+                Text("login.scan.noCamera.detail", bundle: .module)
+            } actions: {
+                Button {
+                    if let settings = URL(string: UIApplication.openSettingsURLString) { openURL(settings) }
+                } label: {
+                    Text("login.scan.openSettings", bundle: .module)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        case nil:
+            Color.clear
         }
     }
 
@@ -342,7 +370,10 @@ private struct ScannerSheet: View {
 
 /// Platzhalter für die Kamera, damit Vorschauen den Scan-Button zeigen.
 private struct PreviewScanner: QRCodeScanner {
+    var hasCamera = true
     var isAvailable: Bool { true }
+
+    func requestAccess() async -> Bool { hasCamera }
 
     func makeView(onCode: @escaping @MainActor (String) -> Void) -> AnyView {
         AnyView(Image(systemName: "qrcode.viewfinder").font(.system(size: 120)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity))
@@ -395,4 +426,8 @@ private struct PreviewScanner: QRCodeScanner {
     let model = previewModel()
     LoginView(model: model, scanner: PreviewScanner())
         .task { await model.openPairingLink(URL(string: "yuvomi://pair?server=http%3A%2F%2F192.168.1.20%3A3901&code=ACDEFGHJK3")!) }
+}
+
+#Preview("Scanner, Kamera abgelehnt") {
+    ScannerSheet(scanner: PreviewScanner(hasCamera: false), model: previewModel(), isPresented: .constant(true))
 }

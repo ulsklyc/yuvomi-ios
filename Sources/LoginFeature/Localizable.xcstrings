@@ -596,6 +596,57 @@
         }
       }
     },
+    "login.scan.noCamera": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Camera Access"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Zugriff auf die Kamera"
+          }
+        }
+      }
+    },
+    "login.scan.noCamera.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Yuvomi to use the camera in Settings, or sign in with the code from the web app instead."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube Yuvomi die Kamera in den Einstellungen oder melde dich stattdessen mit dem Code aus der Web-App an."
+          }
+        }
+      }
+    },
+    "login.scan.openSettings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen öffnen"
+          }
+        }
+      }
+    },
     "login.signIn": {
       "extractionState": "manual",
       "localizations": {
