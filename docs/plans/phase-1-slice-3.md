@@ -135,6 +135,16 @@ Ohne Unit-Test bleiben Views, Delegate, Verdrahtung und der Hintergrund-Abgleich
 - Auf KlyPhone (der User): Mitteilung bei geschlossener App und gesperrtem Gerät, Wechsel der Zeitzone, Refresh per `_simulateLaunchForTaskWithIdentifier` im Debugger.
 - CI grün.
 
+## Abweichungen beim Bau (C1)
+
+- **Kein Vergleich des Inhalts:** `ReminderSync` plant bei jedem Abgleich alles Kommende neu und entfernt nur, was der Server nicht mehr nennt. Dieselbe Kennung ersetzt die alte Mitteilung. So muss `NotificationScheduling.pending()` nur Kennungen liefern, keinen Inhalt. Der Preis: bis zu 60 Aufrufe von `add` je Abgleich.
+- **Gleich fällig bleibt stehen:** Was der Server noch nennt, aber weniger als fünf Sekunden nach `now` liegt, wird nicht neu geplant und auch nicht entfernt. Sonst ginge eine schon geplante Mitteilung kurz vor ihrer Zeit verloren (Code-Review).
+- **Zugestellte Mitteilungen:** Der Port hat dafür `delivered()`. `clear()` entfernt geplante und zugestellte, ein normaler Abgleich nur geplante. Sonst verschwände jede zugestellte Mitteilung beim nächsten Abgleich aus der Mitteilungszentrale.
+- **Für C3 und C5 aus dem Code-Review:**
+  - C3: Der Adapter lässt aus, was beim Planen schon vorbei ist, weil ein langsamer Abruf den Vorlauf von fünf Sekunden aufbrauchen kann.
+  - C5: Ein Besitzer des Abgleichs je Sitzung. Er startet keinen zweiten Lauf, solange einer läuft. Abmelden bricht einen laufenden Lauf ab, bevor `clear()` läuft. Ein abgebrochener Lauf plant nichts mehr.
+- **Bewusst nicht:** Platz für fremde Mitteilungen unter dem Limit (die App plant keine) und `entity_id` an der Mitteilung (erst für das Abplanen in Slice 4).
+
 ## Fertig, wenn
 
 - [ ] Eine in der Web-App gesetzte Erinnerung an eine Aufgabe und an einen Termin erscheint zur Zeit als Mitteilung, bei geschlossener App und im Vordergrund.
