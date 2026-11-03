@@ -145,6 +145,11 @@ Ohne Unit-Test bleiben Views, Delegate, Verdrahtung und der Hintergrund-Abgleich
   - C5: Ein Besitzer des Abgleichs je Sitzung. Er startet keinen zweiten Lauf, solange einer läuft. Abmelden bricht einen laufenden Lauf ab, bevor `clear()` läuft. Ein abgebrochener Lauf plant nichts mehr.
 - **Bewusst nicht:** Platz für fremde Mitteilungen unter dem Limit (die App plant keine) und `entity_id` an der Mitteilung (erst für das Abplanen in Slice 4).
 
+## Abweichungen beim Bau (C2)
+
+- **Herkunft beim Lesen:** Der Adapter lässt jede Zeile außer `task` und `event` fallen, auch wenn ein Server `types` übergeht. Ein fehlender `entity_title` wird ein leerer Titel, die Mitteilung zeigt dann nur die Überschrift.
+- **Aus dem Code-Review, später:** Die gekürzte Spec könnte `types` gleich auf `task` und `event` einengen und die Felder anderer Herkünfte weglassen (`scripts/prune-spec.mjs`, neuer Generatorlauf). Dann ließe sich eine andere Herkunft gar nicht erst anfragen. Nicht in diesem Slice. Für C5: Ein abgebrochener Lauf kommt als „nicht erreichbar“ zurück und darf nichts anzeigen.
+
 ## Fertig, wenn
 
 - [ ] Eine in der Web-App gesetzte Erinnerung an eine Aufgabe und an einen Termin erscheint zur Zeit als Mitteilung, bei geschlossener App und im Vordergrund.
