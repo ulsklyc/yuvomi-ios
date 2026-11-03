@@ -76,6 +76,9 @@ public struct ReminderSync: Sendable {
 
     public func run(now: Date) async throws(APIError) {
         let reminders = try await source.upcoming(from: now, to: now.addingTimeInterval(Self.window))
+        // Abmelden bricht den Lauf ab und räumt danach ab. Eine Antwort, die erst dann kommt,
+        // darf keine Mitteilungen für ein abgemeldetes Konto planen.
+        guard !Task.isCancelled else { return }
         let wanted = reminders
             .filter { $0.firesAt.timeIntervalSince(now) >= Self.leadTime }
             .sorted { ($0.firesAt, $0.id) < ($1.firesAt, $1.id) }
@@ -88,10 +91,14 @@ public struct ReminderSync: Sendable {
         let aboutToFire = reminders
             .filter { $0.firesAt.timeIntervalSince(now) < Self.leadTime }
             .map { Self.id(of: $0) }
-        let gone = Self.ours(await scheduler.pending())
+        let pending = await scheduler.pending()
+        // Auch nach jedem Warten auf iOS: Ein abgelaufener Hintergrund-Task hört hier auf.
+        guard !Task.isCancelled else { return }
+        let gone = Self.ours(pending)
             .subtracting(wanted.map(\.id))
             .subtracting(aboutToFire)
         if !gone.isEmpty { await scheduler.remove(gone) }
+        guard !Task.isCancelled else { return }
         // Alles neu planen statt vergleichen: Dieselbe Kennung ersetzt, und der Port muss so
         // keinen Inhalt zurückgeben.
         await scheduler.plan(wanted)
@@ -100,7 +107,12 @@ public struct ReminderSync: Sendable {
     /// Beim Abmelden, nach einem Widerruf und bei ausgeschaltetem Schalter: Keine Mitteilung
     /// von Yuvomi bleibt zurück.
     public func clear() async {
-        let ours = Self.ours(await scheduler.pending().union(await scheduler.delivered()))
+        await Self.clear(scheduler: scheduler)
+    }
+
+    /// Abräumen braucht weder Server noch Anmeldung.
+    public static func clear(scheduler: any NotificationScheduling) async {
+        let ours = ours(await scheduler.pending().union(await scheduler.delivered()))
         if !ours.isEmpty { await scheduler.remove(ours) }
     }
 
