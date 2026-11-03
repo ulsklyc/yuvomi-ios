@@ -119,6 +119,15 @@ Stand 03.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q12) auf Basis von
 - Nebenbei nachholen, falls es sich ergibt: Pull-to-refresh nach Widerruf (offen aus A6).
 - CI grün.
 
+## Abweichungen beim Bau (B1)
+
+- **Seams**, vor dem ersten Test abgestimmt:
+  1. `PairingLink(url:)` im Kern.
+  2. `PairingFlow.redeem(code:)` mit Fakes für `PairingRedeeming` und den Keychain.
+- **Kein eigener Fehlertyp:** `PairingFlow` wirft `SignInError`, der dafür den Fall `invalidPairingCode` bekommt. Die übrigen Fälle (`notAllowed`, `rateLimited`, `unreachable`, `unexpectedResponse`, `credentialNotStored`) gibt es dort schon, und `LoginModel.Problem` übersetzt so nur einen Typ. Bis B3 bildet `LoginModel` den neuen Fall auf `.invalidCode` ab, erreichbar ist er dort noch nicht.
+- **Link-Regeln:** Schema `yuvomi` und Host `pair`, beides ohne Rücksicht auf Groß- und Kleinschreibung. `server` und `code` müssen genau einmal vorkommen. `server` läuft durch `ServerAddress` und darf danach keinen Pfad haben. Der Code ist nach `PairingCode.normalize` nicht leer.
+- **Normalisiert wird im Kern:** `PairingFlow` schickt den Code immer normalisiert an den Port. So gilt das auch für den abgetippten Code, nicht nur für Links.
+
 ## Fertig, wenn
 
 - [ ] Ein Mitglied koppelt im Simulator per Link und per abgetipptem Code und sieht seine Aufgaben.
