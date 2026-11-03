@@ -30,6 +30,13 @@ public final class LoginModel {
     public private(set) var problem: Problem?
     public private(set) var isWorking = false
 
+    /// Leere Felder schickt die App nicht ab; der Server antwortet darauf nur mit 400.
+    public var canSubmitPassword: Bool {
+        !username.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty
+    }
+
+    public var canSubmitCode: Bool { !code.trimmingCharacters(in: .whitespaces).isEmpty }
+
     private let check: ServerCheck
     private let makeFlow: @MainActor (URL) -> SignInFlow
     private let onSignedIn: @MainActor (Session) -> Void
@@ -59,7 +66,7 @@ public final class LoginModel {
     }
 
     public func submitPassword() async {
-        guard !isWorking, case .password(let server, _) = step else { return }
+        guard !isWorking, canSubmitPassword, case .password(let server, _) = step else { return }
         let flow = makeFlow(server)
         let result = await working { () async -> Result<SignInStep, SignInError> in
             do throws(SignInError) { return .success(try await flow.submitPassword(username: username, password: password)) } catch { return .failure(error) }
@@ -76,7 +83,7 @@ public final class LoginModel {
     }
 
     public func submitCode() async {
-        guard !isWorking, step == .code, let flow = pendingFlow else { return }
+        guard !isWorking, canSubmitCode, step == .code, let flow = pendingFlow else { return }
         let result = await working { () async -> Result<Session, SignInError> in
             do throws(SignInError) { return .success(try await flow.submitCode(code)) } catch { return .failure(error) }
         }

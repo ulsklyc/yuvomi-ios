@@ -81,6 +81,7 @@ public struct LoginView: View {
             PrimaryButton(Text("login.signIn", bundle: .module), isWorking: model.isWorking) {
                 await model.submitPassword()
             }
+            .disabled(!model.canSubmitPassword)
         } header: {
             Text(verbatim: appName)
         }
@@ -108,6 +109,7 @@ public struct LoginView: View {
             PrimaryButton(Text("login.code.confirm", bundle: .module), isWorking: model.isWorking) {
                 await model.submitCode()
             }
+            .disabled(!model.canSubmitCode)
         } header: {
             Text("login.code.header", bundle: .module)
         } footer: {
