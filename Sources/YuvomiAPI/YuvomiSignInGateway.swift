@@ -122,7 +122,7 @@ public actor YuvomiSignInGateway: SignInGateway {
 private let csrfHeader = HTTPField.Name("X-CSRF-Token")!
 
 extension SignInError {
-    enum Step { case password, code, device }
+    enum Step { case password, code, device, pairing }
 
     /// Was ein Status im jeweiligen Schritt bedeutet. Ein 401 beim Passwort ist etwas
     /// anderes als ein 401 beim Code.
