@@ -190,6 +190,24 @@ Stand 02.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q20) auf Basis von
 - **DesignSystem** enthält nur `ProblemLabel` und `PrimaryButton`.
 - **Nach dem Codex-Review zu PR #5:** `SessionState.handle(_:from:)` nimmt die Sitzung der Anfrage mit; eine späte 401-Antwort aus einer alten Sitzung meldet die neue nicht ab. „Zurück“ und erneutes Absenden (auch über die Tastatur) wirken nicht, solange eine Anfrage läuft. Kalendertage rechnet `CalendarDay` im Kern immer gregorianisch um (`init(_:timeZone:)`, `start(timeZone:)`), auch wenn das Gerät etwa den buddhistischen Kalender nutzt.
 
+## Simulator-Lauf (A6, 03.11.2026)
+
+Server v2.84.0 aus dem Haupt-Checkout, mit frischer Demo-Datenbank (`seed-demo.js --locale de`) außerhalb des Repos, `PORT=3901`, `NODE_ENV=development`. App im Simulator „iPhone 17“ mit Adresse `http://localhost:3901`. Den Zustand auf dem Server habe ich jeweils in `api_tokens` und `sessions` nachgesehen.
+
+| Schritt | Ergebnis |
+| --- | --- |
+| Adresse prüfen | Passwort-Formular mit dem App-Namen des Servers |
+| Anmelden ohne 2FA | Liste mit „Heute“ und „Demnächst“, Datum, Zuständige und Flaggen auf Deutsch. Auf dem Server liegt ein Geräte-Credential (`kind = device`, `platform = ios`), keine Cookie-Sitzung |
+| App neu starten | Sitzung aus dem Keychain wiederhergestellt, Liste lädt |
+| Abmelden | Zurück zur Anmeldung, Adresse vorbefüllt; auf dem Server ist das Credential widerrufen |
+| Anmelden mit 2FA (TOTP für den Demo-Nutzer per API eingeschaltet) | Code-Schritt, danach die Liste; neues Credential, keine Cookie-Sitzung |
+| Abmelden und erneut mit 2FA anmelden | wie oben |
+| Credential auf dem Server widerrufen, App neu starten | 401, zurück zur Anmeldung |
+
+- **Befund, behoben:** Leere Felder gingen an den Server. Er antwortet mit 400, die App zeigte „Der Server hat unerwartet geantwortet“. Jetzt sperrt `LoginModel` (`canSubmitPassword`, `canSubmitCode`) das Absenden, und die Buttons sind ausgegraut.
+- **Nicht gesehen:** ob Pull-to-refresh nach dem Widerruf schon den 401 auslöst. Der Wisch im Simulator hat keine sichtbare Aktualisierung gezeigt. Den Weg über `onUnauthorized` deckt der Neustart ab, das Modell dazu ein Test.
+- **Eingabe im Simulator:** Das Tippen über die Zwischenablage klappt nur mit `xcrun simctl pbcopy`, danach lange auf das Feld drücken und „Einsetzen“ wählen.
+
 ## Geklärte Fakten (02.11.2026)
 
 - **Herkunft der Spec:** Die Spec liegt im Server-Repo nicht als Datei. `buildOpenApiSpec()` in `server/openapi.js` erzeugt sie zur Laufzeit, ausgeliefert wird sie nur an Admins unter `/api/v1/openapi.json`. Ohne Server geht es aber auch: Die Funktion läuft ohne `node_modules`, sobald `server/`, `public/` und `package.json` aus dem Tag vorliegen. Geprüft mit `v2.84.0`: 501 Pfade, `info.version` ist `2.84.0`. `update-spec.sh <tag>` holt diese drei Teile deshalb per `git archive` aus dem Tag, ruft die Funktion mit Node auf und schreibt das Ergebnis nach `Spec/`. Admin-Zugang und laufender Server sind dafür nicht nötig. Die Pfade beginnen mit `/api/v1/`, die Basis-URL der App ist also die reine Serveradresse.

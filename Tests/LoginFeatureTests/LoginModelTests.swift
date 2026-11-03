@@ -182,4 +182,34 @@ final class FakeGateway: SignInGateway, @unchecked Sendable {
         login.back()
         #expect(login.step == .password(server: server, appName: "Familie Muster"))
     }
+
+    /// Leere Felder gehen nicht an den Server: Er antwortet darauf mit 400, und die App
+    /// zeigte „Der Server hat unerwartet geantwortet“ (gesehen im Simulator, A6).
+    @Test(arguments: [("", "demo1234"), ("  ", "demo1234"), ("alex", "")])
+    func emptyFieldsAreNotSent(username: String, password: String) async {
+        let gateway = FakeGateway()
+        let login = await passwordStep(gateway: gateway, signedIn: SignedIn())
+        login.username = username
+        login.password = password
+
+        #expect(!login.canSubmitPassword)
+        await login.submitPassword()
+
+        #expect(gateway.signIns == 0)
+        #expect(login.problem == nil)
+    }
+
+    @Test func emptyCodeIsNotSent() async {
+        let gateway = FakeGateway()
+        gateway.passwordResult = .success(.needsSecondFactor)
+        gateway.codeResult = .failure(.invalidCode)
+        let login = await passwordStep(gateway: gateway, signedIn: SignedIn())
+        await login.submitPassword()
+        login.code = " "
+
+        #expect(!login.canSubmitCode)
+        await login.submitCode()
+
+        #expect(login.problem == nil)
+    }
 }
