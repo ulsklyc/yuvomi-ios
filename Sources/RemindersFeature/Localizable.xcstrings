@@ -1,0 +1,20 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "reminders.notification.event": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Event" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Termin" } }
+      }
+    },
+    "reminders.notification.task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Task" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Aufgabe" } }
+      }
+    }
+  },
+  "version": "1.0"
+}
