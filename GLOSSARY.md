@@ -1,0 +1,21 @@
+# Yuvomi für iOS
+
+Der native Client für einen selbst gehosteten Yuvomi-Server. Er spricht nur mit dem Server des eigenen Haushalts.
+
+## Anmeldung
+
+**Signed-in device**:
+Ein Telefon mit der App, das mit dem Konto einer Person angemeldet ist. In der Oberfläche „Angemeldetes Gerät“, die Liste heißt „Angemeldete Geräte“.
+_Avoid_: gekoppeltes Gerät, Client
+
+**Device credential**:
+Der Schlüssel, mit dem ein signed-in device beim Server auftritt. Eine Person kann ihn je Gerät widerrufen.
+_Avoid_: device token (meint bei Apple das APNs-Token), API-Token
+
+**Kopplungscode**:
+Ein kurzer, einmal gültiger Code aus der Web-App, gegen den die App ein device credential bekommt, ohne Passwort. Er erreicht die App als QR-Code, als App-Link oder abgetippt.
+_Avoid_: Pairing-Token, PIN
+
+**App-Link**:
+Der Link `yuvomi://pair` mit Server-Adresse und Kopplungscode. Hinter „In der App öffnen“ und im QR-Code steht derselbe App-Link.
+_Avoid_: Deep Link, Universal Link

@@ -261,10 +261,31 @@ Nur von je einem Agenten gemeldet, noch nicht unabhängig bestätigt: weitere 50
 
 Diese Punkte hängen nicht am Server-Vertrag und halten Phase 0 deshalb nicht auf.
 
-- [ ] Der PWA-PR mit dem Abschnitt „Angemeldete Geräte“ und den 27 Locales ist gemergt.
-- [ ] Ein SSO-only-Konto mit nur einem Gerät kommt per App-Link zu einem Credential.
-- [ ] Entschieden ist, ob dasselbe Gerät per Universal Link oder per `yuvomi://` gekoppelt wird.
+- [x] Der PWA-PR mit dem Abschnitt „Angemeldete Geräte“ und den 27 Locales ist gemergt (ulsklyc/yuvomi#2496, `12e442668`). Codex fand fünf Lücken im Takt der Kopplung, alle im selben PR behoben: Liste vor „abgelaufen“, Code bleibt nach einem neuen Gerät stehen, ein gescheiterter neuer Code beendet den alten nicht, Sammel-Abmeldung, Passwortwechsel und 2FA leeren die Karte.
+- [x] Ein SSO-only-Konto mit nur einem Gerät kommt per App-Link zu einem Credential. Belegt im Simulator gegen einen Server ohne Passwort-Login, die SSO-Anmeldung selbst ist offen (siehe B6).
+- [x] Entschieden ist, ob dasselbe Gerät per Universal Link oder per `yuvomi://` gekoppelt wird: `yuvomi://` bleibt, siehe [ADR 0001](../adr/0001-kopplung-per-yuvomi-schema.md).
 - [ ] Die Antwort auf die Apple-Anfrage steht in den Review-Notes.
+
+## B6 (Vor TestFlight)
+
+Lauf am 03.11.2026 gegen den Demo-Seed aus dem Server-Branch `pwa-signed-in-devices`. Konto emma, Plattform `ios`, Stand in `api_tokens` nach jedem Fall. Simulator und iPhone liefen gegen getrennte Kopien der Datenbank, die Ids gelten je Lauf.
+
+| Fall | Weg | `api_tokens` |
+|---|---|---|
+| Simulator, Link | Code in der PWA, Link per `simctl openurl`, Bestätigung, Aufgabenliste. Die PWA meldet „„iPhone“ (iOS) hat sich gerade angemeldet“. | id 1, `kind = device` |
+| Simulator, Widerruf | „Abmelden“ in der PWA, dann Pull-to-refresh in der App: zurück zum Login | id 1, `revoked_at` gesetzt |
+| Simulator, SSO-only | emma ohne Passwort (`$oidc$`), Server mit `password_login_enabled: false`, Passwort-Login ergibt 401. App-Link aus der PWA führt zum Credential. | id 2 (Simulator), `kind = device` |
+| iPhone, „In der App öffnen“ | PWA in Safari auf dem iPhone, Knopf, Bestätigung in der App | id 2, danach in der App abgemeldet |
+| iPhone, QR | QR aus der PWA am Mac mit dem Scanner der App | id 3, danach in der App abgemeldet |
+| iPhone, Code | Code aus der PWA am Mac in der App abgetippt | id 4, aktiv |
+
+Abweichungen:
+
+- **SSO-only:** Im Server-Repo gibt es keinen lauffähigen OIDC-Anbieter, die Tests ersetzen nur das Modul. Die Browser-Sitzung stammt deshalb aus der Zeit vor der Umstellung auf SSO-only. Belegt ist der Weg ab der Sitzung: Code, App-Link, Credential. Die Anmeldung über einen echten IdP bleibt für die Review-Instanz.
+- **Simulator, Code abtippen:** Die Eingabe per Einfügen kam im Simulator nicht an. Den abgetippten Code belegt der iPhone-Lauf.
+- **PWA:** Bei voller Breite stand der QR neben den Schritten statt darunter, behoben im selben PR. „Auf anderen Geräten abmelden“ nennt jetzt auch die angemeldeten Geräte, die der Server schon mit abmeldete.
+- **Universal Link:** bleibt `yuvomi://`, siehe [ADR 0001](../adr/0001-kopplung-per-yuvomi-schema.md). Für die App folgt daraus keine Arbeit.
+- **Kamera über Bildschirmzeit gesperrt (`.restricted`):** Die App rät dann „in den Einstellungen erlauben“, obwohl der Schalter gesperrt ist. Nicht in B6 behoben, ein eigener kleiner Punkt für die App.
 
 ## Nachzuziehen in der Yuvomi-Doku
 
