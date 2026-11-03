@@ -1,23 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "tasks.account": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Account"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konto"
-          }
-        }
-      }
-    },
     "tasks.empty.message": {
       "extractionState": "manual",
       "localizations": {
@@ -222,19 +205,19 @@
         }
       }
     },
-    "tasks.signOut": {
+    "tasks.settings": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign Out"
+            "value": "Settings"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abmelden"
+            "value": "Einstellungen"
           }
         }
       }

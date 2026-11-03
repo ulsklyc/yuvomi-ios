@@ -156,7 +156,17 @@ Ohne Unit-Test bleiben Views, Delegate, Verdrahtung und der Hintergrund-Abgleich
 - **Testdatum 2099:** Ein einmaliger Kalender-Trigger in der Vergangenheit gibt kein `nextTriggerDate()` mehr. Getestet wird deshalb die Nacht der Umstellung auf Sommerzeit 2099, 01:30 UTC, unter vier Zeitzonen des Geräts. Ohne Zone an den Komponenten werden drei davon rot.
 - **Globale Zeitzone im Test:** Der Test setzt `NSTimeZone.default`. Die Suite läuft seriell, und die übrigen Suiten in `RemindersFeatureTests` geben keine Zeitzone vor. Sollte ein späterer Test dort `TimeZone.current` lesen, muss er in eine eigene serielle Suite.
 - **Eine Sekunde Luft im Adapter:** Was beim Planen weniger als eine Sekunde entfernt ist, plant der Adapter nicht. Den Vorlauf von fünf Sekunden prüft der Kern vor dem Abruf.
+- **Sprache der Überschrift:** `String(localized:locale:)` nimmt die Locale nur zum Formatieren. Der Test war lokal grün, weil der Simulator auf Deutsch steht, und in der CI auf Englisch rot. Die Überschrift kommt jetzt aus dem `.lproj` der Locale. Tests mit Sprache vor dem Push auch mit `-testLanguage en` laufen lassen.
 - **Bewusst nicht:** Fehler von `add` melden (die Erlaubnis prüft der Abschnitt „Erinnerungen“), parallele Aufrufe von `add` (höchstens 60 je Abgleich), Bruchteile von Sekunden (`fires_at` hat laut Spec ganze Sekunden).
+
+## Abweichungen beim Bau (C4)
+
+- **Seam 4:** `RemindersSettingsModel` mit dem Port `NotificationPermission` (`current()`, `request()`) und eigenen `UserDefaults`. Umgesetzt mit `SystemNotificationPermission`.
+- **Vorläufige Erlaubnis zählt als „nicht gefragt“:** Stellt iOS still zu, holt die Karte die volle Erlaubnis.
+- **Ohne gespeicherten Wunsch gilt „an“:** Wer iOS erlaubt hat, will Erinnerungen. Der Schalter ist nur mit Erlaubnis an.
+- **Liste:** `TaskListView` nimmt ein `banner`, die App setzt die Karte hinein. Der Hinweis „keine offenen Aufgaben“ steht jetzt in der Liste statt darüber, sonst läge er über der Karte.
+- **Blatt „Einstellungen“** in der App (`App/SettingsView.swift`), weil es Teile aus zwei Modulen zeigt. Unter „Server“ steht die ganze Adresse mit Schema und Port.
+- **Nach dem Code-Review:** Die Karte verschwindet auch, wenn iOS über den Schalter gefragt hat. Solange iOS fragt, löst ein zweites Tippen keine zweite Frage aus. Endet die Sitzung bei offenem Blatt, geht es nach der nächsten Anmeldung nicht von selbst auf. Für C5: Erlaubnis beim Wechsel in den Vordergrund neu lesen, damit der Rückweg aus den Einstellungen von iOS ankommt.
 
 ## Fertig, wenn
 
