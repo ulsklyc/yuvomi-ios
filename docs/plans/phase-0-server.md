@@ -244,17 +244,17 @@ Nur von je einem Agenten gemeldet, noch nicht unabhängig bestätigt: weitere 50
   - Gemergt mit ulsklyc/yuvomi#2471 (`ad1d29f79`, 2026-11-02). Abweichung: Die Typprüfung läuft über einen neuen Helfer `textShape()` in `validate.js`, damit dieselbe Prüfung nicht dreimal im Code steht; die vorhandenen Helfer bleiben unverändert. Mitgenommen wurden `POST /shopping/{listId}/items` mit denselben Formen und der Tagesschlüssel in `GET /tasks` und MCP `list_tasks`. Die Messung bestätigte auch die nur einmal gemeldeten Fehler. Neu gefunden: Ein leerer oder `null`-Titel im `PUT /calendar` wurde gespeichert oder still ignoriert, und Zahlen landeten in Textfeldern als `"5.0"`.
 - **`PUT /reminders`** im selben PR: zuerst mit einem Test messen, ob der Gelesen-Status zurückgesetzt wird, dann beheben. Sonst bringt `/upcoming` alte Erinnerungen zurück, sobald jemand in der PWA eine Serie speichert.
 - **Release:** Das nächste Release bringt diese Fixes und `client_api: 1` (gemergt mit ulsklyc/yuvomi#2472, `fbe6359b2`)). Veröffentlicht als `v2.84.0` am 2026-11-02, Docker- und Umbrel-Publish grün. Der PWA-Teil von S3 ändert keine Route und gehört nicht zum Vertrag. Das Release selbst braucht weiter eine ausdrückliche Freigabe.
-- **Serien-Lücke:** Gelöschte erste Vorkommen erinnern weiter, das gilt für `/upcoming`, `/pending` und die Zustellung. Das ist kein Blocker für Phase 0, es läuft als ulsklyc/yuvomi#2470.
+- **Serien-Lücke:** Gelöschte erste Vorkommen erinnern weiter, das gilt für `/upcoming`, `/pending` und die Zustellung. Das ist kein Blocker für Phase 0, es läuft als ulsklyc/yuvomi#2470. Behoben mit ulsklyc/yuvomi#2495 (`91356e54c`, 03.11.2026), noch in keinem Release; #2470 ist geschlossen.
 - **S6:** Kommt direkt nach dem Release, weil die Fixtures schon für die App-Entwicklung gebraucht werden. Der VPS läuft bei IONOS.
 - **Apple-Anfrage:** ist abgeschickt, die Antwort steht aus.
 
 ## Fertig, wenn
 
-- [ ] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential.
-- [ ] Personal, Displays, Gäste und Ehemalige bekommen keines, und kein Credential erreicht eine Admin-Route.
-- [ ] Alle Wege aus S2 Regel 4 beenden Geräte, Integrations-Tokens bleiben.
-- [ ] `GET /reminders/upcoming` liefert für die vier Module nur Sichtbares.
-- [ ] `test:openapi-client-contract` ist grün.
+- [x] Ein normales Mitglied kommt per Passwort und per Kopplung zu einem Credential. `test:signed-in-devices` („ein Mitglied meldet ein Geraet an …“), `test:device-pairing` („ein Mitglied koppelt ein Geraet, ohne dass die App je ein Passwort sieht“), live in A6, B5 und B6.
+- [x] Personal, Displays, Gäste und Ehemalige bekommen keines, und kein Credential erreicht eine Admin-Route. Personal und Gäste in beiden Suiten, „Gegenprobe: ein Display-Code meldet kein Geraet an“, „Deaktivieren entwertet offene Codes“ und „wer zwischen Ausstellen und Einloesen die Mitgliedschaft verliert …“ in `test:device-pairing`, „keine Admin-Route, weder hier noch dort“ und die Allowlist in `test:signed-in-devices`.
+- [ ] Alle Wege aus S2 Regel 4 beenden Geräte, Integrations-Tokens bleiben. Offen: Alle Wege rufen `invalidateUserSessions()`, das die Geräte widerruft (`server/auth.js:971` auf `6b194e5a2`). Eigene Tests gibt es für „Auf anderen Geräten abmelden“, den eigenen Passwortwechsel, das Admin-Passwort und das Löschen. Für den Passwort-Reset und das Einschalten von 2FA fehlen sie, ein kleiner Test-PR im Server-Repo folgt.
+- [x] `GET /reminders/upcoming` liefert für die vier Module nur Sichtbares. `test:reminders-upcoming` (fremde, private und verwaiste Zeilen, Scopes je Herkunft, entzogenes und abgeschaltetes Modul, `types` erweitert nichts), unter `Europe/Berlin` und `UTC`.
+- [x] `test:openapi-client-contract` ist grün. Läuft in der Kette von `npm test`, CI auf `main` grün (Stand 03.11.2026).
 - [x] Ein Release ist draußen, und die Review-Instanz läuft darauf (`v2.84.0`, `review.yuvomi.cloud`, 2026-11-02).
 
 ## Vor TestFlight

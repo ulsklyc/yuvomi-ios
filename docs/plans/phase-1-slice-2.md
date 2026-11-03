@@ -189,7 +189,7 @@ Server `v2.84.0` aus dem Haupt-Checkout, Demo-Seed `de`, Port 3901. Codes per `P
 - **Pull-to-refresh nach Widerruf** (offen aus A6): leos Token in der Datenbank widerrufen, dann gewischt. Die App fällt zum Login zurück. Mit `swipe` über 1,5 Sekunden kam der Wisch an, ein schneller `touch_path` nicht.
 - **Eingabe im Simulator:** Die `text`-Aktion kam wie in B4 nicht an. Getippt wurde über die Bildschirmtastatur, nach `set_keyboard show`. Schnelle Tipps direkt nach einem Wechsel der Tastaturebene gingen verloren, mit Pausen kam alles an. Das ist der Simulator, nicht die Gruppierung.
 
-**iPhone** (KlyPhone, iPhone18,4, Dunkelmodus, signiert mit Team `8C2HRWK28S`), Server auf `192.168.178.64`:
+**iPhone** (iPhone18,4, Dunkelmodus, signiert mit Team `8C2HRWK28S`), Server auf der LAN-Adresse des Macs:
 
 | Weg | Ergebnis | `api_tokens` |
 |---|---|---|
