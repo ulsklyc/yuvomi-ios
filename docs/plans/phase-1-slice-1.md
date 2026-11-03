@@ -216,11 +216,11 @@ Server v2.84.0 aus dem Haupt-Checkout, mit frischer Demo-Datenbank (`seed-demo.j
 
 ## Fertig, wenn
 
-- [ ] Ein Mitglied meldet sich im Simulator per Passwort an, auf Wunsch mit 2FA, und sieht seine Aufgaben.
-- [ ] Ein zu alter Server, ein Server ohne `product` und ein SSO-only-Server bekommen vor der Passworteingabe je eine klare Meldung.
-- [ ] Abmelden und ein widerrufenes Credential führen zurück zum Login, und der Keychain-Eintrag ist danach weg.
-- [ ] Alle 21 Fixtures dekodieren, und der Generator-Check in der CI ist grün.
-- [ ] Alle Texte liegen auf Deutsch und Englisch im String Catalog.
+- [x] Ein Mitglied meldet sich im Simulator per Passwort an, auf Wunsch mit 2FA, und sieht seine Aufgaben (Simulator-Lauf A6).
+- [x] Ein zu alter Server, ein Server ohne `product` und ein SSO-only-Server bekommen vor der Passworteingabe je eine klare Meldung. Belegt durch `ServerCheckTests`, `ServerProbeAdapterTests` und `LoginModelTests`, im Simulator nicht eigens durchgespielt.
+- [x] Abmelden und ein widerrufenes Credential führen zurück zum Login, und der Keychain-Eintrag ist danach weg. Live gesehen: Abmelden und Widerruf mit Neustart. Pull-to-refresh nach dem Widerruf deckt nur `SessionStateTests` ab (siehe Simulator-Lauf).
+- [x] Alle 21 Fixtures dekodieren, und der Generator-Check in der CI ist grün (`FixtureDecodingTests`, CI auf `main` nach #6 grün).
+- [x] Alle Texte liegen auf Deutsch und Englisch im String Catalog (`LoginFeature` 24, `TasksFeature` 15 Schlüssel, keiner ohne Deutsch).
 - [ ] Das Repo ist öffentlich.
 
 ## Nachzuziehen in der Yuvomi-Doku
