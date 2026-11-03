@@ -1,3 +1,4 @@
+import BackgroundTasks
 import LoginFeature
 import RemindersFeature
 import SwiftUI
@@ -9,7 +10,9 @@ import YuvomiCore
 /// Kompositionswurzel: Hier treffen Kern und Adapter aufeinander.
 @main
 struct YuvomiApp: App {
+    @UIApplicationDelegateAdaptor private var delegate: AppDelegate
     @State private var app = AppModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -18,7 +21,8 @@ struct YuvomiApp: App {
                     TaskListView(model: app.taskList(for: session), onOpenSettings: { app.showsSettings = true }) {
                         ReminderCard(model: app.reminderSettings)
                     }
-                    .task { await app.reminderSettings.load() }
+                    // Nach der Anmeldung und beim Start mit gespeicherter Anmeldung.
+                    .task { await app.refreshReminders() }
                     .sheet(isPresented: $app.showsSettings) {
                         SettingsView(session: session, reminders: app.reminderSettings, onSignOut: { await app.session.signOut() })
                     }
@@ -30,13 +34,27 @@ struct YuvomiApp: App {
             .animation(.default, value: app.session.current)
             // Endet die Sitzung bei offenem Blatt (Widerruf), darf es nach der nächsten
             // Anmeldung nicht von selbst wieder aufgehen.
-            .onChange(of: app.session.current) { app.showsSettings = false }
+            .onChange(of: app.session.current) { _, current in
+                app.showsSettings = false
+                // Abmelden und Widerruf: keine Mitteilung von Yuvomi bleibt zurück.
+                if current == nil { Task { await app.clearReminders() } }
+            }
+            // Zurück in den Vordergrund, auch aus den Einstellungen von iOS: Erlaubnis neu
+            // lesen und abgleichen.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await app.refreshReminders() } }
+                if phase == .background { app.scheduleBackgroundRefresh() }
+            }
             .onOpenURL { url in Task { await app.open(url) } }
             .alert(Text("app.pairing.alreadySignedIn.title"), isPresented: $app.showsAlreadySignedIn) {
                 Button("app.pairing.alreadySignedIn.ok", role: .cancel) {}
             } message: {
                 Text("app.pairing.alreadySignedIn.message")
             }
+        }
+        // Weckt iOS die App, gleicht sie ab und meldet sich für das nächste Mal an.
+        .backgroundTask(.appRefresh(AppModel.refreshTaskID)) {
+            await app.backgroundRefresh()
         }
     }
 }
@@ -51,18 +69,83 @@ final class AppModel {
     /// Ein Kopplungslink kam, während schon jemand angemeldet ist (Q3).
     var showsAlreadySignedIn = false
     var showsSettings = false
+    /// Der eine Besitzer des Abgleichs: Abgleichen und Abräumen laufen nacheinander.
+    let reminders: ReminderCoordinator
     /// Karte und Schalter für Erinnerungen. Gilt für das Gerät, nicht für das Konto.
-    let reminderSettings = RemindersSettingsModel(permission: SystemNotificationPermission(), onChange: { _ in })
+    let reminderSettings: RemindersSettingsModel
 
     /// Die Serveradresse ist kein Geheimnis und liegt in den UserDefaults. Mit den Widgets
     /// wandert sie in die Defaults der App Group.
     private static let serverKey = "server"
+    nonisolated static let refreshTaskID = "cloud.yuvomi.ios.reminders"
 
     init() {
-        session = SessionState(store: store, revoker: YuvomiSessionRevoker())
+        let session = SessionState(store: store, revoker: YuvomiSessionRevoker())
+        self.session = session
         if let server = UserDefaults.standard.url(forKey: Self.serverKey) {
             session.restore(server: server)
         }
+        let reminders = ReminderCoordinator(
+            makeSource: { YuvomiUpcomingReminders(server: $0.server, credential: $0.credential) },
+            scheduler: SystemNotificationScheduler(),
+            onUnauthorized: { session.handle(.unauthorized, from: $0) }
+        )
+        self.reminders = reminders
+        reminderSettings = RemindersSettingsModel(permission: SystemNotificationPermission()) { on in
+            Task {
+                if !on { await Self.clear(reminders) } else if let current = session.current { await reminders.sync(current) }
+            }
+        }
+        // Wurde die Sitzung beendet, während die App nicht lief (Widerruf im Hintergrund),
+        // dürfen keine Mitteilungen des alten Kontos übrig bleiben.
+        if session.current == nil { Task { await Self.clear(reminders) } }
+    }
+
+    /// Erlaubnis neu lesen, dann abgleichen oder abräumen. Ohne Erlaubnis oder mit
+    /// ausgeschaltetem Schalter bleibt nichts geplant.
+    func refreshReminders() async {
+        guard let current = session.current else { return }
+        await reminderSettings.load()
+        // Abgemeldet, während die Erlaubnis gelesen wurde: Das Abmelden hat schon abgeräumt.
+        guard session.current == current else { return }
+        // Hat iOS den Hintergrund-Task schon beendet, gibt es noch keinen Abgleich zum
+        // Abbrechen. Ein später gemeldeter bricht `cancelSyncs()` ab.
+        guard !Task.isCancelled else { return }
+        if reminderSettings.isOn {
+            await reminders.sync(current)
+        } else {
+            await Self.clear(reminders)
+        }
+    }
+
+    /// Abmelden und Widerruf: alles abräumen, auch den angemeldeten Hintergrund-Task.
+    func clearReminders() async {
+        await Self.clear(reminders)
+    }
+
+    private static func clear(_ reminders: ReminderCoordinator) async {
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: refreshTaskID)
+        await reminders.clear()
+    }
+
+    /// Frühestens in vier Stunden. Wann iOS die App wirklich weckt, entscheidet iOS.
+    /// Erst nach `load()` aufrufen, sonst gilt die Erlaubnis noch als nicht erteilt.
+    func scheduleBackgroundRefresh() {
+        guard session.current != nil, reminderSettings.isOn else { return }
+        let request = BGAppRefreshTaskRequest(identifier: Self.refreshTaskID)
+        request.earliestBeginDate = .now.addingTimeInterval(4 * 3600)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    /// Nimmt iOS dem Task die Zeit, bricht das den Abgleich ab, statt auf ihn zu warten.
+    func backgroundRefresh() async {
+        let reminders = reminders
+        await withTaskCancellationHandler {
+            await refreshReminders()
+        } onCancel: {
+            Task { @MainActor in reminders.cancelSyncs() }
+        }
+        scheduleBackgroundRefresh()
     }
 
     func login() -> LoginModel {
@@ -110,5 +193,15 @@ final class AppModel {
     /// Name „iPhone“ und `identifierForVendor`, entschieden in A4.
     private static var device: DeviceInfo {
         DeviceInfo(name: "iPhone", deviceID: UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString)
+    }
+}
+
+/// Setzt den Delegate für Mitteilungen, bevor iOS den Start abschließt.
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    private let presenter = ForegroundReminderPresenter()
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        presenter.install()
+        return true
     }
 }
