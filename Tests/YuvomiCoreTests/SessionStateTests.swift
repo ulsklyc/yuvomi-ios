@@ -58,7 +58,7 @@ final class FakeRevoker: SessionRevoking, @unchecked Sendable {
         let state = SessionState(store: store, revoker: revoker)
         state.restore(server: server)
 
-        state.handle(.unauthorized)
+        state.handle(.unauthorized, from: Session(server: server, credential: "ydc_revoked"))
 
         #expect(state.current == nil)
         #expect(try store.credential(for: server) == nil)
@@ -71,10 +71,22 @@ final class FakeRevoker: SessionRevoking, @unchecked Sendable {
         let state = SessionState(store: store, revoker: FakeRevoker())
         state.restore(server: server)
 
-        state.handle(error)
+        state.handle(error, from: Session(server: server, credential: "ydc_stored"))
 
         #expect(state.current == Session(server: server, credential: "ydc_stored"))
         #expect(try store.credential(for: server) == "ydc_stored")
+    }
+
+    /// Eine späte 401-Antwort aus einer alten Sitzung meldet die neue nicht ab.
+    @Test func unauthorizedFromAnOldSessionKeepsTheNewOne() throws {
+        try store.save("ydc_new", for: server)
+        let state = SessionState(store: store, revoker: FakeRevoker())
+        state.signedIn(Session(server: server, credential: "ydc_new"))
+
+        state.handle(.unauthorized, from: Session(server: server, credential: "ydc_old"))
+
+        #expect(state.current == Session(server: server, credential: "ydc_new"))
+        #expect(try store.credential(for: server) == "ydc_new")
     }
 
     /// Wer sich während eines langsamen Widerrufs neu anmeldet, bleibt angemeldet:

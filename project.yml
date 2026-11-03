@@ -27,6 +27,8 @@ targets:
       - package: Yuvomi
         product: YuvomiCore
       - package: Yuvomi
+        product: YuvomiAPI
+      - package: Yuvomi
         product: LoginFeature
       - package: Yuvomi
         product: TasksFeature
@@ -51,6 +53,9 @@ targets:
     info:
       path: App/Info.plist
       properties:
+        # Ohne diese Liste kennt das App-Bundle nur Englisch, und iOS übergeht die
+        # deutschen Texte in den String Catalogs der Pakete.
+        CFBundleLocalizations: [en, de]
         # HTTPS überall, ohne TLS nur im lokalen Netz (localhost, LAN-IPs, .local).
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
@@ -83,4 +88,6 @@ schemes:
       targets:
         - package: Yuvomi/YuvomiCoreTests
         - package: Yuvomi/YuvomiAPITests
+        - package: Yuvomi/LoginFeatureTests
+        - package: Yuvomi/TasksFeatureTests
         - YuvomiHostedTests
