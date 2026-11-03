@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera scans the QR code from the Yuvomi web app to sign in this iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kamera scannt den QR-Code aus der Yuvomi-Web-App, um dieses iPhone anzumelden."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

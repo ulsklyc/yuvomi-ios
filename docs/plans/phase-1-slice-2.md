@@ -149,6 +149,23 @@ Stand 03.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q12) auf Basis von
 - **Offener 2FA-Versuch:** Ein Link verwirft ihn samt Cookie-Sitzung (`pendingFlow = nil`). Von außen ist das nicht zu beobachten, deshalb gibt es dafür keinen eigenen Test. Der Test zu Q8 prüft nur die Schrittfolge.
 - **Texte vorgezogen:** `login.problem.invalidPairingCode` und `login.problem.invalidPairingLink` kamen schon mit B3 in den Katalog, weil die View jedes Problem übersetzt. Die App hat für den Hinweis bei bestehender Anmeldung einen eigenen String Catalog `App/Localizable.xcstrings`.
 
+## Abweichungen beim Bau (B4)
+
+- **Seams**, vor dem ersten Test abgestimmt:
+  1. `LoginModel.openScannedCode(_:) -> Bool`: Ein gültiger Kopplungslink läuft wie `openPairingLink(_:)`, alles andere gibt `false` und lässt das Modell unverändert.
+  2. `PairingCode.grouped(_:)` im Kern: Fünfergruppen mit Leerzeichen, etwa `ACDEF GHJK3`. Abgeschnitten wird nichts, die Länge entscheidet der Server.
+- **Fremder QR:** Der Scanner bleibt offen und zeigt „Das ist kein Kopplungscode von Yuvomi.“, VoiceOver sagt es an. Ein Kopplungslink schließt das Blatt, sobald der Server geprüft ist.
+- **Gruppierung im Modell:** Ein umformendes `Binding` übernimmt das Textfeld während der Eingabe nicht, im Simulator blieb `acde-fghjk3` stehen. Deshalb schreibt `onChange` die gruppierte Form nach `pairingCode` zurück. Eingelöst wird weiterhin normalisiert (B1).
+- **Scanner-Protokoll:** `QRCodeScanner` in `LoginFeature` mit `isAvailable` und `makeView(onCode:)`. `LoginView` nimmt ihn als Parameter, Standard ist `VisionKitScanner`, die Vorschauen bekommen einen Platzhalter mit `isAvailable == true`. So zeigen die Vorschauen den Scan-Button, den der Simulator mangels Kamera nicht zeigt.
+- **Kamerafreigabe:** `DataScannerViewController.isAvailable` ist erst nach der Freigabe der Kamera `true`. Der Button erscheint deshalb auch, solange iOS noch nicht gefragt hat. Die Hülle fragt vor `startScanning()` mit `AVCaptureDevice.requestAccess`. Nach einer Ablehnung fehlt der Button. Geprüft wird das erst in B5 auf dem iPhone.
+- **Info.plist:** `NSCameraUsageDescription` steht englisch in `project.yml`, die deutsche Fassung in `App/InfoPlist.xcstrings`. Im gebauten Bundle liegt sie unter `de.lproj/InfoPlist.strings`.
+- **Bestätigung:** Sie hat ihr eigenes „Abbrechen“ neben „Anmelden“, das „Zurück“ in der Leiste entfällt dort. Orange trägt nur das offene Schloss, der Text bleibt in Primär- und Sekundärfarbe, weil Orange auf Weiß unter 4,5:1 liegt.
+- **Reihenfolge in der Bestätigung**, nach dem Sicherheitsreview des Commits: Zuerst steht der Host groß, darunter der App-Name klein, einzeilig und ohne Steuerzeichen. Den App-Namen liefert der Server, den man gerade bestätigt. Mit einem Zeilenumbruch könnte er sonst über dem echten Host eine falsche Adresse zeigen.
+- **Nach dem Codex-Review zu PR #13:** Während der Serverprüfung für einen gescannten Link lässt sich das Scanner-Blatt nicht schließen, weder mit „Abbrechen“ noch per Wisch. Sonst liefe die Prüfung weiter und wechselte danach trotzdem den Schritt.
+- **Hinweis zur Web-App:** Der Text nennt „Einstellungen > Konto > Angemeldete Geräte“. Diesen Abschnitt bringt erst der PWA-PR vor TestFlight (siehe [phase-0-server.md](phase-0-server.md)). Ändert sich dort der Name, muss der Text mit.
+- **Englische Buttons** in Title Case wie das vorhandene „Sign In“: „Scan QR Code“, „Sign In with a Code Instead“.
+- **Sichtprüfung im Simulator** gegen einen lokalen Server `v2.84.0` (Demo-Seed `de`, Port 3901), auf Deutsch und Englisch: Link mit http, Bestätigung, abgelehnter Code mit Meldung in der Code-Eingabe, „Abbrechen“ zur Adresse, Passwort-Schritt mit „Stattdessen mit Code anmelden“, eingefügter Code gruppiert. Dazu die Bestätigung bei Dynamic Type `accessibility-extra-large`, nichts abgeschnitten. Die Bestätigung mit https und der Scan-Button sind nur in den Vorschauen zu sehen.
+
 ## Fertig, wenn
 
 - [ ] Ein Mitglied koppelt im Simulator per Link und per abgetipptem Code und sieht seine Aufgaben.
