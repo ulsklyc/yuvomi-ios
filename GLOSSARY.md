@@ -19,3 +19,17 @@ _Avoid_: Pairing-Token, PIN
 **App-Link**:
 Der Link `yuvomi://pair` mit Server-Adresse und Kopplungscode. Hinter „In der App öffnen“ und im QR-Code steht derselbe App-Link.
 _Avoid_: Deep Link, Universal Link
+
+## Erinnerungen
+
+**Erinnerung**:
+Ein Zeitpunkt, zu dem der Server eine Person an eine Aufgabe oder einen Termin erinnern will. Sie gehört dem Server und einer Person, die App bekommt nur einen Abzug der kommenden.
+_Avoid_: Reminder, Alarm, Wecker
+
+**Mitteilung**:
+Was iOS zum Zeitpunkt einer Erinnerung auf dem Telefon zeigt. Die App plant sie auf dem Gerät, ohne dass der Server sie schickt.
+_Avoid_: Push, Notification, Benachrichtigung
+
+**Abgleich**:
+Die App holt die kommenden Erinnerungen und bringt die geplanten Mitteilungen auf diesen Stand: neue dazu, weggefallene weg, geänderte neu.
+_Avoid_: Sync, Refresh
