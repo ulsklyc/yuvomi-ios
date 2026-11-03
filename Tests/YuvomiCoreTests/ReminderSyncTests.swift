@@ -5,10 +5,13 @@ import YuvomiCore
 /// Port-Fake: was der Server als kommende Erinnerungen liefert.
 final class FakeUpcomingReminders: UpcomingReminders, @unchecked Sendable {
     var result: Result<[UpcomingReminder], APIError> = .success([])
+    /// Läuft, während der Abruf auf den Server wartet.
+    var whileWaiting: (@Sendable () async -> Void)?
     private(set) var windows: [ClosedRange<Date>] = []
 
     func upcoming(from: Date, to: Date) async throws(APIError) -> [UpcomingReminder] {
         windows.append(from...to)
+        await whileWaiting?()
         return try result.get()
     }
 }
@@ -20,8 +23,13 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
     var foreign: Set<String> = []
     /// Schon zugestellt, in der Mitteilungszentrale.
     var delivered: Set<String> = []
+    /// Läuft, während der Abgleich die geplanten Mitteilungen liest.
+    var whilePending: () -> Void = {}
 
-    func pending() async -> Set<String> { Set(planned.keys).union(foreign) }
+    func pending() async -> Set<String> {
+        whilePending()
+        return Set(planned.keys).union(foreign)
+    }
 
     func delivered() async -> Set<String> { delivered }
 
@@ -139,5 +147,28 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
         await sync.clear()
 
         #expect(scheduler.delivered == ["other.2"])
+    }
+
+    /// Abmelden bricht einen laufenden Abgleich ab, bevor es abräumt. Kommt die Antwort danach,
+    /// darf sie nichts mehr planen.
+    @Test func aCancelledSyncPlansNothing() async throws {
+        source.result = .success([reminder(1, in: 3600)])
+        source.whileWaiting = { withUnsafeCurrentTask { $0?.cancel() } }
+
+        try await sync.run(now: now)
+
+        #expect(scheduler.planned.isEmpty)
+    }
+
+    /// Nimmt iOS dem Hintergrund-Task die Zeit, während der Abgleich bei iOS liest, hört er auf:
+    /// nichts entfernen, nichts planen.
+    @Test func aSyncCancelledWhileReadingThePlannedNotificationsStops() async throws {
+        await scheduler.plan([PlannedNotification(id: "reminder.9", origin: .event, title: "Filmabend", firesAt: now.addingTimeInterval(7200))])
+        source.result = .success([reminder(1, in: 3600)])
+        scheduler.whilePending = { withUnsafeCurrentTask { $0?.cancel() } }
+
+        try await sync.run(now: now)
+
+        #expect(Set(scheduler.planned.keys) == ["reminder.9"])
     }
 }

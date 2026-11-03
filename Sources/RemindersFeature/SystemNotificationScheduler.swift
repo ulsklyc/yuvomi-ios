@@ -20,6 +20,9 @@ public struct SystemNotificationScheduler: NotificationScheduling {
     public func plan(_ notifications: [PlannedNotification]) async {
         let center = UNUserNotificationCenter.current()
         for notification in notifications {
+            // Abgebrochen, etwa weil iOS dem Hintergrund-Task die Zeit nimmt: Der Rest folgt
+            // beim nächsten Abgleich.
+            guard !Task.isCancelled else { return }
             // Der Abgleich prüft den Vorlauf vor dem Abruf. Nach einem langsamen Abruf kann
             // ein Zeitpunkt schon vorbei sein, und ein vergangener Trigger feuert nie. Eine
             // Sekunde Luft für den Weg zum System.
