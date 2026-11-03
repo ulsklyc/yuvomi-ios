@@ -59,6 +59,11 @@ targets:
         # HTTPS überall, ohne TLS nur im lokalen Netz (localhost, LAN-IPs, .local).
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # Kopplungslink yuvomi://pair aus der Web-App (Slice 2). Das Schema ist nicht
+        # exklusiv, deshalb bestätigt man vor dem Einlösen den Server.
+        CFBundleURLTypes:
+          - CFBundleURLName: cloud.yuvomi.ios.pair
+            CFBundleURLSchemes: [yuvomi]
   # Tests, die die App als Host brauchen, etwa für den Keychain: Paket-Tests laufen im
   # Simulator ohne Entitlements und bekommen dort errSecMissingEntitlement (-34018).
   YuvomiHostedTests:

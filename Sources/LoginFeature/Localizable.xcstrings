@@ -239,6 +239,40 @@
         }
       }
     },
+    "login.problem.invalidPairingCode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code is invalid or has expired. Create a new one in the web app."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code ungültig oder abgelaufen. Erzeuge in der Web-App einen neuen."
+          }
+        }
+      }
+    },
+    "login.problem.invalidPairingLink": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not a valid pairing link."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Link ist kein gültiger Kopplungslink."
+          }
+        }
+      }
+    },
     "login.problem.notAllowed": {
       "extractionState": "manual",
       "localizations": {

@@ -11,21 +11,24 @@ public final class LoginModel {
     public enum Step: Hashable, Sendable {
         case address
         case password(server: URL, appName: String)
-        /// Der Server erlaubt keine Passwort-Anmeldung. Koppeln kommt erst mit Slice 2.
-        case ssoOnly(appName: String)
+        /// Kopplungscode eingeben oder scannen, für einen geprüften Server.
+        case pairing(server: URL, appName: String)
+        /// Link oder QR: Server zeigen und bestätigen lassen, bevor der Code eingelöst wird.
+        case confirmPairing(server: URL, appName: String, code: String)
         case code
     }
 
     /// Was die View als Fehlermeldung zeigt. Die Texte stehen im String Catalog.
     public enum Problem: Hashable, Sendable {
-        case invalidAddress, unreachable, notYuvomi, tooOld
-        case invalidCredentials, invalidCode, notAllowed, rateLimited, credentialNotStored, unexpectedResponse
+        case invalidAddress, unreachable, notYuvomi, tooOld, invalidPairingLink
+        case invalidCredentials, invalidCode, invalidPairingCode, notAllowed, rateLimited, credentialNotStored, unexpectedResponse
     }
 
     public var address = ""
     public var username = ""
     public var password = ""
     public var code = ""
+    public var pairingCode = ""
     public private(set) var step: Step = .address
     public private(set) var problem: Problem?
     public private(set) var isWorking = false
@@ -37,16 +40,26 @@ public final class LoginModel {
 
     public var canSubmitCode: Bool { !code.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    public var canSubmitPairingCode: Bool { !PairingCode.normalize(pairingCode).isEmpty }
+
     private let check: ServerCheck
     private let makeFlow: @MainActor (URL) -> SignInFlow
+    private let makePairing: @MainActor (URL) -> PairingFlow
     private let onSignedIn: @MainActor (Session) -> Void
 
     /// - Parameters:
     ///   - makeFlow: Ein neuer Ablauf pro Server, mit frischem Gateway (eigene Cookie-Sitzung).
+    ///   - makePairing: Ein Kopplungsablauf pro Server.
     ///   - onSignedIn: Übergibt die Sitzung an die App, etwa an `SessionState.signedIn`.
-    public init(check: ServerCheck, makeFlow: @escaping @MainActor (URL) -> SignInFlow, onSignedIn: @escaping @MainActor (Session) -> Void) {
+    public init(
+        check: ServerCheck,
+        makeFlow: @escaping @MainActor (URL) -> SignInFlow,
+        makePairing: @escaping @MainActor (URL) -> PairingFlow,
+        onSignedIn: @escaping @MainActor (Session) -> Void
+    ) {
         self.check = check
         self.makeFlow = makeFlow
+        self.makePairing = makePairing
         self.onSignedIn = onSignedIn
     }
 
@@ -57,12 +70,12 @@ public final class LoginModel {
         let result = await working { await check.run(address: address) }
         switch result {
         case .ready(let server, let appName, .password): step = .password(server: server, appName: appName)
-        case .ready(_, let appName, .pairingOnly): step = .ssoOnly(appName: appName)
-        case .invalidAddress: problem = .invalidAddress
-        case .unreachable: problem = .unreachable
-        case .notYuvomi: problem = .notYuvomi
-        case .tooOld: problem = .tooOld
+        case .ready(let server, let appName, .pairingOnly):
+            returnStep = nil
+            step = .pairing(server: server, appName: appName)
+        default: problem = Problem(result)
         }
+        await takeQueuedLink()
     }
 
     public func submitPassword() async {
@@ -73,13 +86,14 @@ public final class LoginModel {
         }
         password = ""
         switch result {
-        case .success(.signedIn(let session)): onSignedIn(session)
+        case .success(.signedIn(let session)): signedIn(session)
         case .success(.needsSecondFactor):
             pendingFlow = flow
             returnStep = step
             step = .code
         case .failure(let error): problem = Problem(error)
         }
+        await takeQueuedLink()
     }
 
     public func submitCode() async {
@@ -91,9 +105,82 @@ public final class LoginModel {
         switch result {
         case .success(let session):
             pendingFlow = nil
-            onSignedIn(session)
+            signedIn(session)
         case .failure(let error): problem = Problem(error)
         }
+        await takeQueuedLink()
+    }
+
+    /// Ein Kopplungslink aus iOS oder ein gescannter QR. Der Server wird geprüft wie eine
+    /// eingetippte Adresse, eingelöst wird erst nach `confirmPairing()`.
+    public func openPairingLink(_ url: URL) async {
+        guard !isWorking else {
+            queuedLink = url
+            return
+        }
+        // Q8: Der Link gewinnt. Ein offener 2FA-Versuch fällt mit seiner Cookie-Sitzung weg,
+        // und Eingaben für den bisherigen Server gehen nicht an den aus dem Link.
+        pendingFlow = nil
+        username = ""
+        password = ""
+        code = ""
+        pairingCode = ""
+        guard let link = PairingLink(url: url) else {
+            step = .address
+            problem = .invalidPairingLink
+            return
+        }
+        address = link.server.absoluteString
+        let result = await working { await check.run(address: address) }
+        switch result {
+        case .ready(let server, let appName, _): step = .confirmPairing(server: server, appName: appName, code: link.code)
+        default:
+            step = .address
+            problem = Problem(result)
+        }
+        await takeQueuedLink()
+    }
+
+    public func confirmPairing() async {
+        guard !isWorking, case .confirmPairing(let server, _, let code) = step else { return }
+        await redeem(code, at: server)
+    }
+
+    /// „Stattdessen mit Code anmelden“ im Passwort-Schritt.
+    public func startPairing() {
+        guard !isWorking, case .password(let server, let appName) = step else { return }
+        problem = nil
+        returnStep = step
+        step = .pairing(server: server, appName: appName)
+    }
+
+    /// Löst den abgetippten Kopplungscode für den geprüften Server ein.
+    public func submitPairingCode() async {
+        guard !isWorking, canSubmitPairingCode, case .pairing(let server, _) = step else { return }
+        await redeem(pairingCode, at: server)
+    }
+
+    private func redeem(_ code: String, at server: URL) async {
+        let flow = makePairing(server)
+        let result = await working { () async -> Result<Session, SignInError> in
+            do throws(SignInError) { return .success(try await flow.redeem(code: code)) } catch { return .failure(error) }
+        }
+        switch result {
+        case .success(let session): signedIn(session)
+        case .failure(let error):
+            problem = Problem(error)
+            // Ein ungültiger Code ist falsch oder verbraucht; bei Netzfehlern und zu vielen
+            // Versuchen bleibt er stehen, damit ein zweiter Versuch ohne neuen Code geht.
+            if error == .invalidPairingCode {
+                pairingCode = ""
+                // Aus der Bestätigung geht es zur Code-Eingabe für denselben Server (Q9).
+                if case .confirmPairing(let server, let appName, _) = step {
+                    returnStep = nil
+                    step = .pairing(server: server, appName: appName)
+                }
+            }
+        }
+        await takeQueuedLink()
     }
 
     /// Einen Schritt zurück. Vom Code geht es zum Passwort, mit neuem Versuch. Während
@@ -103,17 +190,39 @@ public final class LoginModel {
         problem = nil
         password = ""
         code = ""
+        pairingCode = ""
         switch step {
         case .code:
             pendingFlow = nil
+            step = returnStep ?? .address
+        case .pairing:
             step = returnStep ?? .address
         default:
             step = .address
         }
     }
 
+    /// Ein Link, der während einer Anfrage kam. Er gilt nach deren Antwort, der letzte gewinnt.
+    private var queuedLink: URL?
+    private var handedOver = false
+
+    private func signedIn(_ session: Session) {
+        handedOver = true
+        onSignedIn(session)
+    }
+
+    /// Hat die Antwort schon angemeldet, verfällt der Link: Eine bestehende Sitzung ersetzt
+    /// er nicht (Q3).
+    private func takeQueuedLink() async {
+        guard let url = queuedLink else { return }
+        queuedLink = nil
+        guard !handedOver else { return }
+        await openPairingLink(url)
+    }
+
     /// Der Ablauf zwischen Passwort und Code: Er hält die Cookie-Sitzung des Servers.
     private var pendingFlow: SignInFlow?
+    /// Wohin „Zurück“ aus dem 2FA-Code oder der Code-Eingabe führt.
     private var returnStep: Step?
 
     private func working<T>(_ body: () async -> T) async -> T {
@@ -125,11 +234,22 @@ public final class LoginModel {
 }
 
 extension LoginModel.Problem {
+    /// Nur für Ergebnisse, die nicht `.ready` sind.
+    init?(_ result: ServerCheckResult) {
+        switch result {
+        case .ready: return nil
+        case .invalidAddress: self = .invalidAddress
+        case .unreachable: self = .unreachable
+        case .notYuvomi: self = .notYuvomi
+        case .tooOld: self = .tooOld
+        }
+    }
+
     init(_ error: SignInError) {
         switch error {
         case .invalidCredentials: self = .invalidCredentials
-        // Gekoppelt wird erst ab B3, bis dahin erreicht dieser Fall das Modell nicht.
-        case .invalidCode, .invalidPairingCode: self = .invalidCode
+        case .invalidCode: self = .invalidCode
+        case .invalidPairingCode: self = .invalidPairingCode
         case .notAllowed: self = .notAllowed
         case .rateLimited: self = .rateLimited
         case .unreachable: self = .unreachable

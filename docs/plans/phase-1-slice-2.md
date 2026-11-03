@@ -135,6 +135,20 @@ Stand 03.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q12) auf Basis von
 - **Einordnung:** Ein 400 zählt nur mit `reason: invalid_pairing_code` als `.invalidPairingCode`, sonst als `.unexpectedResponse`. Auch bei einem 400 mit HTML-Body: Der Grund lässt sich dann nicht lesen. 403 (auch `device_credential`) wird `.notAllowed`, 429 `.rateLimited`. Ohne Antwort ist der Server nicht erreichbar. Die Regeln nach Status teilt sich der Adapter mit `YuvomiSignInGateway` über den neuen Schritt `.pairing`.
 - **Kein `actor`:** Anders als der Gateway hält der Adapter keinen Zustand zwischen Anfragen, er ist ein `struct`. Den flüchtigen Transport nimmt er von `YuvomiSignInGateway.ephemeralTransport()`.
 
+## Abweichungen beim Bau (B3)
+
+- **Seams**, vor dem ersten Test abgestimmt:
+  1. `LoginModel` mit Fakes für Probe, Gateway und Redeemer.
+  2. `IncomingLink(url:current:)` im Kern. Die Sperre bei bestehender Anmeldung ist damit durch einen Test gesichert und hängt nicht nur am Simulator-Lauf.
+- **API am Modell:** `openPairingLink(_:)`, `confirmPairing()`, `startPairing()`, `submitPairingCode()` und `canSubmitPairingCode`, dazu ein eigenes Feld `pairingCode`. Der Scanner aus B4 ruft ebenfalls `openPairingLink(_:)` auf.
+- **`.ssoOnly` entfällt.** Bis B4 zeigt `LoginView` für `.pairing` und `.confirmPairing` noch den alten Hinweis.
+- **Link öffnen:** Der Server aus dem Link steht danach im Adressfeld. So bezieht sich eine Meldung wie „zu alt“ sichtbar auf diesen Server, und „Abbrechen“ in der Bestätigung führt zur Adresse mit dem Server darin.
+- **Absage in der Bestätigung:** Bei `invalid_pairing_code` geht es zur Code-Eingabe (Q9). Andere Fehler wie 429 oder Netzfehler lassen die Bestätigung stehen, damit ein zweiter Versuch ohne neuen Link geht.
+- **Link während einer Anfrage:** Er wird gemerkt und nach der Antwort angenommen, der letzte gewinnt. Hat die Antwort schon angemeldet, verfällt er (Q3). Vorher startete ein solcher Link eine eigene Prüfung, und `isWorking` fiel zu früh auf `false`.
+- **Nach dem Codex-Review zu PR #11:** Ein angenommener Link leert Benutzername, Passwort, 2FA-Code und Kopplungscode, auch wenn er ungültig ist oder die Serverprüfung scheitert. Sonst gingen Zugangsdaten für Server A nach einer erneuten Prüfung an Server B aus dem Link.
+- **Offener 2FA-Versuch:** Ein Link verwirft ihn samt Cookie-Sitzung (`pendingFlow = nil`). Von außen ist das nicht zu beobachten, deshalb gibt es dafür keinen eigenen Test. Der Test zu Q8 prüft nur die Schrittfolge.
+- **Texte vorgezogen:** `login.problem.invalidPairingCode` und `login.problem.invalidPairingLink` kamen schon mit B3 in den Katalog, weil die View jedes Problem übersetzt. Die App hat für den Hinweis bei bestehender Anmeldung einen eigenen String Catalog `App/Localizable.xcstrings`.
+
 ## Fertig, wenn
 
 - [ ] Ein Mitglied koppelt im Simulator per Link und per abgetipptem Code und sieht seine Aufgaben.
