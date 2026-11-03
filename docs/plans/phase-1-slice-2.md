@@ -128,6 +128,13 @@ Stand 03.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q12) auf Basis von
 - **Link-Regeln:** Schema `yuvomi` und Host `pair`, beides ohne Rücksicht auf Groß- und Kleinschreibung. `server` und `code` müssen genau einmal vorkommen. `server` läuft durch `ServerAddress` und darf danach keinen Pfad haben. Der Code ist nach `PairingCode.normalize` nicht leer.
 - **Normalisiert wird im Kern:** `PairingFlow` schickt den Code immer normalisiert an den Port. So gilt das auch für den abgetippten Code, nicht nur für Links.
 
+## Abweichungen beim Bau (B2)
+
+- **Seam**, vor dem ersten Test abgestimmt: `YuvomiPairingRedeemer.redeem(code:)` über den Fixture-Transport mit Recorder.
+- **Fixture:** `FixtureTransport.defaults` ordnet `redeemPairingCode` der Datei `auth-devices-create.json` zu, mit Status 201.
+- **Einordnung:** Ein 400 zählt nur mit `reason: invalid_pairing_code` als `.invalidPairingCode`, sonst als `.unexpectedResponse`. Auch bei einem 400 mit HTML-Body: Der Grund lässt sich dann nicht lesen. 403 (auch `device_credential`) wird `.notAllowed`, 429 `.rateLimited`. Ohne Antwort ist der Server nicht erreichbar. Die Regeln nach Status teilt sich der Adapter mit `YuvomiSignInGateway` über den neuen Schritt `.pairing`.
+- **Kein `actor`:** Anders als der Gateway hält der Adapter keinen Zustand zwischen Anfragen, er ist ein `struct`. Den flüchtigen Transport nimmt er von `YuvomiSignInGateway.ephemeralTransport()`.
+
 ## Fertig, wenn
 
 - [ ] Ein Mitglied koppelt im Simulator per Link und per abgetipptem Code und sieht seine Aufgaben.
