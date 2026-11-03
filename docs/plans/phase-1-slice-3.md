@@ -178,13 +178,29 @@ Ohne Unit-Test bleiben Views, Delegate, Verdrahtung und der Hintergrund-Abgleich
 - **Delegate:** `ForegroundReminderPresenter` in `RemindersFeature`, gesetzt im `AppDelegate`. Banner, Liste und Ton im Vordergrund. Antippen öffnet nur die App.
 - **Sichtprüfung im Simulator** (Server `v2.84.0`, Demo-Seed `de`, emma per App-Link): Karte, Frage von iOS erst über den Knopf, Blatt „Einstellungen“. Zwei Erinnerungen per API angelegt: Die Aufgabe kam bei geschlossener App als Mitteilung „Aufgabe / Einverständnis für Schulausflug“, der Termin bei offener App als Banner „Termin / Filmabend“. Im Systemlog standen vorher zwei geplante Mitteilungen der App.
 
+## Prüfung im Simulator (C7)
+
+Gegen den lokalen Server `v2.84.0` mit Demo-Seed `de`, emma per Kopplungslink. Die geplanten Mitteilungen liest ein Hilfsskript aus `PendingNotifications.plist` des Simulators, mit Kennung und Trigger-Komponenten.
+
+- **Planen:** Vier Erinnerungen per API (drei Aufgaben, ein Termin), nach dem Wechsel in den Vordergrund vier geplante Mitteilungen. Die Komponenten stehen in GMT und treffen `fires_at` auf die Sekunde.
+- **Verschieben, Löschen, Erledigen:** Aufgabe 2 verschoben, die Erinnerung an Aufgabe 5 gelöscht, Aufgabe 1 erledigt. Nach dem nächsten Abgleich waren genau die zwei verbliebenen geplant, die verschobene zur neuen Zeit.
+- **Mehr als 60:** 65 kommende Erinnerungen, geplant waren genau die frühesten 60 (Vergleich der Kennungen und Zeitpunkte mit der Antwort des Servers).
+- **Zeitzone:** Die App neu gestartet mit `TZ=Pacific/Kiritimati` (UTC+14). Der Abgleich schrieb neu, und alle 60 Zeitpunkte blieben gleich. Das zeigt nur, dass Planen nicht von der Zone abhängt. Dass eine schon geplante Mitteilung bei einem Wechsel der Zone bleibt, zeigt Seam 3: derselbe Trigger, `nextTriggerDate()` unter vier Zonen des Geräts.
+- **Schalter aus:** danach 0 geplant, 0 zugestellt. Dabei gefunden: Der Schalter blieb sichtbar auf „an“, weil `@Observable` den Wunsch in `UserDefaults` nicht bemerkte. Behoben, mit Test. Nach dem Code-Review liest das Modell den Wunsch in `init`, und „aus“ läuft synchron, damit der Schalter nicht kurz zurückspringt.
+- **Abmelden:** danach 0 geplant, 0 zugestellt. Nach erneuter Anmeldung sofort wieder 60.
+- **Widerruf:** im Test `aRevokedCredentialLeavesNothingBehind`, nicht im Simulator.
+- **impeccable (audit.native, eine Runde polish):** nativ, semantische Farben, keine hart codierten Werte. Die Knöpfe der Karte stehen bei großer Schrift jetzt untereinander (in größter Stufe im Simulator geprüft). Solange iOS fragt, ist die Karte schon ausgeblendet.
+- **Werkzeug:** Das Tipp-Werkzeug des Simulators erreicht den Schalter nicht verlässlich und liefert Tipps verzögert. Den sichtbaren Schalter und den Hintergrund-Abgleich prüft der Lauf auf dem iPhone.
+
+**Offen für den Lauf auf dem iPhone:** Schalter aus und wieder an von Hand, Abgleich im Hintergrund mit `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"cloud.yuvomi.ios.reminders"]` im Debugger, eine Mitteilung bei gesperrtem Gerät.
+
 ## Fertig, wenn
 
-- [ ] Eine in der Web-App gesetzte Erinnerung an eine Aufgabe und an einen Termin erscheint zur Zeit als Mitteilung, bei geschlossener App und im Vordergrund.
-- [ ] Verschoben, gelöscht oder erledigt in der Web-App wirkt beim nächsten Abgleich.
-- [ ] Höchstens 60 Mitteilungen sind geplant, die frühesten im Fenster von 14 Tagen.
-- [ ] Ein Wechsel der Zeitzone verschiebt keine Mitteilung.
-- [ ] Abmelden, Widerruf und ausgeschalteter Schalter lassen keine Mitteilung von Yuvomi zurück.
-- [ ] Die Anfrage trägt immer `types=task,event`.
-- [ ] Die Erlaubnis fragt die App erst über die Karte oder den Schalter, und die Einstellungen nennen Web Push und die Grenzen.
-- [ ] Alle neuen Texte liegen auf Deutsch und Englisch im String Catalog, CI ist grün.
+- [x] Eine in der Web-App gesetzte Erinnerung an eine Aufgabe und an einen Termin erscheint zur Zeit als Mitteilung, bei geschlossener App und im Vordergrund. (C5, Sichtprüfung)
+- [x] Verschoben, gelöscht oder erledigt in der Web-App wirkt beim nächsten Abgleich. (C7)
+- [x] Höchstens 60 Mitteilungen sind geplant, die frühesten im Fenster von 14 Tagen. (C7)
+- [x] Ein Wechsel der Zeitzone verschiebt keine Mitteilung. (Seam 3 unter vier Zonen, C7 mit UTC+14)
+- [x] Abmelden, Widerruf und ausgeschalteter Schalter lassen keine Mitteilung von Yuvomi zurück. (C7, Widerruf per Test)
+- [x] Die Anfrage trägt immer `types=task,event`. (Seam 2)
+- [x] Die Erlaubnis fragt die App erst über die Karte oder den Schalter, und die Einstellungen nennen Web Push und die Grenzen. (C4, Sichtprüfung)
+- [x] Alle neuen Texte liegen auf Deutsch und Englisch im String Catalog, CI ist grün. (Texte vollständig, Suite auf Deutsch und Englisch grün, CI zu C7 grün.)
