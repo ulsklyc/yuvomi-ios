@@ -285,7 +285,7 @@ Abweichungen:
 - **Simulator, Code abtippen:** Die Eingabe per Einfügen kam im Simulator nicht an. Den abgetippten Code belegt der iPhone-Lauf.
 - **PWA:** Bei voller Breite stand der QR neben den Schritten statt darunter, behoben im selben PR. „Auf anderen Geräten abmelden“ nennt jetzt auch die angemeldeten Geräte, die der Server schon mit abmeldete.
 - **Universal Link:** bleibt `yuvomi://`, siehe [ADR 0001](../adr/0001-kopplung-per-yuvomi-schema.md). Für die App folgt daraus keine Arbeit.
-- **Kamera über Bildschirmzeit gesperrt (`.restricted`):** Die App rät dann „in den Einstellungen erlauben“, obwohl der Schalter gesperrt ist. Nicht in B6 behoben, ein eigener kleiner Punkt für die App.
+- **Kamera über Bildschirmzeit gesperrt (`.restricted`):** Die App riet dann „in den Einstellungen erlauben“, obwohl der Schalter gesperrt ist. Nicht in B6 behoben, nachgezogen am 2026-11-04: Das Blatt nennt die Sperre und zeigt keinen Weg in die Einstellungen (`CameraAccess`). Damit der Hinweis ankommt, zeigt die App den Knopf „QR-Code scannen“ jetzt auf jedem Gerät, das scannen kann, auch ohne Freigabe (vorher nur mit Freigabe oder vor der ersten Frage). Das Blatt liest die Freigabe neu, wenn die App wieder nach vorn kommt.
 
 ## Nachzuziehen in der Yuvomi-Doku
 
