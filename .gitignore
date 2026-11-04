@@ -8,3 +8,9 @@ DerivedData/
 # Ebenfalls aus project.yml (info:)
 App/Info.plist
 App/Yuvomi.entitlements
+# Lokale Agent-Anweisungen und Claude-Code-Konfiguration, wie im Server-Repo:
+# Arbeitsweise mit Werkzeugen gehört nicht in das öffentliche Repo.
+CLAUDE.md
+AGENTS.md
+.claude/
+docs/agents/
