@@ -16,11 +16,10 @@ Include:
 
 If the problem sits in the server rather than in the app - an endpoint that hands out more than it should, a pairing code that stays valid too long - report it to the [server repository](https://github.com/ulsklyc/yuvomi/security/advisories/new) instead. When you are not sure which side it belongs to, report it here; it will be moved, not dropped.
 
-What you can expect, on the same terms as the server:
+What you can expect:
 
 - an **acknowledgment within 7 days**;
-- a **classification within 14 days** - confirmed, duplicate, or outside the [scope](#scope) below - with the reasoning;
-- for a confirmed finding of high severity, a **fix within 30 days** in the code. Once the app is distributed through TestFlight or the App Store, the fixed build is submitted the same day; how long Apple's review takes is outside the project's control, and the advisory says when the build was submitted and when it became available.
+- a **classification within 14 days** - confirmed, duplicate, or outside the [scope](#scope) below - with the reasoning.
 
 Every advisory that is published gets a CVE requested through GitHub and names the reporter and the fixed version.
 

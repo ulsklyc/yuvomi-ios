@@ -120,3 +120,5 @@ Texts live in String Catalogs, English first, German alongside.
 ## License
 
 MIT, like Yuvomi itself. See [LICENSE](LICENSE).
+
+Want to help? Start with [CONTRIBUTING.md](CONTRIBUTING.md). Security issues are reported privately as described in [SECURITY.md](SECURITY.md), and [PRIVACY.md](PRIVACY.md) explains what the app does with your data.

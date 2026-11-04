@@ -122,3 +122,5 @@ Testing. Texte liegen in String Catalogs, Englisch zuerst, Deutsch daneben.
 ## Lizenz
 
 MIT, wie Yuvomi selbst. Siehe [LICENSE](LICENSE).
+
+Mithelfen? Der Einstieg steht in [CONTRIBUTING.md](CONTRIBUTING.md). Sicherheitslücken werden vertraulich gemeldet, wie in [SECURITY.md](SECURITY.md) beschrieben, und [PRIVACY.md](PRIVACY.md) erklärt, was die App mit euren Daten macht.

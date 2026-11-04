@@ -2,7 +2,9 @@
 
 Thanks for your interest in contributing! This app is a small, deliberately plain native client for the [Yuvomi server](https://github.com/ulsklyc/yuvomi). This guide covers what you need to know before submitting code.
 
-Have a question or an idea before diving in? Start a thread in the [Yuvomi Discussions](https://github.com/ulsklyc/yuvomi/discussions) - the app and the server share one place for that.
+Have a question or an idea before diving in? Start a thread in the [Yuvomi Discussions](https://github.com/ulsklyc/yuvomi/discussions) - the app and the server share one place for that. [`SUPPORT.md`](SUPPORT.md) lists where else to turn.
+
+Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
@@ -119,6 +121,7 @@ Branch prefixes: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`.
 - Link the related issue: `Closes #123` for a bug the PR fixes completely, `Refs #123` otherwise
 - Keep PRs focused - one feature or fix per PR. Something that would make sense on its own (a refactor you needed along the way, a new dependency) goes in a separate PR, first.
 - Screenshots for any visible change, in light and dark mode
+- The [pull request template](.github/PULL_REQUEST_TEMPLATE.md) fills in the description and the checklist below
 
 **Before opening:**
 
@@ -127,6 +130,9 @@ Branch prefixes: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`.
 - [ ] A fix carries a test that fails without it
 - [ ] New UI text is in the String Catalogs, in English and German
 - [ ] No change to `Sources/YuvomiAPI/Generated/` without a matching change to `Spec/openapi.json`
+- [ ] A user-facing change has an entry in `CHANGELOG.md`
+
+**Changelog:** every change a user can see gets an entry in [`CHANGELOG.md`](CHANGELOG.md) under `## [Unreleased]`, in the section that fits (`Added`, `Changed`, `Fixed`, ...), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries are in English and start with a bold sentence that names the change from the user's side; the rest of the entry explains it.
 
 ### 5. Review and merge
 
