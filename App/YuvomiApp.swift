@@ -1,5 +1,6 @@
 import BackgroundTasks
 import LoginFeature
+import os
 import RemindersFeature
 import SwiftUI
 import TasksFeature
@@ -43,7 +44,7 @@ struct YuvomiApp: App {
             // lesen und abgleichen.
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { Task { await app.refreshReminders() } }
-                if phase == .background { app.scheduleBackgroundRefresh() }
+                if phase == .background { Task { await app.scheduleBackgroundRefresh() } }
             }
             .onOpenURL { url in Task { await app.open(url) } }
             .alert(Text("app.pairing.alreadySignedIn.title"), isPresented: $app.showsAlreadySignedIn) {
@@ -130,12 +131,29 @@ final class AppModel {
 
     /// Frühestens in vier Stunden. Wann iOS die App wirklich weckt, entscheidet iOS.
     /// Erst nach `load()` aufrufen, sonst gilt die Erlaubnis noch als nicht erteilt.
-    func scheduleBackgroundRefresh() {
+    func scheduleBackgroundRefresh() async {
         guard session.current != nil, reminderSettings.isOn else { return }
-        let request = BGAppRefreshTaskRequest(identifier: Self.refreshTaskID)
-        request.earliestBeginDate = .now.addingTimeInterval(4 * 3600)
-        try? BGTaskScheduler.shared.submit(request)
+        do {
+            try await Self.submitRefresh(at: .now.addingTimeInterval(4 * 3600))
+        } catch {
+            // Etwa Hintergrundaktualisierung aus: Es fehlt nur der Abgleich im Hintergrund.
+            Self.log.error("Hintergrund-Abgleich nicht angemeldet: \(error.localizedDescription, privacy: .public)")
+        }
+        // Abgemeldet oder ausgeschaltet, während die Anmeldung lief: Das `cancel` aus
+        // `clear` kam dann vor ihr an und hätte sie nicht erfasst.
+        if session.current == nil || !reminderSettings.isOn {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.refreshTaskID)
+        }
     }
+
+    /// Nicht auf dem Main Thread, so verlangt es `BGTaskScheduler`.
+    @concurrent private nonisolated static func submitRefresh(at date: Date) async throws {
+        let request = BGAppRefreshTaskRequest(identifier: refreshTaskID)
+        request.earliestBeginDate = date
+        try await BGTaskScheduler.shared.submitTaskRequest(request)
+    }
+
+    private static let log = Logger(subsystem: "cloud.yuvomi.ios", category: "reminders")
 
     /// Nimmt iOS dem Task die Zeit, bricht das den Abgleich ab, statt auf ihn zu warten.
     func backgroundRefresh() async {
@@ -145,7 +163,7 @@ final class AppModel {
         } onCancel: {
             Task { @MainActor in reminders.cancelSyncs() }
         }
-        scheduleBackgroundRefresh()
+        await scheduleBackgroundRefresh()
     }
 
     func login() -> LoginModel {
