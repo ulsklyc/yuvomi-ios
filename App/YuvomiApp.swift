@@ -129,9 +129,7 @@ final class AppModel {
     /// können, holt die App die Anmeldung jetzt nach. Und eine im Hintergrund abgehakte Aufgabe
     /// verschwindet aus der Liste.
     func becameActive() {
-        if session.current == nil, let server = UserDefaults.standard.url(forKey: Self.serverKey) {
-            session.restore(server: server)
-        }
+        restoreIfReadable()
         if listIsStale, let current = session.current, let taskListModel, taskListModel.session == current {
             listIsStale = false
             Task { await taskListModel.model.load() }
@@ -206,6 +204,14 @@ final class AppModel {
         await scheduleBackgroundRefresh()
     }
 
+    /// Liest die Anmeldung nach, wenn ein Start vor dem ersten Entsperren sie nicht lesen konnte.
+    private func restoreIfReadable() {
+        guard session.current == nil, UIApplication.shared.isProtectedDataAvailable,
+              let server = UserDefaults.standard.url(forKey: Self.serverKey)
+        else { return }
+        session.restore(server: server)
+    }
+
     /// Antippen, Wegwischen oder „Erledigt“ an einer Mitteilung. Läuft oft, während die App im
     /// Hintergrund ist: Die Zeit dafür holt `beginBackgroundTask`, und läuft sie ab, bleibt die
     /// Rückmeldung für den nächsten Abgleich gemerkt.
@@ -217,8 +223,12 @@ final class AppModel {
             reminders.cancelRunning()
             background.end()
         }
+        // Hat ein Start vor dem ersten Entsperren den Keychain nicht lesen können, ist das Gerät
+        // jetzt womöglich entsperrt, ohne dass die App vorn war („Erledigt“ verlangt das).
+        restoreIfReadable()
         let current = session.current
-        await reminders.reply(reply, session: current)
+        let locked = current == nil && !application.isProtectedDataAvailable
+        await reminders.reply(reply, session: current, keepWithoutSession: locked)
         background.end()
         // Ist die Liste offen, zeigt sie die abgehakte Aufgabe nicht mehr. Im Hintergrund erst
         // beim nächsten Wechsel in den Vordergrund.
