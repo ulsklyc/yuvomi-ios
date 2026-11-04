@@ -77,8 +77,11 @@ final class AppModel {
     let reminderSettings: RemindersSettingsModel
     /// Delegate für Mitteilungen. Das Center hält ihn nur schwach.
     private var notifications: ReminderNotificationDelegate?
-    /// Im Hintergrund abgehakt: Die offene Liste lädt beim nächsten Wechsel in den Vordergrund.
+    /// Abgehakt, aber die offene Liste hat es noch nicht neu geladen: Sie lädt beim nächsten
+    /// Wechsel in den Vordergrund, nach dem Abgleich. Bleibt gesetzt, solange ein Abhaken noch
+    /// in der Warteschlange liegt, denn erst nach dem Senden zeigt die Liste es.
     private var listIsStale = false
+    private let replies = UserDefaultsReplyQueue()
 
     /// Die Serveradresse ist kein Geheimnis und liegt in den UserDefaults. Mit den Widgets
     /// wandert sie in die Defaults der App Group.
@@ -95,7 +98,7 @@ final class AppModel {
             makeSource: { YuvomiUpcomingReminders(server: $0.server, credential: $0.credential) },
             makeWriter: { YuvomiReminderWriting(server: $0.server, credential: $0.credential) },
             scheduler: SystemNotificationScheduler(),
-            queue: UserDefaultsReplyQueue(),
+            queue: replies,
             onUnauthorized: { session.handle(.unauthorized, from: $0) },
             onNotCheckedOff: { await SystemNotificationScheduler().announceNotCheckedOff(title: $0.title) }
         )
@@ -131,10 +134,7 @@ final class AppModel {
     func becameActive() async {
         restoreIfReadable()
         await refreshReminders()
-        if listIsStale, let current = session.current, let taskListModel, taskListModel.session == current {
-            listIsStale = false
-            await taskListModel.model.load()
-        }
+        await reloadListIfStale()
     }
 
     /// Erlaubnis neu lesen, dann abgleichen oder abräumen. Ohne Erlaubnis oder mit
@@ -234,11 +234,16 @@ final class AppModel {
         // Ist die Liste offen, zeigt sie die abgehakte Aufgabe nicht mehr. Im Hintergrund erst
         // beim nächsten Wechsel in den Vordergrund.
         guard reply.kind == .checkOff else { return }
-        if application.applicationState == .active, let current, let taskListModel, taskListModel.session == current {
-            await taskListModel.model.load()
-        } else {
-            listIsStale = true
-        }
+        listIsStale = true
+        if application.applicationState == .active { await reloadListIfStale() }
+    }
+
+    /// Lädt die offene Liste neu, wenn ein Abhaken sie veraltet hat. Liegt noch ein Abhaken in
+    /// der Warteschlange (etwa ohne Netz), bleibt sie als veraltet markiert, bis es gesendet ist.
+    private func reloadListIfStale() async {
+        guard listIsStale, let current = session.current, let taskListModel, taskListModel.session == current else { return }
+        if !replies.replies.contains(where: { $0.kind == .checkOff }) { listIsStale = false }
+        await taskListModel.model.load()
     }
 
     func login() -> LoginModel {
