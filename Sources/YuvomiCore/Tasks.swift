@@ -86,6 +86,10 @@ public struct TaskSummary: Hashable, Sendable, Identifiable {
 public enum APIError: Error, Hashable, Sendable {
     /// 401: Das Credential gilt nicht mehr, etwa nach einem Passwortwechsel. Zurück zum Login.
     case unauthorized
+    /// 403: Die Person darf das im Modul nicht, etwa weil sie Aufgaben nur lesen darf.
+    case forbidden
+    /// 404: gelöscht oder für die Person nicht (mehr) sichtbar.
+    case notFound
     case unreachable
     case unexpectedResponse
 }

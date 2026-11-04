@@ -88,13 +88,21 @@ final class AppModel {
         }
         let reminders = ReminderCoordinator(
             makeSource: { YuvomiUpcomingReminders(server: $0.server, credential: $0.credential) },
+            makeWriter: { YuvomiReminderWriting(server: $0.server, credential: $0.credential) },
             scheduler: SystemNotificationScheduler(),
-            onUnauthorized: { session.handle(.unauthorized, from: $0) }
+            queue: UserDefaultsReplyQueue(),
+            onUnauthorized: { session.handle(.unauthorized, from: $0) },
+            // Die Mitteilung „Nicht abgehakt“ kommt mit den Aktionen an der Mitteilung (D3, D4).
+            onNotCheckedOff: { _ in Self.log.notice("Abhaken vom Server abgelehnt") }
         )
         self.reminders = reminders
         reminderSettings = RemindersSettingsModel(permission: SystemNotificationPermission()) { on in
             Task {
-                if !on { await Self.clear(reminders) } else if let current = session.current { await reminders.sync(current) }
+                if !on {
+                    await Self.clear(reminders, keepingReplies: true)
+                } else if let current = session.current {
+                    await reminders.sync(current)
+                }
             }
         }
         // Wurde die Sitzung beendet, während die App nicht lief (Widerruf im Hintergrund),
@@ -110,12 +118,16 @@ final class AppModel {
         // Abgemeldet, während die Erlaubnis gelesen wurde: Das Abmelden hat schon abgeräumt.
         guard session.current == current else { return }
         // Hat iOS den Hintergrund-Task schon beendet, gibt es noch keinen Abgleich zum
-        // Abbrechen. Ein später gemeldeter bricht `cancelSyncs()` ab.
+        // Abbrechen. Ein später gemeldeter bricht `cancelRunning()` ab.
         guard !Task.isCancelled else { return }
         if reminderSettings.isOn {
             await reminders.sync(current)
         } else {
-            await Self.clear(reminders)
+            // Ohne Mitteilungen, aber was jemand schon getan hat, geht trotzdem raus.
+            await Self.clear(reminders, keepingReplies: true)
+            // Abgemeldet, während abgeräumt wurde: Die Warteschlange gehört nicht mehr diesem Konto.
+            guard session.current == current else { return }
+            await reminders.sendReplies(current)
         }
     }
 
@@ -124,9 +136,9 @@ final class AppModel {
         await Self.clear(reminders)
     }
 
-    private static func clear(_ reminders: ReminderCoordinator) async {
+    private static func clear(_ reminders: ReminderCoordinator, keepingReplies: Bool = false) async {
         BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: refreshTaskID)
-        await reminders.clear()
+        await reminders.clear(keepingReplies: keepingReplies)
     }
 
     /// Frühestens in vier Stunden. Wann iOS die App wirklich weckt, entscheidet iOS.
@@ -161,7 +173,7 @@ final class AppModel {
         await withTaskCancellationHandler {
             await refreshReminders()
         } onCancel: {
-            Task { @MainActor in reminders.cancelSyncs() }
+            Task { @MainActor in reminders.cancelRunning() }
         }
         await scheduleBackgroundRefresh()
     }

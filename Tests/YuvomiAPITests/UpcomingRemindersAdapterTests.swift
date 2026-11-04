@@ -18,7 +18,7 @@ import YuvomiFixtures
 
         // Einziger Eintrag von Fixtures/demo/reminders-upcoming.json.
         #expect(list == [UpcomingReminder(
-            id: 1, origin: .task, title: "Pay electricity bill",
+            id: 1, origin: .task, entityID: 2, title: "Pay electricity bill",
             firesAt: try #require(ISO8601DateFormatter().date(from: "2026-11-04T07:00:00Z"))
         )])
         let request = try #require(await recorder.requests.first?.request)
@@ -64,5 +64,6 @@ import YuvomiFixtures
         #expect(list.map(\.id) == [2])
         #expect(list.first?.origin == .event)
         #expect(list.first?.title == "")
+        #expect(list.first?.entityID == 4)
     }
 }

@@ -11,7 +11,7 @@ import YuvomiCore
     let firesAt = Date(timeIntervalSince1970: 4_078_431_000)
 
     func planned(_ origin: ReminderOrigin = .task) -> PlannedNotification {
-        PlannedNotification(id: "reminder.7", origin: origin, title: "Strom zahlen", firesAt: firesAt)
+        PlannedNotification(id: "reminder.7.task.12", reminderID: 7, origin: origin, entityID: 12, title: "Strom zahlen", firesAt: firesAt)
     }
 
     @Test(arguments: ["Europe/Berlin", "America/Los_Angeles", "Asia/Kolkata", "UTC"])
@@ -27,7 +27,7 @@ import YuvomiCore
         let trigger = try #require(request.trigger as? UNCalendarNotificationTrigger)
         #expect(trigger.nextTriggerDate() == firesAt)
         #expect(trigger.repeats == false)
-        #expect(request.identifier == "reminder.7")
+        #expect(request.identifier == "reminder.7.task.12")
     }
 
     @Test func headingNamesTheOriginAndTheBodyTheTitle() {
