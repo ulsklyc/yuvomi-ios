@@ -11,7 +11,6 @@ import YuvomiCore
 /// Kompositionswurzel: Hier treffen Kern und Adapter aufeinander.
 @main
 struct YuvomiApp: App {
-    @UIApplicationDelegateAdaptor private var delegate: AppDelegate
     @State private var app = AppModel()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -43,7 +42,10 @@ struct YuvomiApp: App {
             // Zurück in den Vordergrund, auch aus den Einstellungen von iOS: Erlaubnis neu
             // lesen und abgleichen.
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await app.refreshReminders() } }
+                if phase == .active {
+                    app.becameActive()
+                    Task { await app.refreshReminders() }
+                }
                 if phase == .background { Task { await app.scheduleBackgroundRefresh() } }
             }
             .onOpenURL { url in Task { await app.open(url) } }
@@ -74,6 +76,10 @@ final class AppModel {
     let reminders: ReminderCoordinator
     /// Karte und Schalter für Erinnerungen. Gilt für das Gerät, nicht für das Konto.
     let reminderSettings: RemindersSettingsModel
+    /// Delegate für Mitteilungen. Das Center hält ihn nur schwach.
+    private var notifications: ReminderNotificationDelegate?
+    /// Im Hintergrund abgehakt: Die offene Liste lädt beim nächsten Wechsel in den Vordergrund.
+    private var listIsStale = false
 
     /// Die Serveradresse ist kein Geheimnis und liegt in den UserDefaults. Mit den Widgets
     /// wandert sie in die Defaults der App Group.
@@ -92,8 +98,7 @@ final class AppModel {
             scheduler: SystemNotificationScheduler(),
             queue: UserDefaultsReplyQueue(),
             onUnauthorized: { session.handle(.unauthorized, from: $0) },
-            // Die Mitteilung „Nicht abgehakt“ kommt mit den Aktionen an der Mitteilung (D3, D4).
-            onNotCheckedOff: { _ in Self.log.notice("Abhaken vom Server abgelehnt") }
+            onNotCheckedOff: { await SystemNotificationScheduler().announceNotCheckedOff(title: $0.title) }
         )
         self.reminders = reminders
         reminderSettings = RemindersSettingsModel(permission: SystemNotificationPermission()) { on in
@@ -106,8 +111,31 @@ final class AppModel {
             }
         }
         // Wurde die Sitzung beendet, während die App nicht lief (Widerruf im Hintergrund),
-        // dürfen keine Mitteilungen des alten Kontos übrig bleiben.
-        if session.current == nil { Task { await Self.clear(reminders) } }
+        // dürfen keine Mitteilungen des alten Kontos übrig bleiben. Nicht aber vor dem ersten
+        // Entsperren: Dann ist nur der Keychain nicht lesbar, und eine Rückmeldung von der
+        // gesperrten Mitteilungszentrale hat die App gestartet.
+        if session.current == nil, UIApplication.shared.isProtectedDataAvailable {
+            Task { await Self.clear(reminders) }
+        }
+        // Kategorien und Delegate vor dem Ende von `didFinishLaunching`: Das Modell entsteht mit
+        // der App, und iOS meldet Antippen, Wegwischen und „Erledigt“ erst danach.
+        SystemNotificationScheduler.registerCategories()
+        let notifications = ReminderNotificationDelegate { [weak self] in await self?.reply($0) }
+        notifications.install()
+        self.notifications = notifications
+    }
+
+    /// Zurück im Vordergrund. Hat der Start vor dem ersten Entsperren den Keychain nicht lesen
+    /// können, holt die App die Anmeldung jetzt nach. Und eine im Hintergrund abgehakte Aufgabe
+    /// verschwindet aus der Liste.
+    func becameActive() {
+        if session.current == nil, let server = UserDefaults.standard.url(forKey: Self.serverKey) {
+            session.restore(server: server)
+        }
+        if listIsStale, let current = session.current, let taskListModel, taskListModel.session == current {
+            listIsStale = false
+            Task { await taskListModel.model.load() }
+        }
     }
 
     /// Erlaubnis neu lesen, dann abgleichen oder abräumen. Ohne Erlaubnis oder mit
@@ -178,6 +206,30 @@ final class AppModel {
         await scheduleBackgroundRefresh()
     }
 
+    /// Antippen, Wegwischen oder „Erledigt“ an einer Mitteilung. Läuft oft, während die App im
+    /// Hintergrund ist: Die Zeit dafür holt `beginBackgroundTask`, und läuft sie ab, bleibt die
+    /// Rückmeldung für den nächsten Abgleich gemerkt.
+    func reply(_ reply: ReminderReply) async {
+        let application = UIApplication.shared
+        let background = BackgroundTask()
+        let reminders = reminders
+        background.id = application.beginBackgroundTask(withName: "reminders.reply") {
+            reminders.cancelRunning()
+            background.end()
+        }
+        let current = session.current
+        await reminders.reply(reply, session: current)
+        background.end()
+        // Ist die Liste offen, zeigt sie die abgehakte Aufgabe nicht mehr. Im Hintergrund erst
+        // beim nächsten Wechsel in den Vordergrund.
+        guard reply.kind == .checkOff else { return }
+        if application.applicationState == .active, let current, let taskListModel, taskListModel.session == current {
+            await taskListModel.model.load()
+        } else {
+            listIsStale = true
+        }
+    }
+
     func login() -> LoginModel {
         if let loginModel { return loginModel }
         let store = store
@@ -226,12 +278,14 @@ final class AppModel {
     }
 }
 
-/// Setzt den Delegate für Mitteilungen, bevor iOS den Start abschließt.
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    private let presenter = ForegroundReminderPresenter()
+/// Hält die Kennung aus `beginBackgroundTask` und beendet sie genau einmal: am Ende der
+/// Rückmeldung oder, wenn iOS die Zeit nimmt, im Ablauf-Handler.
+@MainActor private final class BackgroundTask {
+    var id: UIBackgroundTaskIdentifier = .invalid
 
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        presenter.install()
-        return true
+    func end() {
+        guard id != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(id)
+        id = .invalid
     }
 }

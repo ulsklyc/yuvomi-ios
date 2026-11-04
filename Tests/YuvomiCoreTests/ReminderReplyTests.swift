@@ -85,7 +85,7 @@ final class FirstTime: @unchecked Sendable {
     func coordinator(
         makeWriter: ((Session) -> any ReminderWriting)? = nil,
         onUnauthorized: @escaping @MainActor (Session) -> Void = { _ in },
-        onNotCheckedOff: @escaping @MainActor (ReminderReply) -> Void = { _ in }
+        onNotCheckedOff: @escaping @MainActor (ReminderReply) async -> Void = { _ in }
     ) -> ReminderCoordinator {
         let source = source
         let writer = writer

@@ -30,7 +30,7 @@ public final class ReminderCoordinator {
     private let queue: any ReplyQueue
     private let now: () -> Date
     private let onUnauthorized: @MainActor (Session) -> Void
-    private let onNotCheckedOff: @MainActor (ReminderReply) -> Void
+    private let onNotCheckedOff: @MainActor (ReminderReply) async -> Void
 
     /// Der zuletzt angehängte Auftrag. Jeder neue wartet auf ihn.
     private var last: (job: Job, id: UUID, task: Task<Void, Never>)?
@@ -48,6 +48,8 @@ public final class ReminderCoordinator {
     ///   - onUnauthorized: Das Credential ist widerrufen, etwa `SessionState.handle(.unauthorized, from:)`.
     ///     Mitteilungen und gemerkte Rückmeldungen sind dann schon abgeräumt.
     ///   - onNotCheckedOff: Der Server lehnt das Abhaken ab (403), die Aufgabe ist weiter offen.
+    ///     Der Auftrag wartet darauf: Läuft er im Hintergrund, hält iOS die App sonst an, bevor
+    ///     der Hinweis geplant ist.
     public init(
         makeSource: @escaping (Session) -> any UpcomingReminders,
         makeWriter: @escaping (Session) -> any ReminderWriting,
@@ -55,7 +57,7 @@ public final class ReminderCoordinator {
         queue: any ReplyQueue,
         now: @escaping () -> Date = { .now },
         onUnauthorized: @escaping @MainActor (Session) -> Void,
-        onNotCheckedOff: @escaping @MainActor (ReminderReply) -> Void
+        onNotCheckedOff: @escaping @MainActor (ReminderReply) async -> Void
     ) {
         self.makeSource = makeSource
         self.makeWriter = makeWriter
@@ -211,7 +213,7 @@ public final class ReminderCoordinator {
                 break
             case .refused:
                 queue.remove(reply)
-                onNotCheckedOff(reply)
+                await onNotCheckedOff(reply)
             case .failed:
                 continue
             case .unreachable:
