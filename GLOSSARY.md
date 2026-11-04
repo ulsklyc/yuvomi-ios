@@ -30,6 +30,18 @@ _Avoid_: Reminder, Alarm, Wecker
 Was iOS zum Zeitpunkt einer Erinnerung auf dem Telefon zeigt. Die App plant sie auf dem Gerät, ohne dass der Server sie schickt.
 _Avoid_: Push, Notification, Benachrichtigung
 
+**Verwerfen**:
+Eine Erinnerung als gesehen markieren. Danach erinnert der Server auf keinem Weg mehr daran, weder in der Glocke der Web-App noch per Web-Push noch in der App. Die Aufgabe oder der Termin bleibt dabei unverändert.
+_Avoid_: dismiss, als gelesen markieren, löschen
+
+**Abhaken**:
+Eine Aufgabe als erledigt markieren. Einen Termin hakt man nicht ab, an ihm lässt sich nur die Erinnerung verwerfen.
+_Avoid_: check (meint am Server eine Zeile der Checkliste), done
+
+**Rückmeldung**:
+Was eine Person an einer Mitteilung tut und die App an den Server weitergibt: Verwerfen der Erinnerung oder Abhaken der Aufgabe. Bis der Server sie angenommen hat, merkt die App sich die Rückmeldung.
+_Avoid_: Antwort, Response, Aktion (meint bei Apple den Knopf)
+
 **Abgleich**:
 Die App holt die kommenden Erinnerungen und bringt die geplanten Mitteilungen auf diesen Stand: neue dazu, weggefallene weg, geänderte neu.
 _Avoid_: Sync, Refresh
