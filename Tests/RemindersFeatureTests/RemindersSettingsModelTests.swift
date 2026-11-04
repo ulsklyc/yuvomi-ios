@@ -26,6 +26,39 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
     }
 }
 
+/// Hält die Frage von iOS offen, bis der Test sie beantwortet. So tippt der Test sicher,
+/// während iOS fragt, statt auf die Reihenfolge der Tasks zu hoffen.
+actor HeldPermission: NotificationPermission {
+    private(set) var requests = 0
+    private var answers: [CheckedContinuation<Void, Never>] = []
+    private var waitingForQuestion: [CheckedContinuation<Void, Never>] = []
+
+    func current() -> NotificationPermissionStatus { .notDetermined }
+
+    func request() async -> NotificationPermissionStatus {
+        requests += 1
+        // Nur die erste Frage bleibt offen. Fragt die App ein zweites Mal, antwortet der Fake
+        // sofort: Der Test zählt die Fragen dann, statt zu hängen.
+        guard requests == 1 else { return .allowed }
+        waitingForQuestion.forEach { $0.resume() }
+        waitingForQuestion = []
+        await withCheckedContinuation { answers.append($0) }
+        return .allowed
+    }
+
+    /// Kehrt zurück, sobald die App iOS fragt.
+    func untilAsked() async {
+        guard requests == 0 else { return }
+        await withCheckedContinuation { waitingForQuestion.append($0) }
+    }
+
+    /// Die Person erlaubt.
+    func allow() {
+        answers.forEach { $0.resume() }
+        answers = []
+    }
+}
+
 @MainActor @Suite final class RemindersSettingsModelTests {
     /// Eigene Defaults je Test, damit nichts zwischen den Tests stehen bleibt.
     let suite = "RemindersSettingsModelTests.\(UUID())"
@@ -35,7 +68,7 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
         UserDefaults().removePersistentDomain(forName: suite)
     }
 
-    func model(_ permission: FakePermission, onChange: @escaping @MainActor (Bool) -> Void = { _ in }) -> RemindersSettingsModel {
+    func model(_ permission: any NotificationPermission, onChange: @escaping @MainActor (Bool) -> Void = { _ in }) -> RemindersSettingsModel {
         RemindersSettingsModel(permission: permission, defaults: defaults, onChange: onChange)
     }
 
@@ -138,16 +171,18 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
     }
 
     @Test func tappingTwiceWhileIOSAsksAsksOnlyOnce() async {
-        let permission = FakePermission(.notDetermined)
+        let permission = HeldPermission()
         var changes: [Bool] = []
         let settings = model(permission) { changes.append($0) }
         await settings.load()
 
-        async let first: Void = settings.setOn(true)
-        async let second: Void = settings.setOn(true)
-        _ = await (first, second)
+        let first = Task { await settings.setOn(true) }
+        await permission.untilAsked()
+        await settings.setOn(true)
+        await permission.allow()
+        await first.value
 
-        #expect(permission.requests == 1)
+        #expect(await permission.requests == 1)
         #expect(changes == [true])
     }
 }
