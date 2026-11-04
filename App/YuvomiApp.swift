@@ -43,8 +43,7 @@ struct YuvomiApp: App {
             // lesen und abgleichen.
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
-                    app.becameActive()
-                    Task { await app.refreshReminders() }
+                    Task { await app.becameActive() }
                 }
                 if phase == .background { Task { await app.scheduleBackgroundRefresh() } }
             }
@@ -126,13 +125,15 @@ final class AppModel {
     }
 
     /// Zurück im Vordergrund. Hat der Start vor dem ersten Entsperren den Keychain nicht lesen
-    /// können, holt die App die Anmeldung jetzt nach. Und eine im Hintergrund abgehakte Aufgabe
-    /// verschwindet aus der Liste.
-    func becameActive() {
+    /// können, holt die App die Anmeldung jetzt nach. Dann gleicht sie ab, und erst danach lädt
+    /// eine Liste neu, in der eine im Hintergrund abgehakte Aufgabe noch steht: Der Abgleich
+    /// sendet gemerkte Rückmeldungen zuerst, sonst zeigte die Liste die Aufgabe weiter offen.
+    func becameActive() async {
         restoreIfReadable()
+        await refreshReminders()
         if listIsStale, let current = session.current, let taskListModel, taskListModel.session == current {
             listIsStale = false
-            Task { await taskListModel.model.load() }
+            await taskListModel.model.load()
         }
     }
 
