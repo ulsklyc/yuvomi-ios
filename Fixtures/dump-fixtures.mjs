@@ -6,15 +6,18 @@
 // eine Datei geschrieben wird.
 //
 // Aufruf:
-//   node Fixtures/dump-fixtures.mjs <base-url> <benutzer> <passwort> [zielordner]
+//   node Fixtures/dump-fixtures.mjs <base-url> <benutzer> <passwort> [zielordner] [nur]
+// `nur` ist eine Liste von Dateinamen mit Komma, etwa `task-checklist`: Dann schreibt das
+// Skript nur diese Dateien und laesst die uebrigen Abzuege mit ihren Daten stehen.
 // Beispiel gegen die lokale Seed-Instanz aus scripts/seed-demo.js:
 //   node Fixtures/dump-fixtures.mjs http://127.0.0.1:3917 alex demo1234 Fixtures/demo
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const [base, username, password, outDir = 'Fixtures/demo'] = process.argv.slice(2);
+const [base, username, password, outDir = 'Fixtures/demo', only] = process.argv.slice(2);
+const wanted = only ? new Set(only.split(',')) : null;
 if (!base || !username || !password) {
-  console.error('Aufruf: node Fixtures/dump-fixtures.mjs <base-url> <benutzer> <passwort> [zielordner]');
+  console.error('Aufruf: node Fixtures/dump-fixtures.mjs <base-url> <benutzer> <passwort> [zielordner] [nur]');
   process.exit(2);
 }
 const API = `${base.replace(/\/$/, '')}/api/v1`;
@@ -25,6 +28,7 @@ mkdirSync(outDir, { recursive: true });
 const written = [];
 
 function save(name, data) {
+  if (wanted && !wanted.has(name)) return;
   writeFileSync(join(outDir, `${name}.json`), `${JSON.stringify(data, null, 2)}\n`);
   written.push(name);
 }
@@ -70,6 +74,37 @@ const tasks = await get('/tasks');
 save('tasks', tasks);
 save('tasks-meta-options', await get('/tasks/meta/options'));
 if (tasks.data?.length) save('task', await get(`/tasks/${tasks.data[0].id}`));
+
+// Der Seed hat keine Aufgabe mit Checkliste und Unteraufgaben. Die App braucht eine fuer das
+// Detail (Slice 5): einmal mit der Sitzung anlegen, dann wie die App mit dem Credential lesen.
+// Die Beschreibung mischt Text, Markdown und Checkliste in allen Formen, die die Regel des
+// Servers kennt (Einzug, `*`, `X`), dazu eine Zeile, die wie eine Checkliste aussieht, aber
+// keine ist.
+const CHECKLIST_TITLE = 'Pack for the weekend trip';
+let checklist = tasks.data?.find((task) => task.title === CHECKLIST_TITLE);
+if (!checklist && (!wanted || wanted.has('task-checklist'))) {
+  const description = [
+    'Leave by **Friday 5 pm**.',
+    '',
+    '- [x] Book the cabin',
+    '- [ ] Pack sleeping bags',
+    '  * [X] Charge the power bank',
+    '- [ ] Buy snacks',
+    '-[ ] not a checklist line',
+  ].join('\n');
+  checklist = (await request('POST', '/tasks', {
+    headers: session,
+    body: { title: CHECKLIST_TITLE, description, priority: 'medium', points: 5 },
+  })).data.data;
+  const sub = async (title) => (await request('POST', '/tasks', {
+    headers: session,
+    body: { title, parent_task_id: checklist.id },
+  })).data.data;
+  await sub('Check the car tyres');
+  const done = await sub('Print the route');
+  await request('PATCH', `/tasks/${done.id}/status`, { headers: session, body: { status: 'done' } });
+}
+if (checklist) save('task-checklist', await get(`/tasks/${checklist.id}`));
 
 const lists = await get('/shopping');
 save('shopping-lists', lists);

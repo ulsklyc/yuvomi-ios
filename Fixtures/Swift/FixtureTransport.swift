@@ -69,6 +69,13 @@ public struct FixtureTransport: ClientTransport {
         "listPendingReminders": ("reminders-pending", .ok),
     ]
 
+    /// Weitere echte Antworten derselben Operation, die ein Test per `overrides` einsetzt:
+    /// Datei in `Fixtures/demo` -> operationId.
+    public static let variants: [String: String] = [
+        // Aufgabe mit Checkliste und Unteraufgaben (Slice 5).
+        "task-checklist": "getTask",
+    ]
+
     private let overrides: [String: Response]
     private let recorder: Recorder?
 
