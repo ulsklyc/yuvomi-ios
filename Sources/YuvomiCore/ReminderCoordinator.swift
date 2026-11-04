@@ -39,6 +39,10 @@ public final class ReminderCoordinator {
     private var syncs: [UUID: Task<Void, Never>] = [:]
     /// Rückmeldungen, die gerade gesendet werden. Abmelden bricht sie ab.
     private var replies: [UUID: Task<Void, Never>] = [:]
+    /// Das sofortige Abräumen der Rückmeldungen, das neben der Reihe läuft. Abräumen wartet
+    /// darauf: Sonst entfernte es nach dem Abmelden noch Mitteilungen eines neuen Kontos mit
+    /// derselben Kennung.
+    private var cleanups: [UUID: Task<Void, Never>] = [:]
 
     /// - Parameters:
     ///   - onUnauthorized: Das Credential ist widerrufen, etwa `SessionState.handle(.unauthorized, from:)`.
@@ -97,7 +101,12 @@ public final class ReminderCoordinator {
         // Sofort vom Gerät, auch wenn vor dem Auftrag ein langsamer Abgleich wartet (Q5). Ohne
         // darauf zu warten: Der Auftrag muss eingetragen sein, bevor irgendetwas wartet, sonst
         // bricht ein Abmelden ihn nicht ab, und er sendet später mit dem alten Credential.
-        let immediately = Task { await removeNotifications(of: reply) }
+        let cleanup = UUID()
+        let immediately = Task {
+            await removeNotifications(of: reply)
+            cleanups[cleanup] = nil
+        }
+        cleanups[cleanup] = immediately
         await enqueue(.reply, in: \.replies) { coordinator in
             // Im Auftrag noch einmal: Ein Abgleich, der vor ihm lief, kannte die Rückmeldung
             // nicht und hat die Aufgabe womöglich wieder eingeplant.
@@ -145,9 +154,11 @@ public final class ReminderCoordinator {
             queue.removeAll()
         }
         let previous = last?.task
+        let pendingCleanups = Array(cleanups.values)
         let scheduler = scheduler
         let task = Task {
             await previous?.value
+            for cleanup in pendingCleanups { await cleanup.value }
             await ReminderSync.clear(scheduler: scheduler)
         }
         last = (.clear, UUID(), task)

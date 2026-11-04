@@ -42,6 +42,19 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
     }
 }
 
+/// Wahr nur beim ersten Aufruf.
+final class FirstTime: @unchecked Sendable {
+    private let lock = NSLock()
+    private var used = false
+
+    func take() -> Bool {
+        lock.withLock {
+            defer { used = true }
+            return !used
+        }
+    }
+}
+
 /// Port-Fake: die Warteschlange im Speicher.
 @MainActor final class FakeReplyQueue: ReplyQueue {
     private(set) var replies: [ReminderReply] = []
@@ -384,6 +397,37 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
         #expect(writerA.log.events.isEmpty)
         #expect(writerB.log.events == ["dismiss 2"])
         #expect(queue.replies.isEmpty)
+    }
+
+    /// Das sofortige Abräumen einer Rückmeldung hängt noch bei iOS, als sich die Person abmeldet
+    /// und Konto B sich anmeldet. Kommt es danach frei, darf es B's Mitteilung mit derselben
+    /// Kennung nicht entfernen (Befund von Codex zu #7).
+    @Test func aLateCleanupOfTheOldAccountKeepsTheNewOnesNotifications() async {
+        let fetch = Gate()
+        let removal = Gate()
+        let first = FirstTime()
+        let log = log
+        source.whileWaiting = { log.append("fetch"); await fetch.wait() }
+        scheduler.whileRemoving = { if first.take() { await removal.wait() } }
+        source.result = .success([UpcomingReminder(id: 1, origin: .task, entityID: 101, title: "Strom zahlen", firesAt: now.addingTimeInterval(3600))])
+        await scheduler.plan([planned(1, .task, 101)])
+        let reminders = coordinator()
+        let syncA = Task { await reminders.sync(session) }
+        await settle()
+        let replyA = Task { await reminders.reply(reply(.checkOff), session: session) }
+        await settle()
+
+        let signOut = Task { await reminders.clear() }
+        fetch.open()
+        await settle()
+        let accountB = Session(server: session.server, credential: "ydc_b")
+        let syncB = Task { await reminders.sync(accountB) }
+        // Bis B geplant hat oder lange genug, falls die Reihenfolge B warten lässt.
+        for _ in 0..<200 where scheduler.planned.isEmpty { await Task.yield() }
+        removal.open()
+        _ = await (syncA.value, replyA.value, signOut.value, syncB.value)
+
+        #expect(Set(scheduler.planned.keys) == ["reminder.1.task.101"])
     }
 
     /// Schalter aus räumt nur die Mitteilungen ab: Die Person hat schon gehandelt.
