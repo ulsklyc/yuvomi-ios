@@ -10,17 +10,30 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Nur Lesen; Jobs, die mehr brauchen, erweitern das für sich.
+permissions:
+  contents: read
+
 env:
   # Hauptversion wie lokal (Xcode 27.2); das Ziel iOS 27 braucht das iOS-27-SDK.
   XCODE_MAJOR: "27"
 
 jobs:
+  action-pins:
+    # Jede uses:-Zeile in .github/workflows/ ist auf einen Commit-SHA gepinnt (Skript erklärt warum).
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Action-Pins prüfen
+        run: node scripts/check-workflow-pins.mjs
+
   test:
     # macos-26 hat nur Xcode 26.x; Xcode 27 gibt es bisher nur im Preview-Image xcode-27.
     runs-on: xcode-27
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Xcode wählen
         run: |
@@ -35,7 +48,7 @@ jobs:
           xcodebuild -version
 
       - name: Generator zwischenspeichern
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: Tools/.build
           key: tools-${{ runner.os }}-${{ hashFiles('Tools/Package.resolved') }}-${{ env.XCODE_MAJOR }}
