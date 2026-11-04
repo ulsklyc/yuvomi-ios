@@ -12,6 +12,15 @@ Gezogen am 02.11.2026 aus einer lokalen Seed-Instanz auf Yuvomi `v2.84.0` (`clie
 - `dashboard.json` enthält auch `budget`, `health` und `fasting`. Die App liest diese Felder in v1 nicht, ihre Modelle kennen sie nicht. Die Daten bleiben trotzdem drin, damit der Decoder unbekannte Felder nachweislich überspringt.
 - `shopping-suggestions.json` ist leer, weil die Seed-Daten dafür keine Historie haben.
 
+## `derived/`
+
+Keine echten Antworten, sondern Testvarianten, abgeleitet aus `demo/`: Sie prüfen, dass ein **unbekannter Wert** (ein Enum-Wert, den diese App-Version nicht kennt) nicht die ganze Antwort kippt. Jede Datei ist eine Kopie aus `demo/` mit gezielt geänderten Werten:
+
+- `tasks-unknown-values.json` aus `tasks.json`: Aufgabe 7 hat den Status `waiting`, Aufgabe 2 die Priorität `critical`.
+- `reminders-upcoming-unknown-type.json` aus `reminders-upcoming.json`: zusätzlich Erinnerung 2 mit dem Typ `chore_rotation`.
+
+`check-fixtures.mjs` prüft sie nicht, weil sie absichtlich außerhalb der Spec liegen.
+
 ## Neu ziehen
 
 1. In einem eigenen Worktree des Server-Repos auf dem gewünschten Tag: `npm ci`.

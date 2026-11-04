@@ -22,7 +22,13 @@ targets:
     type: application
     platform: iOS
     sources:
-      - App
+      - path: App
+        excludes:
+          - PrivacyInfo.xcprivacy
+      # Privacy-Manifest ausdrücklich als Ressource, damit es sicher im Bundle-Stamm landet.
+      # Es deckt auch die statisch gelinkten Paket-Module ab (siehe Kommentar in der Datei).
+      - path: App/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: Yuvomi
         product: YuvomiCore
@@ -72,6 +78,10 @@ targets:
         # Garantie, der verlässliche Abgleich bleibt der beim Öffnen.
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: [cloud.yuvomi.ios.reminders]
+        # Exportkontrolle: Die App verschlüsselt nur über das System (HTTPS per URLSession,
+        # Keychain), keine eigene Kryptografie. Das ist ausgenommen, also NO, und
+        # App Store Connect fragt beim Upload nicht jedes Mal nach.
+        ITSAppUsesNonExemptEncryption: false
   # Tests, die die App als Host brauchen, etwa für den Keychain: Paket-Tests laufen im
   # Simulator ohne Entitlements und bekommen dort errSecMissingEntitlement (-34018).
   YuvomiHostedTests:

@@ -48,12 +48,16 @@ public struct CalendarDay: Hashable, Sendable, Comparable {
     }
 }
 
+/// `unknown` ist ein unbekannter Wert (Glossar): ein Status, den diese App-Version nicht
+/// kennt. Er gilt nie als erledigt, die Aufgabe bleibt also in der Liste.
 public enum TaskStatus: Hashable, Sendable {
-    case open, inProgress, done
+    case open, inProgress, done, unknown
 }
 
+/// `unknown` ist ein unbekannter Wert (Glossar). Die Liste zeigt ihn wie `none`: ohne Hinweis,
+/// statt ihn als dringend oder unwichtig zu deuten.
 public enum TaskPriority: Hashable, Sendable {
-    case none, low, medium, high, urgent
+    case none, low, medium, high, urgent, unknown
 }
 
 /// Eine Aufgabe, so weit die Liste sie zeigt.

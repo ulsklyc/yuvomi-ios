@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Privacy-Manifest der App. Die Paket-Module (YuvomiCore, RemindersFeature usw.) sind
+  statisch gelinkt und landen im App-Binary, deshalb deckt dieses eine Manifest auch sie ab.
+  - Kein Tracking, keine Tracking-Domains.
+  - Keine gesammelten Daten: Alles geht nur an den selbst gehosteten Server des Nutzers,
+    der Entwickler bekommt nichts davon zu sehen.
+  - UserDefaults (CA92.1): Serveradresse, Warteschlange der Rückmeldungen und
+    Erinnerungs-Einstellungen, nur für die App selbst lesbar.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,4 +1,5 @@
 import Foundation
+import ObjectiveC
 @testable import RemindersFeature
 import Testing
 import UserNotifications
@@ -85,5 +86,69 @@ import YuvomiCore
         #expect(request.trigger == nil)
         #expect(request.identifier.hasPrefix("reminder.notice.notCheckedOff."))
         #expect(ReminderSync.parse(request.identifier) == nil)
+    }
+}
+
+/// iOS erfährt erst nach der Rückmeldung, dass die Aktion fertig ist, und zwar auf dem Main
+/// Thread. Sonst beendet UIKit die App („Call must be made on main thread“).
+///
+/// Ruft `didReceive` über das Protokoll mit Completion Handler auf, so wie iOS es tut. Eine
+/// `UNNotificationResponse` hat keinen öffentlichen Init, die Tests bauen sie über die
+/// Fabrikmethoden der Klassen (nur im Test).
+@MainActor @Suite struct NotificationDelegateTests {
+    @MainActor final class Steps {
+        var all: [String] = []
+    }
+
+    /// `UNUserNotificationCenter.current()` gibt es ohne Host-App nicht. Der Delegate liest
+    /// `center` nie, ein Objekt ohne Init reicht.
+    static let center = class_createInstance(UNUserNotificationCenter.self, 0) as! UNUserNotificationCenter
+
+    static func response(identifier: String, action: String) throws -> UNNotificationResponse {
+        let content = UNMutableNotificationContent()
+        content.body = "Strom zahlen"
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
+        let notification = try #require(
+            (UNNotification.self as AnyObject)
+                .perform(NSSelectorFromString("notificationWithRequest:date:"), with: request, with: Date())?
+                .takeUnretainedValue() as? UNNotification
+        )
+        return try #require(
+            (UNNotificationResponse.self as AnyObject)
+                .perform(NSSelectorFromString("responseWithNotification:actionIdentifier:"), with: notification, with: action)?
+                .takeUnretainedValue() as? UNNotificationResponse
+        )
+    }
+
+    @Test func iOSHearsBackOnTheMainThreadAfterTheReply() async throws {
+        let steps = Steps()
+        let delegate: UNUserNotificationCenterDelegate = ReminderNotificationDelegate { reply in
+            await Task.yield()
+            steps.all.append("reply \(reply.kind)")
+        }
+        let response = try Self.response(identifier: "reminder.7.task.12", action: "reminder.checkOff")
+
+        let onMainThread = await withCheckedContinuation { finished in
+            delegate.userNotificationCenter?(Self.center, didReceive: response) {
+                finished.resume(returning: Thread.isMainThread)
+            }
+        }
+        // Der Handler hat nicht gewartet, wenn die Rückmeldung danach noch fehlt.
+        let repliedBefore = steps.all
+
+        #expect(onMainThread)
+        #expect(repliedBefore == ["reply checkOff"])
+    }
+
+    @Test func aForeignNotificationIsDoneAtOnce() throws {
+        var done = false
+        let delegate: UNUserNotificationCenterDelegate = ReminderNotificationDelegate { _ in
+            Issue.record("Eine fremde Mitteilung ist keine Rückmeldung")
+        }
+        let response = try Self.response(identifier: "reminder.notice.notCheckedOff.1", action: UNNotificationDefaultActionIdentifier)
+
+        delegate.userNotificationCenter?(Self.center, didReceive: response) { done = true }
+
+        #expect(done)
     }
 }

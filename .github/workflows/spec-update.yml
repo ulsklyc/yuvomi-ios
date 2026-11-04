@@ -1,0 +1,367 @@
+name: Spec-Update
+
+# Holt die Spec des neuesten Server-Releases (ulsklyc/yuvomi), kürzt sie mit
+# scripts/update-spec.sh, erzeugt den Client neu und öffnet dafür einen PR.
+# Ein Spec-Update ist nie nötig, damit bestehende Apps laufen: es holt nur neue
+# Felder und Operationen in den Client. Scheitert es, weil eine Operation aus
+# CLIENT_OPERATIONS fehlt, gibt es ein Issue statt eines PR.
+#
+# Zwei Jobs mit getrennten Rechten: `prepare` führt fremden Code aus (server/openapi.js
+# des Tags, den Generator) und darf nur lesen. `open-pr` darf schreiben, führt aber
+# nichts aus dem Tag aus, sondern wendet nur den fertigen Patch an.
+
+on:
+  schedule:
+    # Täglich, ungerade Minute gegen die Lastspitzen zur vollen Stunde.
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Server-Tag, etwa v2.85.0 (leer: neuestes Release)"
+        required: false
+        default: ""
+
+concurrency:
+  group: spec-update
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Wie in ci.yml: Hauptversion von Xcode für den Generator.
+  XCODE_MAJOR: "27"
+  SERVER_REPO: ulsklyc/yuvomi
+
+jobs:
+  prepare:
+    # Gleicher Runner wie ci.yml; der Generator braucht Swift aus Xcode 27.
+    runs-on: xcode-27
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      # Nur Lesen: offene PRs nach spec-update/<tag> suchen.
+      pull-requests: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      skip: ${{ steps.check.outputs.skip }}
+      failed: ${{ steps.update.outputs.failed }}
+      has_changes: ${{ steps.diff.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Tag bestimmen
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          TAG="$INPUT_TAG"
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release view --repo "$SERVER_REPO" --json tagName -q .tagName)
+          fi
+          # Nur echte Versions-Tags; der Wert landet in Branch-Namen und Befehlen.
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Ungültiger Tag: '$TAG' (erwartet vX.Y.Z)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Server-Tag: $TAG"
+
+      - name: Schon erledigt?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          CURRENT=$(node -p 'require("./Spec/openapi.json").info.version')
+          if [ "v$CURRENT" = "$TAG" ]; then
+            echo "Spec/openapi.json steht schon auf $TAG."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OPEN=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "spec-update/$TAG" --state open --json number -q length)
+          if [ "$OPEN" != "0" ]; then
+            echo "Es gibt schon einen offenen PR von spec-update/$TAG."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/branches/spec-update/$TAG" --silent 2>/dev/null; then
+            echo "Der Branch spec-update/$TAG existiert schon (PR geschlossen?). Erst den Branch löschen."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Spec $CURRENT -> $TAG"
+
+      - name: Spec holen und kürzen
+        id: update
+        if: steps.check.outputs.skip == 'false'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          # Scheitert das Skript (etwa: Operation fehlt in der Spec), ist das kein
+          # Job-Fehler, sondern ein Befund: report-failure öffnet dafür ein Issue.
+          set -o pipefail
+          if scripts/update-spec.sh "$TAG" 2>&1 | tee "$RUNNER_TEMP/spec-update-error.log"; then
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Xcode wählen
+        if: steps.update.outputs.failed == 'false'
+        run: |
+          # Wie in ci.yml: neuestes installiertes Xcode der Hauptversion.
+          XCODE_APP=$(ls -d /Applications/Xcode_${XCODE_MAJOR}*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -z "$XCODE_APP" ]; then
+            echo "Kein Xcode $XCODE_MAJOR auf diesem Runner. Vorhanden:"
+            ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+
+      - name: Generator zwischenspeichern
+        if: steps.update.outputs.failed == 'false'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: Tools/.build
+          key: tools-${{ runner.os }}-${{ hashFiles('Tools/Package.resolved') }}-${{ env.XCODE_MAJOR }}
+
+      - name: Client erzeugen
+        if: steps.update.outputs.failed == 'false'
+        run: |
+          # Warnungen des Generators brechen ab (im Skript); dann scheitert der Job
+          # und report-failure meldet es mit diesem Log.
+          set -o pipefail
+          scripts/generate-api.sh 2>&1 | tee "$RUNNER_TEMP/spec-update-error.log"
+
+      - name: Patch bauen
+        id: diff
+        if: steps.update.outputs.failed == 'false'
+        run: |
+          # Index erst leeren: der Code aus dem Tag könnte schon etwas gestagt haben.
+          # Die eigentliche Grenze ist aber die Prüfung in open-pr.
+          git reset -q
+          git add -A -- Spec Sources/YuvomiAPI/Generated
+          if git diff --cached --quiet; then
+            echo "Kein Unterschied zur eingecheckten Spec, nichts zu tun."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --cached --stat
+          git diff --cached --binary > "$RUNNER_TEMP/spec-update.patch"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Patch hochladen
+        if: steps.diff.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: spec-update-patch
+          path: ${{ runner.temp }}/spec-update.patch
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Fehlermeldung hochladen
+        if: failure() || steps.update.outputs.failed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: spec-update-error
+          path: ${{ runner.temp }}/spec-update-error.log
+          retention-days: 30
+          if-no-files-found: ignore
+
+  open-pr:
+    needs: prepare
+    if: needs.prepare.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      # Für `gh workflow run ci.yml` (siehe unten).
+      actions: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      # Hier läuft kein Code aus dem Server-Tag: nur git und gh auf dem fertigen Patch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: spec-update-patch
+          path: ${{ runner.temp }}/patch
+
+      - name: Patch prüfen und anwenden
+        run: |
+          # Grenze zwischen den Jobs: Der Code aus dem Server-Tag lief in prepare und
+          # konnte dort beliebige Dateien ändern. Durch darf nur, was die Skripte dort
+          # erzeugen sollen: Änderungen an Spec/openapi.json und an normalen Dateien
+          # unter Sources/YuvomiAPI/Generated/. Keine Löschung, Umbenennung,
+          # Modus- oder Symlink-Änderung, kein Binärpatch. Sonst bricht der Job ab,
+          # und report-failure öffnet ein Issue.
+          set -euo pipefail
+          PATCH="$RUNNER_TEMP/patch/spec-update.patch"
+          LOG="$RUNNER_TEMP/spec-update-error.log"
+          reject() {
+            printf 'Patch aus prepare abgelehnt: %s\n' "$1" | tee -a "$LOG" >&2
+            exit 1
+          }
+          allowed() {
+            [ "$1" = "Spec/openapi.json" ] && return 0
+            [[ "$1" == Sources/YuvomiAPI/Generated/* && "$1" != *..* && "$1" =~ ^[A-Za-z0-9_./+-]+$ ]]
+          }
+
+          git apply --check "$PATCH" 2>>"$LOG" || reject "lässt sich nicht anwenden"
+
+          # Pfade und Binärpatches, so wie git den Patch liest.
+          COUNT=0
+          while IFS=$'\t' read -r added _ path; do
+            COUNT=$((COUNT + 1))
+            [ "$added" = "-" ] && reject "Binärpatch: $path"
+            allowed "$path" || reject "Pfad außerhalb von Spec/openapi.json und Sources/YuvomiAPI/Generated/: $path"
+          done < <(git apply --numstat "$PATCH")
+          [ "$COUNT" -gt 0 ] || reject "enthält keine Datei"
+
+          # Erweiterte Kopfzeilen: nur neue normale Dateien sind erlaubt.
+          while read -r line; do
+            case "$line" in
+              "create mode 100644 "*) allowed "${line#create mode 100644 }" || reject "$line" ;;
+              *) reject "$line" ;;
+            esac
+          done < <(git apply --summary "$PATCH")
+
+          git apply --index "$PATCH"
+
+          # Gegenprobe am Ergebnis: Index und Arbeitskopie gegen dieselbe Allowlist.
+          while IFS=$'\t' read -r meta path; do
+            read -r old_mode new_mode _ _ status <<< "${meta#:}"
+            [[ "$status" == M || "$status" == A ]] || reject "Status $status: $path"
+            [[ "$old_mode" == 100644 || "$old_mode" == 000000 ]] || reject "Modus $old_mode: $path"
+            [ "$new_mode" = 100644 ] || reject "Modus $new_mode: $path"
+            allowed "$path" || reject "Pfad außerhalb der Allowlist: $path"
+          done < <(git diff --cached --raw --no-renames)
+          git diff --quiet || reject "Arbeitskopie weicht vom Index ab"
+          [ -z "$(git ls-files --others --exclude-standard)" ] || reject "unversionierte Dateien"
+          echo "Patch geprüft: $COUNT Dateien, alle in der Allowlist."
+
+      - name: Fehlermeldung hochladen
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: spec-update-error-open-pr
+          path: ${{ runner.temp }}/spec-update-error.log
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Commit und Push
+        run: |
+          BRANCH="spec-update/$TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git commit -q -F - <<EOF
+          Spec-Update auf $TAG
+
+          Spec/openapi.json kommt per scripts/update-spec.sh aus dem Server-Tag $TAG,
+          Sources/YuvomiAPI/Generated per scripts/generate-api.sh daraus. Erzeugt vom
+          Workflow Spec-Update; inhaltlich nur Generator-Ausgabe.
+          EOF
+          git push -u origin "$BRANCH"
+
+      - name: PR öffnen
+        run: |
+          BRANCH="spec-update/$TAG"
+          STAT=$(git diff --stat HEAD~1 HEAD)
+          cat > "$RUNNER_TEMP/body.md" <<EOF
+          Spec-Update auf den Server-Tag \`$TAG\`, erzeugt vom Workflow Spec-Update.
+
+          ## Was sich geändert hat
+
+          \`\`\`
+          $STAT
+          \`\`\`
+
+          ## Einordnen
+
+          - Ein Spec-Update ist nie nötig, damit bestehende Apps laufen. Es holt nur neue Felder und Operationen in den Client.
+          - Es hebt die Mindest-Serverversion der App nicht von selbst. Nutzt Code später etwas, das erst $TAG kann, muss die Mindestversion bewusst mit.
+          - Ändern sich Antworten, die die Tests lesen, die Fixtures in \`Fixtures/demo/\` neu ziehen (siehe \`Fixtures/README.md\`).
+          - Die CI läuft per \`workflow_dispatch\` auf dem Branch, weil PRs mit dem GITHUB_TOKEN keine \`pull_request\`-Workflows auslösen.
+          EOF
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Spec-Update auf $TAG" \
+            --label dependencies \
+            --body-file "$RUNNER_TEMP/body.md"
+
+      - name: CI anstoßen
+        run: |
+          # Ereignisse des GITHUB_TOKEN starten keine Workflows, workflow_dispatch ist die Ausnahme.
+          gh workflow run ci.yml --ref "spec-update/$TAG"
+
+  report-failure:
+    needs: [prepare, open-pr]
+    if: >-
+      always() && (needs.prepare.result == 'failure' || needs.prepare.outputs.failed == 'true'
+      || needs.open-pr.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      OPEN_PR_FAILED: ${{ needs.open-pr.result == 'failure' }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        # Aus prepare oder open-pr, je nachdem wo es scheiterte. Fehlt, wenn der Job
+        # vor dem Holen der Spec gescheitert ist.
+        continue-on-error: true
+        with:
+          pattern: spec-update-error*
+          merge-multiple: true
+          path: ${{ runner.temp }}/error
+
+      - name: Issue öffnen
+        run: |
+          TAG="${TAG:-unbekannt}"
+          TITLE="Spec-Update auf $TAG gescheitert"
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label needs-triage \
+            --json title -q "[.[] | select(.title == \"$TITLE\")] | length")
+          if [ "$EXISTING" != "0" ]; then
+            echo "Issue \"$TITLE\" ist schon offen."
+            exit 0
+          fi
+          LOG="$RUNNER_TEMP/error/spec-update-error.log"
+          if [ -f "$LOG" ]; then
+            ERROR=$(tail -n 40 "$LOG")
+          else
+            ERROR="(keine Fehlermeldung gesichert, siehe Lauf)"
+          fi
+          {
+            echo "Spec-Update auf \`$TAG\` gescheitert ([Lauf]($RUN_URL))."
+            echo
+            if [ "$OPEN_PR_FAILED" = "true" ]; then
+              echo "Gescheitert ist der Job open-pr: Entweder berührt der Patch aus prepare Dateien außerhalb von \`Spec/openapi.json\` und \`Sources/YuvomiAPI/Generated/\` (dann hat Code aus dem Server-Tag mehr geändert als erwartet, bitte genau ansehen), oder Push bzw. PR schlugen fehl."
+            else
+              echo "Vermutlich hat der Server den Client-Vertrag gebrochen: eine Operation aus \`CLIENT_OPERATIONS\` (\`test/openapi-client-operations.js\` im Server-Repo) fehlt in der Spec. Bestehende Apps sind davon erst betroffen, wenn ein Server mit diesem Stand läuft."
+            fi
+            echo
+            echo "Fehlermeldung:"
+            echo
+            echo '```'
+            echo "$ERROR"
+            echo '```'
+          } > "$RUNNER_TEMP/issue.md"
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "$TITLE" \
+            --label needs-triage \
+            --body-file "$RUNNER_TEMP/issue.md"

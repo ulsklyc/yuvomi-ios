@@ -35,6 +35,13 @@ public struct YuvomiUpcomingReminders: UpcomingReminders {
 
 extension UpcomingReminder {
     /// `nil` für jede Herkunft außer Aufgabe und Termin, auch wenn der Server sie doch schickt.
+    ///
+    /// Bewusst keine Ausnahme nach der Regel für den unbekannten Wert (ein Eintrag bleibt
+    /// sichtbar, nur das Feld wird nicht gedeutet): Die App fragt nur `types=task,event` ab und
+    /// hat laut Angabe gegenüber Apple keine Gesundheits- oder Finanzfunktionen. Eine andere
+    /// Herkunft kommt nur an, wenn der Server den Filter missachtet, und dann gehört die
+    /// Erinnerung nicht aufs Telefon, auch nicht mit allgemeinem Text. Die Antwort selbst
+    /// dekodiert trotzdem vollständig, weil `entity_type` ein String ist.
     init?(_ row: Components.Schemas.UpcomingReminder) {
         let origin: ReminderOrigin
         switch row.entityType {
