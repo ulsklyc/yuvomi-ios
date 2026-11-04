@@ -40,17 +40,4 @@ import YuvomiCore
         #expect(task.body == "Strom zahlen")
         #expect(task.sound == .default)
     }
-
-    /// Ein unbekannter Typ bekommt einen allgemeinen Text statt Herkunft und Titel.
-    @Test(arguments: [
-        ("de", "Erinnerung", "Details findest du in Yuvomi."),
-        ("en", "Reminder", "Open Yuvomi for details."),
-    ])
-    func anUnknownTypeGetsAGeneralText(language: String, title: String, body: String) {
-        let content = SystemNotificationScheduler.request(for: planned(.unknown), locale: Locale(identifier: language)).content
-
-        #expect(content.title == title)
-        #expect(content.body == body)
-        #expect(content.sound == .default)
-    }
 }

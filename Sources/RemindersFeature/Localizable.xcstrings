@@ -171,40 +171,6 @@
         }
       }
     },
-    "reminders.notification.other": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reminder"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erinnerung"
-          }
-        }
-      }
-    },
-    "reminders.notification.other.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Yuvomi for details."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Details findest du in Yuvomi."
-          }
-        }
-      }
-    },
     "reminders.notification.task": {
       "extractionState": "manual",
       "localizations": {

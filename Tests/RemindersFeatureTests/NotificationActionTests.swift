@@ -10,7 +10,7 @@ import YuvomiCore
     let task = "reminder.7.task.12"
     let event = "reminder.8.event.30"
 
-    @Test(arguments: [(ReminderOrigin.task, "reminder.task"), (.event, "reminder.event"), (.unknown, "reminder.other")])
+    @Test(arguments: [(ReminderOrigin.task, "reminder.task"), (.event, "reminder.event")])
     func theRequestCarriesTheCategoryOfItsOrigin(origin: ReminderOrigin, category: String) {
         let planned = PlannedNotification(id: "reminder.7.task.12", reminderID: 7, origin: origin, entityID: 12, title: "Strom zahlen", firesAt: .distantFuture)
 
@@ -24,10 +24,7 @@ import YuvomiCore
         let task = try #require(categories.first { $0.identifier == "reminder.task" })
         let event = try #require(categories.first { $0.identifier == "reminder.event" })
 
-        let other = try #require(categories.first { $0.identifier == "reminder.other" })
-        #expect(categories.count == 3)
-        #expect(other.actions.isEmpty)
-        #expect(other.options.contains(.customDismissAction))
+        #expect(categories.count == 2)
         let action = try #require(task.actions.first)
         #expect(task.actions.count == 1)
         #expect(action.identifier == "reminder.checkOff")
@@ -62,14 +59,6 @@ import YuvomiCore
     @Test func anEventIsNeverCheckedOff() {
         #expect(ReminderReply(action: "reminder.checkOff", identifier: event, title: "Filmabend", at: at) == nil)
         #expect(ReminderReply(action: UNNotificationDefaultActionIdentifier, identifier: event, title: "Filmabend", at: at)?.kind == .dismiss)
-    }
-
-    /// Ein unbekannter Typ lässt sich nur verwerfen.
-    @Test func anUnknownTypeIsOnlyDismissed() {
-        let unknown = "reminder.9.unknown.3"
-        #expect(ReminderReply(action: "reminder.checkOff", identifier: unknown, title: "x", at: at) == nil)
-        #expect(ReminderReply(action: UNNotificationDismissActionIdentifier, identifier: unknown, title: "x", at: at)
-            == ReminderReply(kind: .dismiss, reminderID: 9, origin: .unknown, entityID: 3, title: "x", at: at))
     }
 
     /// Fremde Mitteilungen, der Hinweis „Nicht abgehakt“, Kennungen aus Slice 3 und unbekannte

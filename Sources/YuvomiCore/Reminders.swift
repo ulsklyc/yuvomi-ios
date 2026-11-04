@@ -1,13 +1,8 @@
 import Foundation
 
-/// Woran eine Erinnerung erinnert. In v1 fragt die App nur Aufgaben und Termine ab
-/// (`types=task,event`).
-///
-/// `unknown` ist ein unbekannter Wert (Glossar): ein Typ, den diese App-Version nicht kennt,
-/// etwa weil der Server ihn doch schickt. Die Erinnerung wird trotzdem geplant, mit einem
-/// allgemeinen Text statt Herkunft und Titel, und lässt sich nur verwerfen.
+/// Woran eine Erinnerung erinnert. In v1 nur Aufgaben und Termine (`types=task,event`).
 public enum ReminderOrigin: String, Hashable, Sendable, Codable {
-    case task, event, unknown
+    case task, event
 }
 
 /// Eine kommende Erinnerung aus `GET /reminders/upcoming`.

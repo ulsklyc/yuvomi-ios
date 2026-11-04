@@ -24,7 +24,7 @@ public struct YuvomiUpcomingReminders: UpcomingReminders {
         switch output {
         case .ok(let ok):
             guard case .json(let list) = ok.body else { throw .unexpectedResponse }
-            return list.data.map(UpcomingReminder.init)
+            return list.data.compactMap(UpcomingReminder.init)
         case .unauthorized:
             throw .unauthorized
         default:
@@ -34,16 +34,21 @@ public struct YuvomiUpcomingReminders: UpcomingReminders {
 }
 
 extension UpcomingReminder {
-    /// Jede andere Herkunft als Aufgabe und Termin wird `.unknown` und verliert ihren Titel,
-    /// auch wenn der Server sie doch schickt: Ein Gesundheits- oder Finanztitel soll nicht aufs
-    /// Telefon. Geplant wird sie trotzdem, mit einem allgemeinen Text.
-    init(_ row: Components.Schemas.UpcomingReminder) {
-        let origin: ReminderOrigin = switch row.entityType {
-        case "task": .task
-        case "event": .event
-        default: .unknown
+    /// `nil` für jede Herkunft außer Aufgabe und Termin, auch wenn der Server sie doch schickt.
+    ///
+    /// Bewusst keine Ausnahme nach der Regel für den unbekannten Wert (ein Eintrag bleibt
+    /// sichtbar, nur das Feld wird nicht gedeutet): Die App fragt nur `types=task,event` ab und
+    /// hat laut Angabe gegenüber Apple keine Gesundheits- oder Finanzfunktionen. Eine andere
+    /// Herkunft kommt nur an, wenn der Server den Filter missachtet, und dann gehört die
+    /// Erinnerung nicht aufs Telefon, auch nicht mit allgemeinem Text. Die Antwort selbst
+    /// dekodiert trotzdem vollständig, weil `entity_type` ein String ist.
+    init?(_ row: Components.Schemas.UpcomingReminder) {
+        let origin: ReminderOrigin
+        switch row.entityType {
+        case "task": origin = .task
+        case "event": origin = .event
+        default: return nil
         }
-        let title = origin == .unknown ? "" : row.entityTitle ?? ""
-        self.init(id: row.id, origin: origin, entityID: row.entityId, title: title, firesAt: row.firesAt)
+        self.init(id: row.id, origin: origin, entityID: row.entityId, title: row.entityTitle ?? "", firesAt: row.firesAt)
     }
 }

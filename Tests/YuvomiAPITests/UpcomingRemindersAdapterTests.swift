@@ -29,21 +29,19 @@ import YuvomiFixtures
         #expect(request.headerFields[.authorization] == "Bearer ydc_FIXTURE_CREDENTIAL")
     }
 
-    /// Fixtures/derived/reminders-upcoming-unknown-type.json: Eine Erinnerung mit einem Typ,
-    /// den diese App-Version nicht kennt, kommt trotzdem an.
-    @Test func keepsAReminderOfAnUnknownType() async throws {
+    /// Fixtures/derived/reminders-upcoming-unknown-type.json: Eine Erinnerung mit einer Herkunft,
+    /// die die App nicht abfragt, kippt die Antwort nicht. Die bekannte bleibt, die fremde fällt
+    /// weg (siehe `UpcomingReminder.init?`).
+    @Test func aReminderOfAnUnknownTypeLeavesTheOthersIntact() async throws {
         let variant = FixtureTransport.Response(body: try Fixtures.derived("reminders-upcoming-unknown-type"))
         let reminders = YuvomiUpcomingReminders(server: server, credential: "c", transport: FixtureTransport(overrides: ["listUpcomingReminders": variant]))
 
         let list = try await reminders.upcoming(from: from, to: to)
 
-        #expect(list.map(\.id) == [1, 2])
-        #expect(list.first?.origin == .task)
-        // Ohne Titel: Er stammt aus einem Modul, das die App nicht kennt (siehe unten).
-        #expect(list.last == UpcomingReminder(
-            id: 2, origin: .unknown, entityID: 9, title: "",
-            firesAt: try #require(ISO8601DateFormatter().date(from: "2026-11-04T08:00:00Z"))
-        ))
+        #expect(list == [UpcomingReminder(
+            id: 1, origin: .task, entityID: 2, title: "Pay electricity bill",
+            firesAt: try #require(ISO8601DateFormatter().date(from: "2026-11-04T07:00:00Z"))
+        )])
     }
 
     /// Auch mit unlesbarem Body: Sonst behielte die App ein widerrufenes Credential.
@@ -66,10 +64,8 @@ import YuvomiFixtures
         await #expect(throws: APIError.unreachable) { try await offline.upcoming(from: from, to: to) }
     }
 
-    /// Ein Server, der doch eine andere Herkunft schickt, darf ihren Titel nicht ins Telefon
-    /// bringen, etwa einen Gesundheits- oder Finanztitel. Die Erinnerung selbst bleibt, als
-    /// unbekannter Typ ohne Titel; die Mitteilung zeigt dann einen allgemeinen Text.
-    @Test func keepsOriginsTheAppDoesNotAskForWithoutTheirTitle() async throws {
+    /// Ein Server, der doch eine andere Herkunft schickt, darf sie nicht ins Telefon bringen.
+    @Test func leavesOutOriginsTheAppDoesNotAskFor() async throws {
         let body = Data("""
         {"data":[
           {"id":1,"entity_type":"subscription","entity_id":3,"entity_title":"Streaming","remind_at":"2026-11-04T07:00:00Z","created_by":1,"fires_at":"2026-11-04T07:00:00Z"},
@@ -80,12 +76,9 @@ import YuvomiFixtures
 
         let list = try await reminders.upcoming(from: from, to: to)
 
-        #expect(list.map(\.id) == [1, 2])
-        #expect(list.first?.origin == .unknown)
+        #expect(list.map(\.id) == [2])
+        #expect(list.first?.origin == .event)
         #expect(list.first?.title == "")
-        #expect(list.first?.entityID == 3)
-        #expect(list.last?.origin == .event)
-        #expect(list.last?.title == "")
-        #expect(list.last?.entityID == 4)
+        #expect(list.first?.entityID == 4)
     }
 }

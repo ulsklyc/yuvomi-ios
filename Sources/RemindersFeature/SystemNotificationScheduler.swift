@@ -7,11 +7,9 @@ import YuvomiCore
 /// Hält das Center nicht fest, sondern holt es je Aufruf: `UNUserNotificationCenter` ist nicht
 /// `Sendable`, der Planer soll es aber sein. Die UN-Typen verlassen dieses Modul nicht.
 public struct SystemNotificationScheduler: NotificationScheduling {
-    /// Kategorie je Herkunft (Q2): Nur die Aufgabe hat einen Knopf. `otherCategory` gilt für
-    /// einen unbekannten Typ, der sich nur verwerfen lässt.
+    /// Kategorie je Herkunft (Q2): Nur die Aufgabe hat einen Knopf.
     static let taskCategory = "reminder.task"
     static let eventCategory = "reminder.event"
-    static let otherCategory = "reminder.other"
     /// „Erledigt“. Über alle Kategorien eindeutig, so verlangt es iOS.
     static let checkOffAction = "reminder.checkOff"
 
@@ -22,7 +20,7 @@ public struct SystemNotificationScheduler: NotificationScheduling {
         UNUserNotificationCenter.current().setNotificationCategories(categories(locale: locale))
     }
 
-    /// Alle Kategorien melden das Wegwischen (`customDismissAction`), denn auch Wegwischen
+    /// Beide Kategorien melden das Wegwischen (`customDismissAction`), denn auch Wegwischen
     /// verwirft (Q3). „Erledigt“ verlangt bei gesperrtem Gerät das Entsperren (Q4) und läuft
     /// im Hintergrund, ohne die App zu öffnen.
     static func categories(locale: Locale = .current) -> Set<UNNotificationCategory> {
@@ -35,7 +33,6 @@ public struct SystemNotificationScheduler: NotificationScheduling {
         return [
             UNNotificationCategory(identifier: taskCategory, actions: [checkOff], intentIdentifiers: [], options: [.customDismissAction]),
             UNNotificationCategory(identifier: eventCategory, actions: [], intentIdentifiers: [], options: [.customDismissAction]),
-            UNNotificationCategory(identifier: otherCategory, actions: [], intentIdentifiers: [], options: [.customDismissAction]),
         ]
     }
 
@@ -105,22 +102,16 @@ public struct SystemNotificationScheduler: NotificationScheduling {
 
         let bundle = localizedBundle(for: locale)
         let content = UNMutableNotificationContent()
-        switch notification.origin {
-        case .task:
-            content.title = String(localized: "reminders.notification.task", bundle: bundle, locale: locale)
-            content.body = notification.title
-            content.categoryIdentifier = taskCategory
-        case .event:
-            content.title = String(localized: "reminders.notification.event", bundle: bundle, locale: locale)
-            content.body = notification.title
-            content.categoryIdentifier = eventCategory
-        case .unknown:
-            // Ein unbekannter Typ: allgemeiner Text statt Herkunft und Titel.
-            content.title = String(localized: "reminders.notification.other", bundle: bundle, locale: locale)
-            content.body = String(localized: "reminders.notification.other.body", bundle: bundle, locale: locale)
-            content.categoryIdentifier = otherCategory
+        content.title = switch notification.origin {
+        case .task: String(localized: "reminders.notification.task", bundle: bundle, locale: locale)
+        case .event: String(localized: "reminders.notification.event", bundle: bundle, locale: locale)
         }
+        content.body = notification.title
         content.sound = .default
+        content.categoryIdentifier = switch notification.origin {
+        case .task: taskCategory
+        case .event: eventCategory
+        }
 
         return UNNotificationRequest(
             identifier: notification.id,
