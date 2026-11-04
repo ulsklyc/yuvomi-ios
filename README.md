@@ -22,7 +22,8 @@
   <p>
     <a href="https://github.com/ulsklyc/yuvomi"><strong>→ Yuvomi server</strong></a>&nbsp;&nbsp;·&nbsp;
     <a href="https://yuvomi.cloud/"><strong>yuvomi.cloud</strong></a>&nbsp;&nbsp;·&nbsp;
-    <a href="#build-from-source">Build from source</a>
+    <a href="#build-from-source">Build from source</a>&nbsp;&nbsp;·&nbsp;
+    <a href="README.de.md" hreflang="de">Auf&nbsp;Deutsch</a>
   </p>
 
   <p><b>1</b>&nbsp;server,&nbsp;yours&nbsp;&nbsp;·&nbsp; <b>0</b>&nbsp;trackers&nbsp;&nbsp;·&nbsp; <b>0</b>&nbsp;in-app&nbsp;purchases&nbsp;&nbsp;·&nbsp; <b>2</b>&nbsp;languages</p>
