@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Swift-Pakete der App (Package.swift, Package.resolved).
+  - package-ecosystem: swift
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+    groups:
+      swift-openapi:
+        patterns:
+          - "swift-openapi-*"
+          - "swift-http-types"
+  # Generator-Paket unter Tools/. Ein neuer Generator kann anderen Code erzeugen:
+  # dann wird der Generator-Check der CI rot, und scripts/generate-api.sh muss im
+  # selben PR laufen. Das ist gewollt, der Bump kommt nie ungeprüft.
+  - package-ecosystem: swift
+    directory: /Tools
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
