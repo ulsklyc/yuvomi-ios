@@ -52,6 +52,13 @@ func task(_ id: Int, due: CalendarDay? = nil, time: String? = nil, status: TaskS
         ]))
     }
 
+    /// Ein unbekannter Status gilt nicht als erledigt: Die Aufgabe bleibt in der Liste.
+    @Test func aTaskWithAnUnknownStatusStaysInTheList() async {
+        let list = model(FakeTasks(.success([task(1, status: .unknown), task(2, status: .done)])))
+        await list.load()
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1, status: .unknown)])]))
+    }
+
     @Test func onlyDoneTasksLeaveAnEmptyList() async {
         let list = model(FakeTasks(.success([task(1, status: .done)])))
         await list.load()

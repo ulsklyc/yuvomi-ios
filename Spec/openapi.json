@@ -2928,10 +2928,6 @@
           },
           "all_day": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 for an all-day event, in the form 0 or 1. Start and end are then normally `YYYY-MM-DD`."
           },
           "tzid": {
@@ -2960,19 +2956,10 @@
             "description": "RRULE of the series, null for a single event. On an expanded occurrence the rule of its series. A synchronized series may carry more than the vocabulary the API accepts."
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "assignees",
-              "private"
-            ]
+            "type": "string"
           },
           "countdown": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the event shows as a countdown."
           },
           "assigned_to": {
@@ -3024,13 +3011,6 @@
           },
           "external_source": {
             "type": "string",
-            "enum": [
-              "local",
-              "google",
-              "apple",
-              "ics",
-              "caldav"
-            ],
             "description": "Where the event lives. `local` also for one sent to a provider that has not come back from the sync yet, and for an imported one."
           },
           "external_calendar_id": {
@@ -3128,34 +3108,18 @@
           },
           "user_modified": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 once a synced event was edited in Yuvomi."
           },
           "color_modified": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "series_authored": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_dirty": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_attempts": {
@@ -3191,10 +3155,6 @@
           },
           "birthday_event_kind": {
             "type": "string",
-            "enum": [
-              "birthday",
-              "name_day"
-            ],
             "description": "Only on a generated event."
           },
           "name_day": {
@@ -3207,18 +3167,10 @@
           },
           "is_recurring_instance": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Present on a row expanded from a series: 0 on the first slot of the series, 1 on every later one."
           },
           "is_series_start": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Present on a row expanded from a series: 1 for its first occurrence."
           },
           "color": {
@@ -3760,34 +3712,21 @@
             "type": "object",
             "description": "Per module key. Extension modules bring their own keys.",
             "additionalProperties": {
-              "type": "string",
-              "enum": [
-                "none",
-                "read",
-                "write"
-              ]
+              "type": "string"
             }
           },
           "widgets": {
             "type": "object",
             "description": "Per dashboard widget id.",
             "additionalProperties": {
-              "type": "string",
-              "enum": [
-                "none",
-                "allow"
-              ]
+              "type": "string"
             }
           },
           "capabilities": {
             "type": "object",
             "description": "Per capability key.",
             "additionalProperties": {
-              "type": "string",
-              "enum": [
-                "none",
-                "allow"
-              ]
+              "type": "string"
             }
           }
         },
@@ -3809,11 +3748,7 @@
             "type": "string"
           },
           "kind": {
-            "type": "string",
-            "enum": [
-              "birthday",
-              "name_day"
-            ]
+            "type": "string"
           },
           "next_date": {
             "type": "string",
@@ -3827,11 +3762,7 @@
             "format": "date"
           },
           "year_unknown": {
-            "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
+            "type": "integer"
           },
           "name_day": {
             "type": [
@@ -3950,12 +3881,7 @@
         "type": "object",
         "properties": {
           "source": {
-            "type": "string",
-            "enum": [
-              "event",
-              "task",
-              "document"
-            ]
+            "type": "string"
           },
           "id": {
             "type": "integer"
@@ -4244,25 +4170,13 @@
             "type": "string"
           },
           "pinned": {
-            "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
+            "type": "integer"
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "private"
-            ]
+            "type": "string"
           },
           "locked": {
-            "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
+            "type": "integer"
           },
           "created_by": {
             "type": [
@@ -4793,12 +4707,6 @@
               "string",
               "null"
             ],
-            "enum": [
-              "approver",
-              "self",
-              "family",
-              null
-            ],
             "description": "`approver` sees every participant and all open requests, `self` only the own row and requests, `family` everybody by name without requests. Null without access to the module."
           },
           "me": {
@@ -4900,11 +4808,7 @@
                   "type": "integer"
                 },
                 "type": {
-                  "type": "string",
-                  "enum": [
-                    "earn",
-                    "bonus"
-                  ]
+                  "type": "string"
                 },
                 "reason": {
                   "type": [
@@ -4944,12 +4848,7 @@
             "format": "date"
           },
           "source": {
-            "type": "string",
-            "enum": [
-              "pattern",
-              "override",
-              "extra"
-            ]
+            "type": "string"
           },
           "crosses_midnight": {
             "type": "boolean"
@@ -5028,10 +4927,7 @@
             ]
           },
           "is_checked": {
-            "type": "integer",
-            "enum": [
-              0
-            ]
+            "type": "integer"
           }
         },
         "required": [
@@ -5129,11 +5025,7 @@
               "type": "object",
               "properties": {
                 "direction": {
-                  "type": "string",
-                  "enum": [
-                    "owe",
-                    "owed"
-                  ]
+                  "type": "string"
                 },
                 "userId": {
                   "type": "integer"
@@ -5198,22 +5090,10 @@
             "description": "Key of a task category, see `GET /tasks/meta/options`. Categories are managed per household, so this is not a fixed list."
           },
           "priority": {
-            "type": "string",
-            "enum": [
-              "none",
-              "low",
-              "medium",
-              "high",
-              "urgent"
-            ]
+            "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "in_progress",
-              "done"
-            ],
             "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
           },
           "start_date": {
@@ -5259,10 +5139,6 @@
           },
           "is_recurring": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task repeats, in the form 0 or 1."
           },
           "recurrence_rule": {
@@ -5274,10 +5150,6 @@
           },
           "recurrence_from_completion": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the next occurrence counts from the day of completion instead of the due date."
           },
           "recurrence_origin_id": {
@@ -5299,27 +5171,14 @@
             "maximum": 10000
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "assignees",
-              "private"
-            ]
+            "type": "string"
           },
           "countdown": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task shows as a countdown."
           },
           "locked": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the definition of the task is closed to everyone but its creator and administrators (#830)."
           },
           "sort_order": {
@@ -5349,10 +5208,6 @@
           },
           "external_source": {
             "type": "string",
-            "enum": [
-              "local",
-              "caldav"
-            ],
             "description": "`caldav` for a task that lives on a CalDAV reminder list."
           },
           "external_uid": {
@@ -5388,10 +5243,6 @@
           },
           "outbound_dirty": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_attempts": {
@@ -5401,10 +5252,6 @@
           },
           "seen_on_server": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "assigned_name": {
@@ -5612,11 +5459,7 @@
             ]
           },
           "all_day": {
-            "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
+            "type": "integer"
           },
           "color": {
             "type": [
@@ -5726,18 +5569,7 @@
       },
       "DocumentStorageErrorCode": {
         "type": "string",
-        "description": "Stable machine-readable code for document-storage failures.",
-        "enum": [
-          "DOCUMENT_STORAGE_INVALID_CONFIG",
-          "DOCUMENT_STORAGE_NOT_CONFIGURED",
-          "DOCUMENT_STORAGE_UPLOAD_FAILED",
-          "DOCUMENT_STORAGE_READ_FAILED",
-          "DOCUMENT_STORAGE_DELETE_FAILED",
-          "DOCUMENT_STORAGE_CLEANUP_FAILED",
-          "DOCUMENT_STORAGE_TOO_LARGE",
-          "DOCUMENT_STORAGE_CONNECTION_TEST_FAILED",
-          "DOCUMENT_STORAGE_CONFIG_PROTECTED"
-        ]
+        "description": "Stable machine-readable code for document-storage failures."
       },
       "LocalCalendarListItem": {
         "type": "object",
@@ -5927,11 +5759,7 @@
             "maxLength": 80
           },
           "scope": {
-            "type": "string",
-            "enum": [
-              "personal",
-              "household"
-            ]
+            "type": "string"
           },
           "owner_user_id": {
             "type": [
@@ -5970,10 +5798,7 @@
         "description": "The answer of a write that has nothing else to say.",
         "properties": {
           "ok": {
-            "type": "boolean",
-            "enum": [
-              true
-            ]
+            "type": "boolean"
           }
         },
         "required": [
@@ -6005,10 +5830,7 @@
             "description": "As stored, and the form depends on who wrote the row: UTC without a zone suffix for a reminder set through this API, on rows from up to v2.68.0 possibly with an offset, and on derived types also `YYYY-MM-DDTHH:MM` or a UTC value with `Z` and possibly milliseconds. Parse it leniently; `GET /reminders/upcoming` has `fires_at` for scheduling."
           },
           "dismissed": {
-            "type": "integer",
-            "enum": [
-              0
-            ]
+            "type": "integer"
           },
           "pushed_at": {
             "type": [
@@ -6116,11 +5938,7 @@
             "type": "string"
           },
           "reason": {
-            "type": "string",
-            "enum": [
-              "refused",
-              "waited"
-            ]
+            "type": "string"
           }
         },
         "required": [
@@ -6253,11 +6071,7 @@
             "description": "The name of a shopping category."
           },
           "is_checked": {
-            "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
+            "type": "integer"
           },
           "notes": {
             "type": [
@@ -6666,10 +6480,6 @@
               },
               "accepts_new_items": {
                 "type": "integer",
-                "enum": [
-                  0,
-                  1
-                ],
                 "description": "0 on a list that mirrors a CalDAV reminder list which is read-only for its account."
               }
             },
@@ -6904,22 +6714,10 @@
             "description": "Key of a task category, see `GET /tasks/meta/options`. Categories are managed per household, so this is not a fixed list."
           },
           "priority": {
-            "type": "string",
-            "enum": [
-              "none",
-              "low",
-              "medium",
-              "high",
-              "urgent"
-            ]
+            "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "in_progress",
-              "done"
-            ],
             "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
           },
           "start_date": {
@@ -6965,10 +6763,6 @@
           },
           "is_recurring": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task repeats, in the form 0 or 1."
           },
           "recurrence_rule": {
@@ -6980,10 +6774,6 @@
           },
           "recurrence_from_completion": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the next occurrence counts from the day of completion instead of the due date."
           },
           "recurrence_origin_id": {
@@ -7005,27 +6795,14 @@
             "maximum": 10000
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "assignees",
-              "private"
-            ]
+            "type": "string"
           },
           "countdown": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task shows as a countdown."
           },
           "locked": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the definition of the task is closed to everyone but its creator and administrators (#830)."
           },
           "sort_order": {
@@ -7055,10 +6832,6 @@
           },
           "external_source": {
             "type": "string",
-            "enum": [
-              "local",
-              "caldav"
-            ],
             "description": "`caldav` for a task that lives on a CalDAV reminder list."
           },
           "external_uid": {
@@ -7094,10 +6867,6 @@
           },
           "outbound_dirty": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_attempts": {
@@ -7107,10 +6876,6 @@
           },
           "seen_on_server": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "assigned_name": {
@@ -7449,22 +7214,10 @@
             "description": "Key of a task category, see `GET /tasks/meta/options`. Categories are managed per household, so this is not a fixed list."
           },
           "priority": {
-            "type": "string",
-            "enum": [
-              "none",
-              "low",
-              "medium",
-              "high",
-              "urgent"
-            ]
+            "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "in_progress",
-              "done"
-            ],
             "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
           },
           "start_date": {
@@ -7510,10 +7263,6 @@
           },
           "is_recurring": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task repeats, in the form 0 or 1."
           },
           "recurrence_rule": {
@@ -7525,10 +7274,6 @@
           },
           "recurrence_from_completion": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the next occurrence counts from the day of completion instead of the due date."
           },
           "recurrence_origin_id": {
@@ -7550,27 +7295,14 @@
             "maximum": 10000
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "assignees",
-              "private"
-            ]
+            "type": "string"
           },
           "countdown": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task shows as a countdown."
           },
           "locked": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the definition of the task is closed to everyone but its creator and administrators (#830)."
           },
           "sort_order": {
@@ -7600,10 +7332,6 @@
           },
           "external_source": {
             "type": "string",
-            "enum": [
-              "local",
-              "caldav"
-            ],
             "description": "`caldav` for a task that lives on a CalDAV reminder list."
           },
           "external_uid": {
@@ -7639,10 +7367,6 @@
           },
           "outbound_dirty": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_attempts": {
@@ -7652,10 +7376,6 @@
           },
           "seen_on_server": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "assigned_name": {
@@ -7827,22 +7547,10 @@
             "description": "Key of a task category, see `GET /tasks/meta/options`. Categories are managed per household, so this is not a fixed list."
           },
           "priority": {
-            "type": "string",
-            "enum": [
-              "none",
-              "low",
-              "medium",
-              "high",
-              "urgent"
-            ]
+            "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "in_progress",
-              "done"
-            ],
             "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
           },
           "start_date": {
@@ -7888,10 +7596,6 @@
           },
           "is_recurring": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task repeats, in the form 0 or 1."
           },
           "recurrence_rule": {
@@ -7903,10 +7607,6 @@
           },
           "recurrence_from_completion": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the next occurrence counts from the day of completion instead of the due date."
           },
           "recurrence_origin_id": {
@@ -7928,27 +7628,14 @@
             "maximum": 10000
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "assignees",
-              "private"
-            ]
+            "type": "string"
           },
           "countdown": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task shows as a countdown."
           },
           "locked": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the definition of the task is closed to everyone but its creator and administrators (#830)."
           },
           "sort_order": {
@@ -7978,10 +7665,6 @@
           },
           "external_source": {
             "type": "string",
-            "enum": [
-              "local",
-              "caldav"
-            ],
             "description": "`caldav` for a task that lives on a CalDAV reminder list."
           },
           "external_uid": {
@@ -8017,10 +7700,6 @@
           },
           "outbound_dirty": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_attempts": {
@@ -8030,10 +7709,6 @@
           },
           "seen_on_server": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "assigned_name": {
@@ -8154,27 +7829,14 @@
           "priorities": {
             "type": "array",
             "items": {
-              "type": "string",
-              "enum": [
-                "none",
-                "low",
-                "medium",
-                "high",
-                "urgent"
-              ]
+              "type": "string"
             }
           },
           "statuses": {
             "type": "array",
             "description": "What the `status` filter and input take. `archived` stands for the archive here; a task never reads back with it.",
             "items": {
-              "type": "string",
-              "enum": [
-                "open",
-                "in_progress",
-                "done",
-                "archived"
-              ]
+              "type": "string"
             }
           },
           "categories": {
@@ -8266,11 +7928,6 @@
               },
               "status": {
                 "type": "string",
-                "enum": [
-                  "open",
-                  "in_progress",
-                  "done"
-                ],
                 "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
               },
               "archived_at": {
@@ -8310,11 +7967,6 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "in_progress",
-              "done"
-            ],
             "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
           }
         }
@@ -8525,22 +8177,10 @@
             "description": "Key of a task category, see `GET /tasks/meta/options`. Categories are managed per household, so this is not a fixed list."
           },
           "priority": {
-            "type": "string",
-            "enum": [
-              "none",
-              "low",
-              "medium",
-              "high",
-              "urgent"
-            ]
+            "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "in_progress",
-              "done"
-            ],
             "description": "The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`."
           },
           "start_date": {
@@ -8586,10 +8226,6 @@
           },
           "is_recurring": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task repeats, in the form 0 or 1."
           },
           "recurrence_rule": {
@@ -8601,10 +8237,6 @@
           },
           "recurrence_from_completion": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the next occurrence counts from the day of completion instead of the due date."
           },
           "recurrence_origin_id": {
@@ -8626,27 +8258,14 @@
             "maximum": 10000
           },
           "visibility": {
-            "type": "string",
-            "enum": [
-              "all",
-              "assignees",
-              "private"
-            ]
+            "type": "string"
           },
           "countdown": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the task shows as a countdown."
           },
           "locked": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "1 when the definition of the task is closed to everyone but its creator and administrators (#830)."
           },
           "sort_order": {
@@ -8676,10 +8295,6 @@
           },
           "external_source": {
             "type": "string",
-            "enum": [
-              "local",
-              "caldav"
-            ],
             "description": "`caldav` for a task that lives on a CalDAV reminder list."
           },
           "external_uid": {
@@ -8715,10 +8330,6 @@
           },
           "outbound_dirty": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "outbound_attempts": {
@@ -8728,10 +8339,6 @@
           },
           "seen_on_server": {
             "type": "integer",
-            "enum": [
-              0,
-              1
-            ],
             "description": "Bookkeeping of the sync; says nothing a client acts on."
           },
           "assigned_name": {
@@ -8800,10 +8407,7 @@
         "description": "The password was right, but no session exists yet. Continue with POST /auth/2fa/verify in the same cookie session.",
         "properties": {
           "twoFactorRequired": {
-            "type": "boolean",
-            "enum": [
-              true
-            ]
+            "type": "boolean"
           },
           "recoveryAvailable": {
             "type": "boolean",
@@ -8859,11 +8463,7 @@
             "type": "string"
           },
           "twoFactorMethod": {
-            "type": "string",
-            "enum": [
-              "totp",
-              "recovery"
-            ]
+            "type": "string"
           },
           "recoveryRemaining": {
             "type": "integer",
@@ -8906,10 +8506,7 @@
             "description": "As stored, and the form depends on who wrote the row: UTC without a zone suffix for a reminder set through this API, on rows from up to v2.68.0 possibly with an offset, and on derived types also `YYYY-MM-DDTHH:MM` or a UTC value with `Z` and possibly milliseconds. Parse it leniently; `GET /reminders/upcoming` has `fires_at` for scheduling."
           },
           "dismissed": {
-            "type": "integer",
-            "enum": [
-              0
-            ]
+            "type": "integer"
           },
           "pushed_at": {
             "type": [
@@ -9007,23 +8604,10 @@
             "description": "PNG, JPEG, or WebP data URL."
           },
           "role": {
-            "type": "string",
-            "enum": [
-              "admin",
-              "member"
-            ]
+            "type": "string"
           },
           "family_role": {
-            "type": "string",
-            "enum": [
-              "dad",
-              "mom",
-              "parent",
-              "child",
-              "grandparent",
-              "relative",
-              "other"
-            ]
+            "type": "string"
           },
           "access_scope": {
             "type": "string",
@@ -9125,9 +8709,6 @@
           },
           "product": {
             "type": "string",
-            "enum": [
-              "yuvomi"
-            ],
             "description": "Identifies a Yuvomi instance. `app_name` cannot do that: a household can rename it."
           },
           "client_api": {

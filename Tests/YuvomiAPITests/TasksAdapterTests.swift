@@ -28,6 +28,29 @@ import YuvomiAPI
         #expect(request.headerFields[.authorization] == "Bearer ydc_FIXTURE_CREDENTIAL")
     }
 
+    /// Fixtures/derived/tasks-unknown-values.json: Aufgabe 7 hat einen unbekannten Status,
+    /// Aufgabe 2 eine unbekannte Priorität. Beide bleiben in der Liste, die übrigen auch.
+    @Test func tasksWithUnknownValuesStayInTheList() async throws {
+        let variant = FixtureTransport.Response(body: try Fixtures.derived("tasks-unknown-values"))
+        let tasks = YuvomiTasks(server: server, credential: "c", transport: FixtureTransport(overrides: ["listTasks": variant]))
+        let original = try await YuvomiTasks(server: server, credential: "c", transport: FixtureTransport()).tasks()
+
+        let list = try await tasks.tasks()
+
+        #expect(list.map(\.id) == original.map(\.id))
+        let seven = try #require(list.first { $0.id == 7 })
+        // Ein unbekannter Status gilt nicht als erledigt, nur dieses Feld bleibt ungedeutet.
+        #expect(seven.status == .unknown)
+        #expect(seven.status != .done)
+        #expect(seven.priority == .urgent)
+        #expect(seven.title == "Sign school permission slip")
+        let two = try #require(list.first { $0.id == 2 })
+        #expect(two.priority == .unknown)
+        #expect(two.status == .open)
+        #expect(two.title == "Pay electricity bill")
+        #expect(list.filter { ![2, 7].contains($0.id) } == original.filter { ![2, 7].contains($0.id) })
+    }
+
     @Test func revokedCredentialIsUnauthorized() async {
         let revoked = FixtureTransport.Response(status: .unauthorized, body: Data(#"{"error":"Unauthorized","code":401}"#.utf8))
         let tasks = YuvomiTasks(server: server, credential: "ydc_revoked", transport: FixtureTransport(overrides: ["listTasks": revoked]))
