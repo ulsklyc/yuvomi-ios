@@ -242,8 +242,12 @@ final class AppModel {
     /// der Warteschlange (etwa ohne Netz), bleibt sie als veraltet markiert, bis es gesendet ist.
     private func reloadListIfStale() async {
         guard listIsStale, let current = session.current, let taskListModel, taskListModel.session == current else { return }
-        if !replies.replies.contains(where: { $0.kind == .checkOff }) { listIsStale = false }
-        await taskListModel.model.load()
+        let allSent = !replies.replies.contains(where: { $0.kind == .checkOff })
+        let list = taskListModel.model
+        await list.load()
+        // Erst ein gelungenes Neuladen nach dem Senden hebt die Markierung auf. Scheitert es,
+        // zeigt die Liste weiter den alten Stand.
+        if allSent, list.refreshProblem == nil, case .loaded = list.state { listIsStale = false }
     }
 
     func login() -> LoginModel {
