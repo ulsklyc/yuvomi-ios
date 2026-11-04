@@ -21,6 +21,8 @@ it sends goes there:
   phone (`identifierForVendor`), so the phone can be listed and signed out in the web app.
 - **While you use the app**, the requests it needs to show your data, authenticated with the
   device credential the server issued.
+- **When you answer a reminder notification**: tapping or swiping it away tells the server to
+  dismiss that reminder, and "Mark as Done" on a task reminder sets that task to done.
 
 What that server stores, for how long and who can see it is decided by whoever runs it - usually
 your own household, not this project. Questions about that data go to the server's operator.
@@ -39,6 +41,15 @@ Plain HTTP is only accepted for servers on the local network (`localhost`, LAN a
   in the app's own settings on the device.
 - **Reminders** are scheduled as local notifications on the phone, with the title of the task or
   event they belong to. The app uses no push service, so no relay sees their content.
+- **Answers not yet sent.** When you answer a notification, the app first notes the answer in its
+  own settings on the device, so it survives a restart and a lost connection. An entry holds
+  whether the reminder was dismissed or the task checked off, the IDs of the reminder and of its
+  task or event, the title of the task or event and the time you answered. An entry is removed
+  once the server has it, when the server refuses it, or after 24 hours unsent.
+- **Signing out** removes all of Yuvomi's scheduled and delivered notifications from the phone,
+  forgets answers not yet sent and cancels the background refresh. The same happens when the
+  server has revoked the phone's credential. Turning reminders off in the app removes the
+  notifications too, but answers already given are still sent.
 
 ## Permissions
 

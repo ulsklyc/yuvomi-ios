@@ -20,3 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reminders on the phone.** Upcoming reminders for tasks and events are scheduled on the device
   and arrive even while the app is closed or the phone is locked. The app refreshes them in the
   background; a switch turns them off for this phone only.
+- **Answer a reminder right from the notification.** Tapping or swiping a notification away
+  dismisses the reminder on the server, and "Mark as Done" on a task reminder checks the task off
+  without opening the app; on a locked phone, iOS asks to unlock first. Without a connection the
+  phone keeps the answer for up to 24 hours and sends it on the next refresh. If the server does
+  not let you check the task off, a notification says so.
