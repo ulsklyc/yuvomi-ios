@@ -192,7 +192,15 @@ Gegen den lokalen Server `v2.84.0` mit Demo-Seed `de`, emma per Kopplungslink. D
 - **impeccable (audit.native, eine Runde polish):** nativ, semantische Farben, keine hart codierten Werte. Die Knöpfe der Karte stehen bei großer Schrift jetzt untereinander (in größter Stufe im Simulator geprüft). Solange iOS fragt, ist die Karte schon ausgeblendet.
 - **Werkzeug:** Das Tipp-Werkzeug des Simulators erreicht den Schalter nicht verlässlich und liefert Tipps verzögert. Den sichtbaren Schalter und den Hintergrund-Abgleich prüft der Lauf auf dem iPhone.
 
-**Offen für den Lauf auf dem iPhone:** Schalter aus und wieder an von Hand, Abgleich im Hintergrund mit `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"cloud.yuvomi.ios.reminders"]` im Debugger, eine Mitteilung bei gesperrtem Gerät.
+## Lauf auf dem iPhone
+
+Am 2026-11-04 auf einem iPhone Air mit iOS 27, gegen denselben lokalen Server im WLAN, emma per Passwort angemeldet. Die Erinnerungen kamen per API, die Zeiten stehen in Ortszeit.
+
+- **Gesperrtes Gerät:** Karte „Erlauben“, App kurz in den Hintergrund, Gerät gesperrt. Die Mitteilung kam zur Minute der Erinnerung, mit dem Titel der Aufgabe.
+- **Schalter aus und wieder an:** Zwei Erinnerungen geplant (Aufgabe, Termin), dann den Schalter in den Einstellungen von Hand aus. Er blieb auf „aus“, und für die Aufgabe kam keine Mitteilung. Danach wieder an, die Mitteilung zum Termin kam pünktlich.
+- **Abgleich im Hintergrund:** Die App per `devicectl device process launch --no-activate` im Hintergrund gestartet und mit lldb angehängt. Erst danach kam eine neue Erinnerung auf den Server. Dann `_simulateLaunchForTaskWithIdentifier:@"cloud.yuvomi.ios.reminders"` ausgelöst. Laut Haltepunkten lief `backgroundRefresh` → `refreshReminders` → `ReminderCoordinator.sync`, und die Mitteilung zur neuen Erinnerung kam bei gesperrtem Gerät, ohne dass die App vorn war.
+- **Werkzeug:** lldb erreicht das Gerät nur entsperrt (`platform select remote-ios`, `device select`, `device process attach`). Nach dem Anhängen dauert es bis zu zwei Minuten, bis der Prozess hält, weil lldb den Shared Cache aus dem Speicher liest. Wer vorher Befehle schickt oder lldb abbricht, beendet die App.
+- **Neue Anmeldung des Abgleichs:** `BGTaskScheduler.submit` ist ab iOS 27 veraltet. Die App meldet den nächsten Abgleich jetzt mit `try await submitTaskRequest(_:)` an, abseits des Main Threads, wartet darauf und schreibt Fehler ins Log. Ist danach abgemeldet oder ausgeschaltet, meldet sie ihn wieder ab, weil das `cancel` aus dem Abräumen sonst vor der Anmeldung ankommen kann. Auf dem iPhone geprüft: Nach dem Wechsel in den Hintergrund zweimal hintereinander ausgelöst, beide Male lief `backgroundRefresh` samt neuer Anmeldung. Vor jedem Auslösen kam eine Erinnerung an dieselbe Aufgabe auf den Server, die zweite ersetzte die erste (eine Erinnerung je Aufgabe). Bei gesperrtem Gerät kam nur die Mitteilung zur zweiten Zeit: Der zweite Abgleich im Hintergrund hat die verschobene Erinnerung umgeplant.
 
 ## Fertig, wenn
 
