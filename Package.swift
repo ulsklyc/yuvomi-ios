@@ -1,6 +1,6 @@
 // swift-tools-version: 6.4
 
-// Module und Abhängigkeitsrichtung: docs/plans/phase-1-slice-1.md, Abschnitt "Projektaufbau".
+// Module und Abhängigkeitsrichtung:
 // UI-Module -> YuvomiCore <- YuvomiAPI. Der Kern kennt weder Generator noch Runtime;
 // YuvomiAPI setzt seine Protokolle mit dem generierten Client um, die App verbindet beides.
 // Die generierten Typen verlassen YuvomiAPI nicht.

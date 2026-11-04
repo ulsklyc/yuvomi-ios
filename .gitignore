@@ -8,3 +8,30 @@ DerivedData/
 # Ebenfalls aus project.yml (info:)
 App/Info.plist
 App/Yuvomi.entitlements
+
+# Im Repo liegt nur, was die App zum Bauen, Testen und Laufen braucht. Arbeitsdokumente,
+# Planung und Werkzeuge für Coding Agents bleiben lokal (wie im Server-Repo).
+CLAUDE.md
+AGENTS.md
+PRODUCT.md
+.claude/
+.codex/
+.agents/
+.cursor/
+.github/skills/
+.github/hooks/
+.github/prompts/
+.github/instructions/
+.github/copilot-instructions.md
+.mcp.json
+.worktreeinclude
+.worktrees/
+.impeccable/
+.superpowers/
+.playwright-mcp/
+# Planung, Recherche und Domänendoku der Agent-Skills
+GLOSSARY.md
+GLOSSARY-MAP.md
+docs/
+# Design-Quellen (das App-Icon steckt in App/Assets.xcassets)
+design/

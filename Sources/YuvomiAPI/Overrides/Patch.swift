@@ -1,7 +1,7 @@
 /// Ein Feld einer Eingabe, bei dem der Server zwischen "weglassen" und `null` unterscheidet.
 ///
 /// Der Generator kennt nur Optionals und lässt `nil` weg. Ein Termin-Ende ließe sich damit
-/// nie entfernen (S5, docs/plans/phase-0-server.md). Vergleich JS: `undefined` gegen `null`.
+/// nie entfernen (Server-Regel S5). Vergleich JS: `undefined` gegen `null`.
 enum Patch<Value: Codable & Hashable & Sendable>: Hashable, Sendable {
     /// Wird nicht gesendet, der Server lässt den gespeicherten Wert stehen.
     case unset
