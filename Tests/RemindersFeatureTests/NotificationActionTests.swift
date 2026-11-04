@@ -87,3 +87,44 @@ import YuvomiCore
         #expect(ReminderSync.parse(request.identifier) == nil)
     }
 }
+
+/// iOS erfährt erst nach der Rückmeldung, dass die Aktion fertig ist, und zwar auf dem Main
+/// Thread. Sonst beendet UIKit die App („Call must be made on main thread“).
+@MainActor @Suite struct NotificationDelegateTests {
+    @MainActor final class Steps {
+        var all: [String] = []
+    }
+
+    let reply = ReminderReply(kind: .checkOff, reminderID: 7, origin: .task, entityID: 12, title: "Strom zahlen", at: .now)
+
+    @Test func iOSHearsBackOnTheMainThreadAfterTheReply() async {
+        let steps = Steps()
+        let delegate = ReminderNotificationDelegate { _ in
+            await Task.yield()
+            steps.all.append("reply")
+        }
+
+        await withCheckedContinuation { finished in
+            delegate.respond(to: reply) {
+                steps.all.append(Thread.isMainThread ? "done on main" : "done elsewhere")
+                finished.resume()
+            }
+        }
+
+        #expect(steps.all == ["reply", "done on main"])
+    }
+
+    @Test func withoutAReplyIOSHearsBackAtOnce() async {
+        let steps = Steps()
+        let delegate = ReminderNotificationDelegate { _ in steps.all.append("reply") }
+
+        await withCheckedContinuation { finished in
+            delegate.respond(to: nil) {
+                steps.all.append("done")
+                finished.resume()
+            }
+        }
+
+        #expect(steps.all == ["done"])
+    }
+}

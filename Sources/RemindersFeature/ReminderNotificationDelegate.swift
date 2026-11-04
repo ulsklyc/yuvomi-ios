@@ -9,8 +9,13 @@ import YuvomiCore
 ///   Antippen öffnet die App wie bisher auf der Aufgabenliste.
 ///
 /// Ohne veränderlichen Zustand und deshalb `Sendable`. Die Methoden sind `nonisolated`: Ein
-/// `@MainActor`-Delegate mit async-Methode baut unter Swift 6 nicht, weil die UN-Typen nicht
-/// `Sendable` sind. Aus `response` wird deshalb nur gelesen, was die Rückmeldung braucht.
+/// `@MainActor`-Delegate baut unter Swift 6 nicht, weil die UN-Typen nicht `Sendable` sind. Aus
+/// `response` wird deshalb nur gelesen, was die Rückmeldung braucht.
+///
+/// Bewusst die Varianten mit Completion Handler, nicht die mit `async`: Kehrt eine
+/// `nonisolated async`-Methode zurück, ruft Swift den Handler von iOS auf einem Thread des
+/// Pools auf. UIKit verlangt dafür den Main Thread und beendet die App sonst mit „Call must be
+/// made on main thread“ (gesehen im Simulator bei „Erledigt“ im Hintergrund).
 public final class ReminderNotificationDelegate: NSObject, UNUserNotificationCenterDelegate, Sendable {
     public typealias ReplyHandler = @MainActor @Sendable (ReminderReply) async -> Void
 
@@ -30,22 +35,36 @@ public final class ReminderNotificationDelegate: NSObject, UNUserNotificationCen
 
     public nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
     }
 
     public nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
         let request = response.notification.request
         // Der Titel der Aufgabe steht im Text, die Überschrift nennt nur die Herkunft
         // (`SystemNotificationScheduler.request(for:)`, geprüft in `NotificationRequestTests`).
-        guard let reply = ReminderReply(
+        let reply = ReminderReply(
             action: response.actionIdentifier, identifier: request.identifier, title: request.content.body, at: .now
-        ) else { return }
-        await onReply(reply)
+        )
+        // Der Handler ist im SDK nicht `Sendable`. Er wird nur einmal und nur auf dem MainActor
+        // aufgerufen, so wie iOS es verlangt.
+        nonisolated(unsafe) let completionHandler = completionHandler
+        respond(to: reply) { completionHandler() }
+    }
+
+    /// Gibt die Rückmeldung weiter und meldet iOS danach auf dem MainActor, dass sie fertig ist.
+    /// Ohne Rückmeldung (fremde Mitteilung, unbekannte Aktion) sofort.
+    nonisolated func respond(to reply: ReminderReply?, then done: @escaping @MainActor @Sendable () -> Void) {
+        Task { @MainActor in
+            if let reply { await onReply(reply) }
+            done()
+        }
     }
 }
 
