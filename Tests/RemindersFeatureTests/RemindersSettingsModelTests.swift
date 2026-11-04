@@ -19,10 +19,59 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
 
     func request() async -> NotificationPermissionStatus {
         requests += 1
-        // Wie die Frage von iOS: Die Antwort kommt nicht sofort.
+        // Die Antwort kommt nicht sofort, eine Reihenfolge zwischen Tasks garantiert das aber
+        // nicht. Tests, die während der Frage tippen, nehmen `HeldPermission`.
         await Task.yield()
         status = answer ? .allowed : .denied
         return status
+    }
+}
+
+/// Hält die Frage von iOS offen, bis der Test sie beantwortet. So tippt der Test sicher,
+/// während iOS fragt, statt auf die Reihenfolge der Tasks zu hoffen.
+actor HeldPermission: NotificationPermission {
+    private(set) var requests = 0
+    private var allowed = false
+    private var answer: CheckedContinuation<Void, Never>?
+    private var waitingForQuestion: [UUID: CheckedContinuation<Void, Never>] = [:]
+
+    func current() -> NotificationPermissionStatus { .notDetermined }
+
+    func request() async -> NotificationPermissionStatus {
+        requests += 1
+        // Nur die erste Frage bleibt offen. Fragt die App ein zweites Mal, antwortet der Fake
+        // sofort: Der Test zählt die Fragen dann, statt zu hängen.
+        guard requests == 1, !allowed else { return .allowed }
+        waitingForQuestion.values.forEach { $0.resume() }
+        waitingForQuestion = [:]
+        await withCheckedContinuation { answer = $0 }
+        return .allowed
+    }
+
+    /// Kehrt zurück, sobald die App iOS fragt, oder wenn `.timeLimit` den Test abbricht. Eine
+    /// Continuation wacht beim Abbruch nicht von selbst auf, deshalb der Handler: Fragt das
+    /// Modell nie, wird der Test rot, statt zu hängen.
+    func untilAsked() async {
+        guard requests == 0 else { return }
+        let id = UUID()
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if Task.isCancelled { continuation.resume() } else { waitingForQuestion[id] = continuation }
+            }
+        } onCancel: {
+            Task { await self.stopWaiting(id) }
+        }
+    }
+
+    private func stopWaiting(_ id: UUID) {
+        waitingForQuestion.removeValue(forKey: id)?.resume()
+    }
+
+    /// Die Person erlaubt. Gilt auch, wenn die Frage erst danach kommt.
+    func allow() {
+        allowed = true
+        answer?.resume()
+        answer = nil
     }
 }
 
@@ -35,7 +84,7 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
         UserDefaults().removePersistentDomain(forName: suite)
     }
 
-    func model(_ permission: FakePermission, onChange: @escaping @MainActor (Bool) -> Void = { _ in }) -> RemindersSettingsModel {
+    func model(_ permission: any NotificationPermission, onChange: @escaping @MainActor (Bool) -> Void = { _ in }) -> RemindersSettingsModel {
         RemindersSettingsModel(permission: permission, defaults: defaults, onChange: onChange)
     }
 
@@ -137,17 +186,22 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
         #expect(!settings.showsCard)
     }
 
-    @Test func tappingTwiceWhileIOSAsksAsksOnlyOnce() async {
-        let permission = FakePermission(.notDetermined)
+    /// Das zweite Tippen wird abgewartet, bevor die Person antwortet: So landet es sicher
+    /// während der Frage. Fragt das Modell gar nicht, bricht `.timeLimit` das Warten in
+    /// `untilAsked()` ab, und der Test wird rot.
+    @Test(.timeLimit(.minutes(1))) func tappingTwiceWhileIOSAsksAsksOnlyOnce() async {
+        let permission = HeldPermission()
         var changes: [Bool] = []
         let settings = model(permission) { changes.append($0) }
         await settings.load()
 
-        async let first: Void = settings.setOn(true)
-        async let second: Void = settings.setOn(true)
-        _ = await (first, second)
+        let first = Task { await settings.setOn(true) }
+        await permission.untilAsked()
+        await settings.setOn(true)
+        await permission.allow()
+        await first.value
 
-        #expect(permission.requests == 1)
+        #expect(await permission.requests == 1)
         #expect(changes == [true])
     }
 }
