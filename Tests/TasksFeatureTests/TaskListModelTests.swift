@@ -91,3 +91,59 @@ func task(_ id: Int, due: CalendarDay? = nil, time: String? = nil, status: TaskS
         #expect(list.refreshProblem == nil)
     }
 }
+
+/// Port-Fake: Jeder Aufruf hat seine eigene Antwort, und der erste wartet, bis der Test ihn
+/// freigibt. So kommt eine ältere Antwort nach einer jüngeren an.
+final class SlowFirstTasks: TaskReading, @unchecked Sendable {
+    private let lock = NSLock()
+    private var calls = 0
+    private var release: CheckedContinuation<Void, Never>?
+    private var released = false
+    let first: [TaskSummary]
+    let later: [TaskSummary]
+
+    init(first: [TaskSummary], later: [TaskSummary]) {
+        self.first = first
+        self.later = later
+    }
+
+    func tasks() async throws(APIError) -> [TaskSummary] {
+        let call = lock.withLock { calls += 1; return calls }
+        guard call == 1 else { return later }
+        await withCheckedContinuation { continuation in
+            let resume = lock.withLock { () -> Bool in
+                if released { return true }
+                release = continuation
+                return false
+            }
+            if resume { continuation.resume() }
+        }
+        return first
+    }
+
+    func releaseFirst() {
+        let continuation = lock.withLock { () -> CheckedContinuation<Void, Never>? in
+            released = true
+            defer { release = nil }
+            return release
+        }
+        continuation?.resume()
+    }
+}
+
+@MainActor @Suite struct TaskListModelOrderTests {
+    /// Eine ältere Antwort, die erst nach einer jüngeren ankommt, überschreibt sie nicht.
+    /// Sonst zeigte die Liste nach dem Abhaken eine erledigte Aufgabe wieder offen.
+    @Test func aSlowOlderAnswerDoesNotOverwriteANewerOne() async {
+        let tasks = SlowFirstTasks(first: [task(1), task(2)], later: [task(2)])
+        let list = TaskListModel(tasks: tasks, today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+
+        let older = Task { await list.load() }
+        for _ in 0..<10 { await Task.yield() }
+        await list.load()
+        tasks.releaseFirst()
+        await older.value
+
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(2)])]))
+    }
+}
