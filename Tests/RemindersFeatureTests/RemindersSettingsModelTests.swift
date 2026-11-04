@@ -33,7 +33,7 @@ actor HeldPermission: NotificationPermission {
     private(set) var requests = 0
     private var allowed = false
     private var answer: CheckedContinuation<Void, Never>?
-    private var waitingForQuestion: [CheckedContinuation<Void, Never>] = []
+    private var waitingForQuestion: [UUID: CheckedContinuation<Void, Never>] = [:]
 
     func current() -> NotificationPermissionStatus { .notDetermined }
 
@@ -42,16 +42,29 @@ actor HeldPermission: NotificationPermission {
         // Nur die erste Frage bleibt offen. Fragt die App ein zweites Mal, antwortet der Fake
         // sofort: Der Test zählt die Fragen dann, statt zu hängen.
         guard requests == 1, !allowed else { return .allowed }
-        waitingForQuestion.forEach { $0.resume() }
-        waitingForQuestion = []
+        waitingForQuestion.values.forEach { $0.resume() }
+        waitingForQuestion = [:]
         await withCheckedContinuation { answer = $0 }
         return .allowed
     }
 
-    /// Kehrt zurück, sobald die App iOS fragt.
+    /// Kehrt zurück, sobald die App iOS fragt, oder wenn `.timeLimit` den Test abbricht. Eine
+    /// Continuation wacht beim Abbruch nicht von selbst auf, deshalb der Handler: Fragt das
+    /// Modell nie, wird der Test rot, statt zu hängen.
     func untilAsked() async {
         guard requests == 0 else { return }
-        await withCheckedContinuation { waitingForQuestion.append($0) }
+        let id = UUID()
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if Task.isCancelled { continuation.resume() } else { waitingForQuestion[id] = continuation }
+            }
+        } onCancel: {
+            Task { await self.stopWaiting(id) }
+        }
+    }
+
+    private func stopWaiting(_ id: UUID) {
+        waitingForQuestion.removeValue(forKey: id)?.resume()
     }
 
     /// Die Person erlaubt. Gilt auch, wenn die Frage erst danach kommt.
@@ -174,8 +187,8 @@ actor HeldPermission: NotificationPermission {
     }
 
     /// Das zweite Tippen wird abgewartet, bevor die Person antwortet: So landet es sicher
-    /// während der Frage. Fragt das Modell gar nicht oder lässt es das zweite Tippen auf die
-    /// Antwort warten, beendet `.timeLimit` den Test, statt ihn hängen zu lassen.
+    /// während der Frage. Fragt das Modell gar nicht, bricht `.timeLimit` das Warten in
+    /// `untilAsked()` ab, und der Test wird rot.
     @Test(.timeLimit(.minutes(1))) func tappingTwiceWhileIOSAsksAsksOnlyOnce() async {
         let permission = HeldPermission()
         var changes: [Bool] = []
