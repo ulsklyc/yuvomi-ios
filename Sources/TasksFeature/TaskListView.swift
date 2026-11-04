@@ -4,12 +4,12 @@ import YuvomiAPI
 import YuvomiCore
 import YuvomiFixtures
 
-/// Offene Aufgaben, nach Fälligkeit gruppiert. Nur lesend.
+/// Offene Aufgaben, nach Fälligkeit gruppiert. Ein Tipp öffnet das Detail.
 ///
 /// `banner` steht über den Abschnitten, etwa die Karte für Erinnerungen. Was darin steht,
 /// entscheidet die App, die Liste kennt Erinnerungen nicht.
 public struct TaskListView<Banner: View>: View {
-    let model: TaskListModel
+    @Bindable var model: TaskListModel
     let onOpenSettings: () -> Void
     let banner: Banner
 
@@ -20,9 +20,13 @@ public struct TaskListView<Banner: View>: View {
     }
 
     public var body: some View {
-        NavigationStack {
+        NavigationStack(path: $model.path) {
             content
                 .navigationTitle(Text("tasks.title", bundle: .module))
+                // Außerhalb der `List`, sonst sieht der Stapel das Ziel nicht immer.
+                .navigationDestination(for: Int.self) { id in
+                    TaskDetailView(model: model.detail(for: id))
+                }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(action: onOpenSettings) {
@@ -64,7 +68,11 @@ public struct TaskListView<Banner: View>: View {
                 }
                 ForEach(sections) { section in
                     Section {
-                        ForEach(section.tasks) { TaskRow(task: $0, showsDate: section.kind != .today) }
+                        ForEach(section.tasks) { task in
+                            NavigationLink(value: task.id) {
+                                TaskRow(task: task, showsDate: section.kind != .today)
+                            }
+                        }
                     } header: {
                         Text(section.kind.title, bundle: .module)
                     }
@@ -90,10 +98,22 @@ struct TaskRow: View {
                         .accessibilityLabel(Text(task.priority == .urgent ? "tasks.priority.urgent" : "tasks.priority.high", bundle: .module))
                 }
             }
-            if let detail {
-                Text(verbatim: detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            if detail != nil || task.subtasks != nil {
+                HStack(spacing: 6) {
+                    if let detail { Text(verbatim: detail) }
+                    if let subtasks = task.subtasks {
+                        // Sichtbar knapp, VoiceOver liest den ganzen Satz statt „2 Schrägstrich 5“.
+                        Label {
+                            Text("tasks.row.subtasks \(subtasks.done) \(subtasks.total)", bundle: .module)
+                        } icon: {
+                            Image(systemName: "checklist")
+                        }
+                        .labelStyle(.titleAndIcon)
+                        .accessibilityLabel(Text("tasks.row.subtasks.spoken \(subtasks.done) \(subtasks.total)", bundle: .module))
+                    }
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)

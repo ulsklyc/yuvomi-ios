@@ -30,6 +30,12 @@ public final class TaskListModel {
     /// Neuladen ist gescheitert, die alte Liste bleibt sichtbar.
     public private(set) var refreshProblem: Problem?
 
+    /// Der Pfad der Navigation: die geöffnete Aufgabe, leer auf der Liste. Auch eine Mitteilung
+    /// setzt ihn (Q8). Wie ein Router-Stack in einer Web-App, nur als Array von Ids.
+    public var path: [Int] = []
+    /// Das Detail der zuletzt geöffneten Aufgabe. Ein Wechsel der Aufgabe baut ein neues.
+    private var openedDetail: TaskDetailModel?
+
     /// Zählt die Ladevorgänge. Nur die Antwort des jüngsten zählt: Eine ältere, die später
     /// ankommt, zeigte sonst etwa eine gerade abgehakte Aufgabe wieder offen.
     private var generation = 0
@@ -66,6 +72,16 @@ public final class TaskListModel {
                 state = .failed(problem)
             }
         }
+    }
+
+    /// Das Detail zu einer Aufgabe. Dieselbe Aufgabe behält ihr Modell, solange keine andere
+    /// geöffnet wird: SwiftUI fragt beim Neuzeichnen erneut, und das Detail soll nicht jedes Mal
+    /// neu laden.
+    public func detail(for id: Int) -> TaskDetailModel {
+        if let openedDetail, openedDetail.taskID == id { return openedDetail }
+        let model = TaskDetailModel(taskID: id, tasks: tasks, onUnauthorized: onUnauthorized)
+        openedDetail = model
+        return model
     }
 
     static func sections(_ all: [TaskSummary], today: CalendarDay) -> [TaskSection] {
