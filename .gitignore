@@ -8,6 +8,8 @@ DerivedData/
 # Ebenfalls aus project.yml (info:)
 App/Info.plist
 App/Yuvomi.entitlements
+# App-Store-Connect-API-Keys (scripts/upload-testflight.sh) nie einchecken
+*.p8
 
 # Im Repo liegt nur, was die App zum Bauen, Testen und Laufen braucht. Arbeitsdokumente,
 # Planung und Werkzeuge für Coding Agents bleiben lokal (wie im Server-Repo).
