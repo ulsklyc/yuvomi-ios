@@ -60,6 +60,7 @@ The client in `Sources/YuvomiAPI/Generated/` is generated from `Spec/openapi.jso
 
 - `scripts/generate-api.sh` regenerates it and stops at the first generator warning.
 - `scripts/update-spec.sh` pulls the spec of a newer server release tag.
+- You rarely run it by hand: the `spec-update.yml` workflow checks the latest server release daily and opens a pull request "Spec-Update auf vX.Y.Z" only when the part of the spec the app uses has changed. A spec update is never needed for existing apps to keep working, and it does not raise the minimum server version by itself.
 
 A change that needs a newer server raises the minimum server version, so say so in the PR.
 
