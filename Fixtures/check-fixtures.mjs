@@ -10,7 +10,7 @@ const map = {
   version: ['get', '/api/v1/version'], 'auth-oidc-config': ['get', '/api/v1/auth/oidc/config'],
   'auth-login': ['post', '/api/v1/auth/login', 200], 'auth-devices-create': ['post', '/api/v1/auth/devices', 201],
   'auth-me': ['get', '/api/v1/auth/me'], 'auth-devices': ['get', '/api/v1/auth/devices'], dashboard: ['get', '/api/v1/dashboard'],
-  tasks: ['get', '/api/v1/tasks'], 'tasks-meta-options': ['get', '/api/v1/tasks/meta/options'], task: ['get', '/api/v1/tasks/{id}'],
+  tasks: ['get', '/api/v1/tasks'], 'tasks-meta-options': ['get', '/api/v1/tasks/meta/options'], task: ['get', '/api/v1/tasks/{id}'], 'task-checklist': ['get', '/api/v1/tasks/{id}'],
   'shopping-lists': ['get', '/api/v1/shopping'], 'shopping-versions': ['get', '/api/v1/shopping/versions'],
   'shopping-suggestions': ['get', '/api/v1/shopping/suggestions'], 'shopping-categories': ['get', '/api/v1/shopping/categories'],
   'shopping-items': ['get', '/api/v1/shopping/{listId}/items'], calendar: ['get', '/api/v1/calendar'],

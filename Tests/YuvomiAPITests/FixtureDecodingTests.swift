@@ -32,6 +32,10 @@ import YuvomiFixtures
         #expect(!tasks.data.isEmpty)
         _ = try await client.getTaskOptions().ok.body.json
         _ = try await client.getTask(path: .init(id: 1)).ok.body.json
+        let checklist = FixtureTransport.Response(body: try Fixtures.data("task-checklist"))
+        let variant = Client(serverURL: URL(string: "https://fixture.invalid")!, transport: FixtureTransport(overrides: ["getTask": checklist]))
+        let detail = try await variant.getTask(path: .init(id: 24)).ok.body.json
+        #expect(detail.data.subtasks.count == 2)
     }
 
     @Test func shopping() async throws {
@@ -65,13 +69,15 @@ import YuvomiFixtures
         #expect(tasks.data.first?.status == "waiting")
     }
 
-    /// Wächter: Jede Fixture-Datei hat einen Eintrag in FixtureTransport.defaults.
+    /// Wächter: Jede Fixture-Datei hat einen Eintrag in FixtureTransport.defaults oder ist als
+    /// Variante einer Operation dort aufgeführt.
     @Test func everyFixtureIsMapped() throws {
         let files = try FileManager.default.contentsOfDirectory(atPath: Fixtures.directory.path())
             .filter { $0.hasSuffix(".json") && !$0.hasPrefix("_") }
             .map { String($0.dropLast(".json".count)) }
-        let mapped = Set(FixtureTransport.defaults.values.map(\.file))
+        let mapped = Set(FixtureTransport.defaults.values.map(\.file)).union(FixtureTransport.variants.keys)
         #expect(Set(files) == mapped)
-        #expect(files.count == 21)
+        #expect(files.count == 22)
+        #expect(Set(FixtureTransport.variants.values).isSubset(of: FixtureTransport.defaults.keys))
     }
 }

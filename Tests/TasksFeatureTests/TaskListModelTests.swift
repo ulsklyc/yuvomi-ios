@@ -12,6 +12,7 @@ final class FakeTasks: TaskReading, @unchecked Sendable {
     }
 
     func tasks() async throws(APIError) -> [TaskSummary] { try result.get() }
+    func task(id: Int) async throws(APIError) -> TaskDetail { throw .notFound }
 }
 
 func task(_ id: Int, due: CalendarDay? = nil, time: String? = nil, status: TaskStatus = .open) -> TaskSummary {
@@ -113,6 +114,8 @@ final class SlowFirstTasks: TaskReading, @unchecked Sendable {
         self.first = first
         self.later = later
     }
+
+    func task(id: Int) async throws(APIError) -> TaskDetail { throw .notFound }
 
     func tasks() async throws(APIError) -> [TaskSummary] {
         let call = lock.withLock { calls += 1; return calls }
