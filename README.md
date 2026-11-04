@@ -47,6 +47,9 @@ that the phone schedules itself, so they arrive on time without a push relay.
 - **Reminders on the phone.** Upcoming reminders for tasks and events are scheduled on the device
   and arrive even while the app is closed or the phone is locked. The app refreshes them in the
   background; a switch turns them off for this phone only.
+- **Answer a reminder right from the notification.** Tapping or swiping it away dismisses the
+  reminder on the server; "Mark as Done" on a task reminder checks the task off without opening
+  the app. Without a connection the phone remembers it and sends it later.
 
 The PWA stays the full Yuvomi. The app grows step by step, and anything it cannot do yet is one
 tap away in the browser.
@@ -120,3 +123,5 @@ Texts live in String Catalogs, English first, German alongside.
 ## License
 
 MIT, like Yuvomi itself. See [LICENSE](LICENSE).
+
+Want to help? Start with [CONTRIBUTING.md](CONTRIBUTING.md). Security issues are reported privately as described in [SECURITY.md](SECURITY.md), and [PRIVACY.md](PRIVACY.md) explains what the app does with your data.

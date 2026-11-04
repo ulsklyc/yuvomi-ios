@@ -48,6 +48,9 @@ Push-Relay.
 - **Erinnerungen auf dem Telefon.** Kommende Erinnerungen an Aufgaben und Termine plant das Gerät
   selbst; sie kommen auch an, wenn die App geschlossen oder das Telefon gesperrt ist. Die App
   frischt sie im Hintergrund auf, ein Schalter stellt sie nur für dieses Telefon ab.
+- **Direkt an der Mitteilung antworten.** Antippen oder Wegwischen verwirft die Erinnerung auf dem
+  Server; "Erledigt" an einer Aufgaben-Erinnerung hakt die Aufgabe ab, ohne die App zu öffnen.
+  Ohne Verbindung merkt sich das Telefon das und schickt es später.
 
 Die PWA bleibt das vollständige Yuvomi. Die App wächst Schritt für Schritt, und was sie noch nicht
 kann, ist im Browser einen Tipp entfernt.
@@ -122,3 +125,5 @@ Testing. Texte liegen in String Catalogs, Englisch zuerst, Deutsch daneben.
 ## Lizenz
 
 MIT, wie Yuvomi selbst. Siehe [LICENSE](LICENSE).
+
+Mithelfen? Der Einstieg steht in [CONTRIBUTING.md](CONTRIBUTING.md). Sicherheitslücken werden vertraulich gemeldet, wie in [SECURITY.md](SECURITY.md) beschrieben, und [PRIVACY.md](PRIVACY.md) erklärt, was die App mit euren Daten macht.

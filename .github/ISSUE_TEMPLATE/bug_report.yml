@@ -1,0 +1,100 @@
+name: Bug Report
+description: Something in the iOS app isn't working as expected
+title: "[Bug] "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! The build, iOS and server
+        fields below decide where we look first.
+
+        **Does the web app show the same problem?** Then it is most likely a
+        server bug - please report it in the
+        [server repository](https://github.com/ulsklyc/yuvomi/issues/new/choose).
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where does your app come from?
+      options:
+        - Built from source
+        - TestFlight
+        - App Store
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: App build
+      description: >-
+        Built from source: the commit, `git rev-parse --short HEAD`.
+        TestFlight: the version and build number shown in the TestFlight app.
+      placeholder: "e.g. 4adcbc2 or 0.1.0 (1)"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and iOS version
+      description: Settings -> General -> About. For the simulator, name the simulated device.
+      placeholder: "e.g. iPhone 17 Pro, iOS 27.1"
+    validations:
+      required: true
+  - type: input
+    id: server-version
+    attributes:
+      label: Yuvomi server version
+      description: >-
+        In the web app, open **Changes** in the sidebar - the dialog shows the
+        installed version at the top.
+      placeholder: "e.g. 2.84.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Signing in with a password
+        - Pairing with a code or QR code
+        - Tasks
+        - Reminders
+        - Signing out
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open '...'
+        2. Tap '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected vs. actual behavior
+      description: >-
+        What you expected to happen, and what actually happened. Include the
+        exact error message the app showed, and screenshots if applicable.
+        Blur your server address and personal data if you'd rather not share them.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: >-
+        Anything else - how the server is reached (HTTPS, local network, VPN,
+        reverse proxy), the phone's language, Low Power Mode or Focus settings
+        for reminder problems, or related issues.
