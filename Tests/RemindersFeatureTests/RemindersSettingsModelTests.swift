@@ -19,7 +19,8 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
 
     func request() async -> NotificationPermissionStatus {
         requests += 1
-        // Wie die Frage von iOS: Die Antwort kommt nicht sofort.
+        // Die Antwort kommt nicht sofort, eine Reihenfolge zwischen Tasks garantiert das aber
+        // nicht. Tests, die während der Frage tippen, nehmen `HeldPermission`.
         await Task.yield()
         status = answer ? .allowed : .denied
         return status
@@ -30,7 +31,8 @@ final class FakePermission: NotificationPermission, @unchecked Sendable {
 /// während iOS fragt, statt auf die Reihenfolge der Tasks zu hoffen.
 actor HeldPermission: NotificationPermission {
     private(set) var requests = 0
-    private var answers: [CheckedContinuation<Void, Never>] = []
+    private var allowed = false
+    private var answer: CheckedContinuation<Void, Never>?
     private var waitingForQuestion: [CheckedContinuation<Void, Never>] = []
 
     func current() -> NotificationPermissionStatus { .notDetermined }
@@ -39,10 +41,10 @@ actor HeldPermission: NotificationPermission {
         requests += 1
         // Nur die erste Frage bleibt offen. Fragt die App ein zweites Mal, antwortet der Fake
         // sofort: Der Test zählt die Fragen dann, statt zu hängen.
-        guard requests == 1 else { return .allowed }
+        guard requests == 1, !allowed else { return .allowed }
         waitingForQuestion.forEach { $0.resume() }
         waitingForQuestion = []
-        await withCheckedContinuation { answers.append($0) }
+        await withCheckedContinuation { answer = $0 }
         return .allowed
     }
 
@@ -52,10 +54,11 @@ actor HeldPermission: NotificationPermission {
         await withCheckedContinuation { waitingForQuestion.append($0) }
     }
 
-    /// Die Person erlaubt.
+    /// Die Person erlaubt. Gilt auch, wenn die Frage erst danach kommt.
     func allow() {
-        answers.forEach { $0.resume() }
-        answers = []
+        allowed = true
+        answer?.resume()
+        answer = nil
     }
 }
 
@@ -170,7 +173,10 @@ actor HeldPermission: NotificationPermission {
         #expect(!settings.showsCard)
     }
 
-    @Test func tappingTwiceWhileIOSAsksAsksOnlyOnce() async {
+    /// Das zweite Tippen wird abgewartet, bevor die Person antwortet: So landet es sicher
+    /// während der Frage. Fragt das Modell gar nicht oder lässt es das zweite Tippen auf die
+    /// Antwort warten, beendet `.timeLimit` den Test, statt ihn hängen zu lassen.
+    @Test(.timeLimit(.minutes(1))) func tappingTwiceWhileIOSAsksAsksOnlyOnce() async {
         let permission = HeldPermission()
         var changes: [Bool] = []
         let settings = model(permission) { changes.append($0) }
