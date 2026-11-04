@@ -30,7 +30,7 @@ public final class ReminderCoordinator {
     private let queue: any ReplyQueue
     private let now: () -> Date
     private let onUnauthorized: @MainActor (Session) -> Void
-    private let onNotCheckedOff: @MainActor (ReminderReply) -> Void
+    private let onNotCheckedOff: @MainActor (ReminderReply) async -> Void
 
     /// Der zuletzt angehängte Auftrag. Jeder neue wartet auf ihn.
     private var last: (job: Job, id: UUID, task: Task<Void, Never>)?
@@ -48,6 +48,8 @@ public final class ReminderCoordinator {
     ///   - onUnauthorized: Das Credential ist widerrufen, etwa `SessionState.handle(.unauthorized, from:)`.
     ///     Mitteilungen und gemerkte Rückmeldungen sind dann schon abgeräumt.
     ///   - onNotCheckedOff: Der Server lehnt das Abhaken ab (403), die Aufgabe ist weiter offen.
+    ///     Der Auftrag wartet darauf: Läuft er im Hintergrund, hält iOS die App sonst an, bevor
+    ///     der Hinweis geplant ist.
     public init(
         makeSource: @escaping (Session) -> any UpcomingReminders,
         makeWriter: @escaping (Session) -> any ReminderWriting,
@@ -55,7 +57,7 @@ public final class ReminderCoordinator {
         queue: any ReplyQueue,
         now: @escaping () -> Date = { .now },
         onUnauthorized: @escaping @MainActor (Session) -> Void,
-        onNotCheckedOff: @escaping @MainActor (ReminderReply) -> Void
+        onNotCheckedOff: @escaping @MainActor (ReminderReply) async -> Void
     ) {
         self.makeSource = makeSource
         self.makeWriter = makeWriter
@@ -91,12 +93,16 @@ public final class ReminderCoordinator {
     /// gemerkt, die Mitteilungen der Aufgabe sind danach vom Gerät weg, und der Server bekommt
     /// sie, sobald er erreichbar ist.
     ///
-    /// - Parameter session: Ohne Anmeldung gibt es niemanden, an den sie ginge. Dann räumt die
-    ///   App nur auf dem Gerät auf.
-    public func reply(_ reply: ReminderReply, session: Session?) async {
+    /// - Parameters:
+    ///   - session: Ohne Anmeldung gibt es niemanden, an den sie ginge. Dann räumt die App nur
+    ///     auf dem Gerät auf.
+    ///   - keepWithoutSession: Die Anmeldung ist nur gerade nicht lesbar, etwa vor dem ersten
+    ///     Entsperren nach einem Neustart. Dann bleibt die Rückmeldung gemerkt, und der nächste
+    ///     Abgleich nach der Anmeldung sendet sie.
+    public func reply(_ reply: ReminderReply, session: Session?, keepWithoutSession: Bool = false) async {
         // Gemerkt, bevor irgendetwas wartet: Nimmt iOS der App gleich die Zeit, geht sie beim
         // nächsten Abgleich raus.
-        if session != nil { queue.append(reply) }
+        if session != nil || keepWithoutSession { queue.append(reply) }
         let writer = session.map(makeWriter)
         // Sofort vom Gerät, auch wenn vor dem Auftrag ein langsamer Abgleich wartet (Q5). Ohne
         // darauf zu warten: Der Auftrag muss eingetragen sein, bevor irgendetwas wartet, sonst
@@ -211,7 +217,7 @@ public final class ReminderCoordinator {
                 break
             case .refused:
                 queue.remove(reply)
-                onNotCheckedOff(reply)
+                await onNotCheckedOff(reply)
             case .failed:
                 continue
             case .unreachable:

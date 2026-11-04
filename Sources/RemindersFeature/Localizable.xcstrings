@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "reminders.action.markDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as Done"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigt"
+          }
+        }
+      }
+    },
     "reminders.card.allow": {
       "extractionState": "manual",
       "localizations": {
@@ -99,6 +116,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dieses iPhone plant deine Erinnerungen für die nächsten 14 Tage, höchstens 60. Neue holt es beim Öffnen der App und ab und zu im Hintergrund. Schickt dir auch die Web-App von Yuvomi Mitteilungen, kommt jede Erinnerung doppelt."
+          }
+        }
+      }
+    },
+    "reminders.notCheckedOff.body %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: You can only view tasks."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: Du darfst Aufgaben nur ansehen."
+          }
+        }
+      }
+    },
+    "reminders.notCheckedOff.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not marked as done"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht abgehakt"
           }
         }
       }

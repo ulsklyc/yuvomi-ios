@@ -7,7 +7,49 @@ import YuvomiCore
 /// Hält das Center nicht fest, sondern holt es je Aufruf: `UNUserNotificationCenter` ist nicht
 /// `Sendable`, der Planer soll es aber sein. Die UN-Typen verlassen dieses Modul nicht.
 public struct SystemNotificationScheduler: NotificationScheduling {
+    /// Kategorie je Herkunft (Q2): Nur die Aufgabe hat einen Knopf.
+    static let taskCategory = "reminder.task"
+    static let eventCategory = "reminder.event"
+    /// „Erledigt“. Über alle Kategorien eindeutig, so verlangt es iOS.
+    static let checkOffAction = "reminder.checkOff"
+
     public init() {}
+
+    /// Muss beim Start passieren, bevor iOS eine Aktion meldet.
+    public static func registerCategories(locale: Locale = .current) {
+        UNUserNotificationCenter.current().setNotificationCategories(categories(locale: locale))
+    }
+
+    /// Beide Kategorien melden das Wegwischen (`customDismissAction`), denn auch Wegwischen
+    /// verwirft (Q3). „Erledigt“ verlangt bei gesperrtem Gerät das Entsperren (Q4) und läuft
+    /// im Hintergrund, ohne die App zu öffnen.
+    static func categories(locale: Locale = .current) -> Set<UNNotificationCategory> {
+        let checkOff = UNNotificationAction(
+            identifier: checkOffAction,
+            title: String(localized: "reminders.action.markDone", bundle: localizedBundle(for: locale), locale: locale),
+            options: [.authenticationRequired],
+            icon: UNNotificationActionIcon(systemImageName: "checkmark")
+        )
+        return [
+            UNNotificationCategory(identifier: taskCategory, actions: [checkOff], intentIdentifiers: [], options: [.customDismissAction]),
+            UNNotificationCategory(identifier: eventCategory, actions: [], intentIdentifiers: [], options: [.customDismissAction]),
+        ]
+    }
+
+    /// Sagt sofort Bescheid, dass der Server das Abhaken abgelehnt hat (Q6). Unter
+    /// `reminder.notice.`: Kein Abgleich räumt den Hinweis ab, Abmelden schon.
+    public func announceNotCheckedOff(title: String) async {
+        try? await UNUserNotificationCenter.current().add(Self.notCheckedOffRequest(title: title))
+    }
+
+    static func notCheckedOffRequest(title: String, locale: Locale = .current) -> UNNotificationRequest {
+        let bundle = localizedBundle(for: locale)
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "reminders.notCheckedOff.title", bundle: bundle, locale: locale)
+        content.body = String(localized: "reminders.notCheckedOff.body \(title)", bundle: bundle, locale: locale)
+        content.sound = .default
+        return UNNotificationRequest(identifier: ReminderSync.noticePrefix + "notCheckedOff.\(UUID().uuidString)", content: content, trigger: nil)
+    }
 
     public func pending() async -> Set<String> {
         Set(await UNUserNotificationCenter.current().pendingNotificationRequests().map(\.identifier))
@@ -66,6 +108,10 @@ public struct SystemNotificationScheduler: NotificationScheduling {
         }
         content.body = notification.title
         content.sound = .default
+        content.categoryIdentifier = switch notification.origin {
+        case .task: taskCategory
+        case .event: eventCategory
+        }
 
         return UNNotificationRequest(
             identifier: notification.id,

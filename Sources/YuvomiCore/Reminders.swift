@@ -71,6 +71,9 @@ public struct ReminderSync: Sendable {
     static let window: TimeInterval = 14 * 86_400
     /// Kennungen anderer Herkunft fasst der Abgleich nicht an.
     static let prefix = "reminder."
+    /// Hinweise wie „Nicht abgehakt“. Sie gehören zu Yuvomi und gehen beim Abräumen mit, aber
+    /// kein Abgleich entfernt sie, denn der Server kennt sie nicht.
+    public static let noticePrefix = "reminder.notice."
     /// iOS behält vermutlich nur 64 geplante Mitteilungen je App, der Server liefert bis 200.
     static let limit = 60
     /// Was früher fällt, verpasst iOS womöglich schon beim Planen.
@@ -116,6 +119,7 @@ public struct ReminderSync: Sendable {
         // Auch nach jedem Warten auf iOS: Ein abgelaufener Hintergrund-Task hört hier auf.
         guard !Task.isCancelled else { return }
         let gone = Self.ours(pending)
+            .filter { !$0.hasPrefix(Self.noticePrefix) }
             .subtracting(wanted.map(\.id))
             .subtracting(aboutToFire)
         if !gone.isEmpty { await scheduler.remove(gone) }

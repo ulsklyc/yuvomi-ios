@@ -85,7 +85,7 @@ final class FirstTime: @unchecked Sendable {
     func coordinator(
         makeWriter: ((Session) -> any ReminderWriting)? = nil,
         onUnauthorized: @escaping @MainActor (Session) -> Void = { _ in },
-        onNotCheckedOff: @escaping @MainActor (ReminderReply) -> Void = { _ in }
+        onNotCheckedOff: @escaping @MainActor (ReminderReply) async -> Void = { _ in }
     ) -> ReminderCoordinator {
         let source = source
         let writer = writer
@@ -156,6 +156,22 @@ final class FirstTime: @unchecked Sendable {
 
         #expect(log.events.isEmpty)
         #expect(scheduler.planned.isEmpty)
+        #expect(queue.replies.isEmpty)
+    }
+
+    /// Vor dem ersten Entsperren ist die Anmeldung nicht lesbar: Die Rückmeldung bleibt
+    /// gemerkt und geht mit dem nächsten Abgleich raus (Befund von Codex zu #8).
+    @Test func aReplyWhileTheSessionIsUnreadableWaitsForTheNextSync() async {
+        await scheduler.plan([planned(1, .task, 101)])
+        let reminders = coordinator()
+
+        await reminders.reply(reply(.checkOff), session: nil, keepWithoutSession: true)
+        #expect(log.events.isEmpty)
+        #expect(scheduler.planned.isEmpty)
+        #expect(queue.replies == [reply(.checkOff)])
+
+        await reminders.sync(session)
+        #expect(log.events == ["checkOff 101", "dismiss 1", "fetch"])
         #expect(queue.replies.isEmpty)
     }
 

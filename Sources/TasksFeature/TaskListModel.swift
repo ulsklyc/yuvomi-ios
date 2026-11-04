@@ -30,6 +30,10 @@ public final class TaskListModel {
     /// Neuladen ist gescheitert, die alte Liste bleibt sichtbar.
     public private(set) var refreshProblem: Problem?
 
+    /// Zählt die Ladevorgänge. Nur die Antwort des jüngsten zählt: Eine ältere, die später
+    /// ankommt, zeigte sonst etwa eine gerade abgehakte Aufgabe wieder offen.
+    private var generation = 0
+
     private let tasks: any TaskReading
     private let today: () -> CalendarDay
     private let onUnauthorized: @MainActor () -> Void
@@ -44,12 +48,17 @@ public final class TaskListModel {
     }
 
     public func load() async {
+        generation += 1
+        let mine = generation
         do throws(APIError) {
-            state = .loaded(Self.sections(try await tasks.tasks(), today: today()))
+            let all = try await tasks.tasks()
+            guard mine == generation else { return }
+            state = .loaded(Self.sections(all, today: today()))
             refreshProblem = nil
         } catch .unauthorized {
             onUnauthorized()
         } catch {
+            guard mine == generation else { return }
             let problem: Problem = error == .unreachable ? .unreachable : .unexpectedResponse
             if case .loaded = state {
                 refreshProblem = problem

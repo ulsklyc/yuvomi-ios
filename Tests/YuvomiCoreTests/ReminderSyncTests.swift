@@ -210,6 +210,18 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
         #expect(ReminderSync.parse(id) == nil)
     }
 
+    /// Ein Hinweis wie „Nicht abgehakt“ bleibt beim Abgleich, geht aber beim Abräumen mit.
+    @Test func aNoticeSurvivesTheSyncButNotTheClear() async throws {
+        scheduler.planned["reminder.notice.1"] = PlannedNotification(id: "reminder.notice.1", reminderID: 0, origin: .task, entityID: 0, title: "x", firesAt: now)
+        source.result = .success([])
+
+        try await ReminderSync(source: source, scheduler: scheduler).run(now: now)
+        #expect(Set(scheduler.planned.keys) == ["reminder.notice.1"])
+
+        await ReminderSync.clear(scheduler: scheduler)
+        #expect(scheduler.planned.isEmpty)
+    }
+
     /// Ein Abgleich nach dem Update ersetzt die Kennungen aus Slice 3.
     @Test func anOldIdentifierIsReplaced() async throws {
         scheduler.planned["reminder.1"] = PlannedNotification(id: "reminder.1", reminderID: 1, origin: .task, entityID: 101, title: "Strom zahlen", firesAt: now.addingTimeInterval(3600))
