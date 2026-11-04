@@ -12,4 +12,11 @@ public enum Fixtures {
     public static func data(_ name: String) throws -> Data {
         try Data(contentsOf: directory.appending(path: "\(name).json"))
     }
+
+    /// Rohdaten einer abgeleiteten Testvariante aus `Fixtures/derived`, `name` ohne Endung.
+    /// Keine echte Server-Antwort: eine Datei aus `demo` mit gezielt geänderten Werten.
+    public static func derived(_ name: String) throws -> Data {
+        let folder = Bundle.module.url(forResource: "derived", withExtension: nil)!
+        return try Data(contentsOf: folder.appending(path: "\(name).json"))
+    }
 }
