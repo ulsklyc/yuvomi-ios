@@ -24,7 +24,7 @@ public struct YuvomiUpcomingReminders: UpcomingReminders {
         switch output {
         case .ok(let ok):
             guard case .json(let list) = ok.body else { throw .unexpectedResponse }
-            return list.data.compactMap(UpcomingReminder.init)
+            return list.data.map(UpcomingReminder.init)
         case .unauthorized:
             throw .unauthorized
         default:
@@ -34,14 +34,16 @@ public struct YuvomiUpcomingReminders: UpcomingReminders {
 }
 
 extension UpcomingReminder {
-    /// `nil` für jede Herkunft außer Aufgabe und Termin, auch wenn der Server sie doch schickt.
-    init?(_ row: Components.Schemas.UpcomingReminder) {
-        let origin: ReminderOrigin
-        switch row.entityType {
-        case "task": origin = .task
-        case "event": origin = .event
-        default: return nil
+    /// Jede andere Herkunft als Aufgabe und Termin wird `.unknown` und verliert ihren Titel,
+    /// auch wenn der Server sie doch schickt: Ein Gesundheits- oder Finanztitel soll nicht aufs
+    /// Telefon. Geplant wird sie trotzdem, mit einem allgemeinen Text.
+    init(_ row: Components.Schemas.UpcomingReminder) {
+        let origin: ReminderOrigin = switch row.entityType {
+        case "task": .task
+        case "event": .event
+        default: .unknown
         }
-        self.init(id: row.id, origin: origin, entityID: row.entityId, title: row.entityTitle ?? "", firesAt: row.firesAt)
+        let title = origin == .unknown ? "" : row.entityTitle ?? ""
+        self.init(id: row.id, origin: origin, entityID: row.entityId, title: title, firesAt: row.firesAt)
     }
 }

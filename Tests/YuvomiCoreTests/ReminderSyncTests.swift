@@ -74,6 +74,19 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
         ])
     }
 
+    /// Ein unbekannter Typ wird trotzdem geplant; den allgemeinen Text wählt der Planer.
+    @Test func plansAReminderOfAnUnknownType() async throws {
+        source.result = .success([reminder(1, in: 3600), reminder(2, in: 7200, kind: .unknown, title: "")])
+
+        try await sync.run(now: now)
+
+        #expect(scheduler.planned["reminder.2.unknown.102"] == PlannedNotification(
+            id: "reminder.2.unknown.102", reminderID: 2, origin: .unknown, entityID: 102, title: "", firesAt: now.addingTimeInterval(7200)
+        ))
+        #expect(scheduler.planned.count == 2)
+        #expect(ReminderSync.parse("reminder.2.unknown.102")?.origin == .unknown)
+    }
+
     @Test func removesWhatIsNoLongerUpcomingAndLeavesForeignNotifications() async throws {
         source.result = .success([reminder(1, in: 3600), reminder(2, in: 7200)])
         try await sync.run(now: now)
