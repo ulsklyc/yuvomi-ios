@@ -32,7 +32,7 @@ Stand 03.11.2026, entschieden in einer Grilling-Runde (Q1 bis Q12) auf Basis von
 
 ### Wege in die Kopplung (Q1, Q5)
 
-- **Scanner in der App:** `DataScannerViewController` aus VisionKit, nur für QR, hinter einem kleinen Protokoll in `LoginFeature`. Der Button erscheint nur, wenn `isSupported && isAvailable`. Daneben funktioniert die Kamera-App von iOS über den Link-Weg ohne eigenen Code. `NSCameraUsageDescription` kommt auf Deutsch und Englisch dazu.
+- **Scanner in der App:** `DataScannerViewController` aus VisionKit, nur für QR, hinter einem kleinen Protokoll in `LoginFeature`. Der Button erscheint nur, wenn `isSupported && isAvailable`. Seit 2026-11-04 reicht `isSupported`: Ohne Freigabe erklärt das Blatt den Grund, siehe [phase-0-server.md](phase-0-server.md), B6. Daneben funktioniert die Kamera-App von iOS über den Link-Weg ohne eigenen Code. `NSCameraUsageDescription` kommt auf Deutsch und Englisch dazu.
 - **Einstiege:**
   - Auf dem Adress-Screen gibt es „QR-Code scannen“. Der QR bringt den Server mit, die Adresse muss vorher nicht eingetippt sein.
   - Nach der Serverprüfung bietet der Passwort-Schritt „Stattdessen mit Code anmelden“ an.
