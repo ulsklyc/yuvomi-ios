@@ -25,6 +25,8 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
     var delivered: Set<String> = []
     /// Läuft, während der Abgleich die geplanten Mitteilungen liest.
     var whilePending: () -> Void = {}
+    /// Läuft, während iOS Mitteilungen entfernt.
+    var whileRemoving: (@Sendable () async -> Void)?
 
     func pending() async -> Set<String> {
         whilePending()
@@ -38,6 +40,7 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
     }
 
     func remove(_ ids: Set<String>) async {
+        await whileRemoving?()
         for id in ids { planned[id] = nil; foreign.remove(id); delivered.remove(id) }
     }
 }

@@ -70,6 +70,7 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
     }
 
     func coordinator(
+        makeWriter: ((Session) -> any ReminderWriting)? = nil,
         onUnauthorized: @escaping @MainActor (Session) -> Void = { _ in },
         onNotCheckedOff: @escaping @MainActor (ReminderReply) -> Void = { _ in }
     ) -> ReminderCoordinator {
@@ -77,7 +78,7 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
         let writer = writer
         return ReminderCoordinator(
             makeSource: { _ in source },
-            makeWriter: { _ in writer },
+            makeWriter: makeWriter ?? { _ in writer },
             scheduler: scheduler,
             queue: queue,
             now: { [now] in now },
@@ -181,7 +182,7 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
         await scheduler.plan([planned(2, .event, 9)])
         writer.dismissResult = .failure(.unauthorized)
         var revoked: [Session] = []
-        let reminders = coordinator { revoked.append($0) }
+        let reminders = coordinator(onUnauthorized: { revoked.append($0) })
         await reminders.reply(reply(.dismiss), session: session)
 
         #expect(revoked == [session])
@@ -193,7 +194,7 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
     @Test func aSyncStopsWhenSendingFindsTheCredentialRevoked() async {
         writer.checkOffResult = .failure(.unreachable)
         var revoked: [Session] = []
-        let reminders = coordinator { revoked.append($0) }
+        let reminders = coordinator(onUnauthorized: { revoked.append($0) })
         await reminders.reply(reply(.checkOff), session: session)
 
         writer.checkOffResult = .failure(.unauthorized)
@@ -357,6 +358,32 @@ final class FakeWriter: ReminderWriting, @unchecked Sendable {
 
         #expect(queue.replies.isEmpty)
         #expect(log.events == ["checkOff 101", "fetch"])
+    }
+
+    /// Abmelden, während die Rückmeldung von Konto A noch die Mitteilungen entfernt, und gleich
+    /// danach meldet sich Konto B an: Der Auftrag von A darf B's Rückmeldungen nicht senden
+    /// (Befund von Codex zu #7).
+    @Test func aReplyOfTheOldAccountNeverSendsTheNewOne() async {
+        let gate = gate
+        scheduler.whileRemoving = { await gate.wait() }
+        let accountA = session
+        let accountB = Session(server: session.server, credential: "ydc_b")
+        let writerA = FakeWriter(log: EventLog())
+        let writerB = FakeWriter(log: EventLog())
+        let reminders = coordinator(makeWriter: { $0 == accountA ? writerA : writerB })
+
+        let first = Task { await reminders.reply(reply(.dismiss, reminder: 1), session: accountA) }
+        await settle()
+        let signOut = Task { await reminders.clear() }
+        await settle()
+        let second = Task { await reminders.reply(reply(.dismiss, reminder: 2), session: accountB) }
+        await settle()
+        gate.open()
+        _ = await (first.value, signOut.value, second.value)
+
+        #expect(writerA.log.events.isEmpty)
+        #expect(writerB.log.events == ["dismiss 2"])
+        #expect(queue.replies.isEmpty)
     }
 
     /// Schalter aus räumt nur die Mitteilungen ab: Die Person hat schon gehandelt.

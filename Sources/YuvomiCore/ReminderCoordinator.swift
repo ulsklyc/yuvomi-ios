@@ -94,11 +94,14 @@ public final class ReminderCoordinator {
         // nächsten Abgleich raus.
         if session != nil { queue.append(reply) }
         let writer = session.map(makeWriter)
-        // Sofort vom Gerät, auch wenn vor dem Auftrag ein langsamer Abgleich wartet (Q5).
-        // Danach im Auftrag noch einmal: Ein Abgleich, der vor ihm lief, kannte die
-        // Rückmeldung nicht und hat die Aufgabe womöglich wieder eingeplant.
-        await removeNotifications(of: reply)
+        // Sofort vom Gerät, auch wenn vor dem Auftrag ein langsamer Abgleich wartet (Q5). Ohne
+        // darauf zu warten: Der Auftrag muss eingetragen sein, bevor irgendetwas wartet, sonst
+        // bricht ein Abmelden ihn nicht ab, und er sendet später mit dem alten Credential.
+        let immediately = Task { await removeNotifications(of: reply) }
         await enqueue(.reply, in: \.replies) { coordinator in
+            // Im Auftrag noch einmal: Ein Abgleich, der vor ihm lief, kannte die Rückmeldung
+            // nicht und hat die Aufgabe womöglich wieder eingeplant.
+            await immediately.value
             await coordinator.removeNotifications(of: reply)
             guard let session, let writer, !Task.isCancelled else { return }
             _ = await coordinator.send(with: writer, for: session)
