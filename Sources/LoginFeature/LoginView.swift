@@ -287,13 +287,21 @@ private struct ScannerSheet: View {
     @State private var sawForeignCode = false
     @State private var isHandling = false
     /// `nil`, solange iOS fragt.
-    @State private var hasCamera: Bool?
+    @State private var access: CameraAccess?
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
             camera
-                .task { hasCamera = await scanner.requestAccess() }
+                .task { access = await scanner.requestAccess() }
+                // Zurück aus den Einstellungen oder der Bildschirmzeit: Freigabe neu lesen.
+                // Nur lesen, nicht fragen: Die Frage von iOS selbst wechselt die Phase.
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active, access != nil, access != .granted,
+                          let current = scanner.currentAccess() else { return }
+                    access = current
+                }
                 .navigationTitle(Text("login.scan", bundle: .module))
                 .navigationBarTitleDisplayMode(.inline)
                 // Läuft die Serverprüfung für einen gescannten Link, entscheidet ihre Antwort
@@ -309,28 +317,38 @@ private struct ScannerSheet: View {
     }
 
     @ViewBuilder private var camera: some View {
-        switch hasCamera {
-        case true?:
+        switch access {
+        case .granted?:
             scanner.makeView { text in handle(text) }
                 .overlay(alignment: .bottom) { hint }
                 .overlay { if isHandling { ProgressView().controlSize(.large) } }
-        case false?:
-            // Abgelehnt: Ohne diesen Zustand bliebe die Kamera schwarz und der Hinweis
-            // verlangte trotzdem, sie auf den Code zu richten.
+        case let blocked?:
+            // Abgelehnt oder gesperrt: Ohne diesen Zustand bliebe die Kamera schwarz und der
+            // Hinweis verlangte trotzdem, sie auf den Code zu richten.
+            let text = Self.text(for: blocked)
             ContentUnavailableView {
-                Label { Text("login.scan.noCamera", bundle: .module) } icon: { Image(systemName: "video.slash") }
+                Label { Text(text.title, bundle: .module) } icon: { Image(systemName: "video.slash") }
             } description: {
-                Text("login.scan.noCamera.detail", bundle: .module)
+                Text(text.detail, bundle: .module)
             } actions: {
-                Button {
-                    if let settings = URL(string: UIApplication.openSettingsURLString) { openURL(settings) }
-                } label: {
-                    Text("login.scan.openSettings", bundle: .module)
+                if blocked.offersSettings {
+                    Button {
+                        if let settings = URL(string: UIApplication.openSettingsURLString) { openURL(settings) }
+                    } label: {
+                        Text("login.scan.openSettings", bundle: .module)
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
             }
         case nil:
             Color.clear
+        }
+    }
+
+    private static func text(for blocked: CameraAccess) -> (title: LocalizedStringKey, detail: LocalizedStringKey) {
+        switch blocked {
+        case .denied: ("login.scan.noCamera", "login.scan.noCamera.detail")
+        case .restricted, .granted: ("login.scan.restricted", "login.scan.restricted.detail")
         }
     }
 
@@ -370,10 +388,11 @@ private struct ScannerSheet: View {
 
 /// Platzhalter für die Kamera, damit Vorschauen den Scan-Button zeigen.
 private struct PreviewScanner: QRCodeScanner {
-    var hasCamera = true
+    var access = CameraAccess.granted
     var isAvailable: Bool { true }
 
-    func requestAccess() async -> Bool { hasCamera }
+    func currentAccess() -> CameraAccess? { access }
+    func requestAccess() async -> CameraAccess { access }
 
     func makeView(onCode: @escaping @MainActor (String) -> Void) -> AnyView {
         AnyView(Image(systemName: "qrcode.viewfinder").font(.system(size: 120)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity))
@@ -429,5 +448,9 @@ private struct PreviewScanner: QRCodeScanner {
 }
 
 #Preview("Scanner, Kamera abgelehnt") {
-    ScannerSheet(scanner: PreviewScanner(hasCamera: false), model: previewModel(), isPresented: .constant(true))
+    ScannerSheet(scanner: PreviewScanner(access: .denied), model: previewModel(), isPresented: .constant(true))
+}
+
+#Preview("Scanner, Kamera gesperrt") {
+    ScannerSheet(scanner: PreviewScanner(access: .restricted), model: previewModel(), isPresented: .constant(true))
 }

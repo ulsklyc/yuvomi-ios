@@ -7,14 +7,41 @@ import VisionKit
 /// Was ein erkannter Code bedeutet, entscheidet `LoginModel.openScannedCode(_:)`; die Hülle
 /// liefert nur den Inhalt.
 @MainActor public protocol QRCodeScanner {
-    /// Ob „QR-Code scannen“ erscheint.
+    /// Ob „QR-Code scannen“ erscheint. Hängt nicht an der Freigabe der Kamera.
     var isAvailable: Bool { get }
-    /// Fragt nach der Kamera, falls iOS noch nicht gefragt hat. `false` heißt abgelehnt:
-    /// Das Blatt zeigt dann den Weg in die Einstellungen statt einer schwarzen Kamera.
-    func requestAccess() async -> Bool
-    /// Die Kameraansicht, erst nach `requestAccess()`. `onCode` bekommt den Inhalt jedes neu
+    /// Die Freigabe, ohne zu fragen. `nil`, solange iOS noch nicht gefragt hat.
+    func currentAccess() -> CameraAccess?
+    /// Fragt nach der Kamera, falls iOS noch nicht gefragt hat. Ohne Freigabe zeigt das Blatt
+    /// einen Hinweis statt einer schwarzen Kamera.
+    func requestAccess() async -> CameraAccess
+    /// Die Kameraansicht, nur wenn `requestAccess()` `.granted` ergab. `onCode` bekommt den Inhalt jedes neu
     /// erkannten QR-Codes.
     func makeView(onCode: @escaping @MainActor (String) -> Void) -> AnyView
+}
+
+/// Die Freigabe der Kamera, wie das Blatt sie braucht.
+public enum CameraAccess: Equatable, Sendable {
+    case granted
+    /// Abgelehnt: In den Einstellungen lässt sich das ändern.
+    case denied
+    /// Gesperrt, etwa über Bildschirmzeit oder eine Geräteverwaltung. Den Schalter in den
+    /// Einstellungen kann die Person dann nicht umlegen.
+    case restricted
+
+    /// `nil`, solange iOS noch nicht gefragt hat.
+    init?(_ status: AVAuthorizationStatus) {
+        switch status {
+        case .notDetermined: return nil
+        case .authorized: self = .granted
+        case .restricted: self = .restricted
+        case .denied: self = .denied
+        // Ein unbekannter Zustand soll nicht in die Einstellungen schicken.
+        @unknown default: self = .restricted
+        }
+    }
+
+    /// Ob der Weg in die Einstellungen etwas ändern kann.
+    var offersSettings: Bool { self == .denied }
 }
 
 /// `DataScannerViewController` nur für QR. Im Simulator gibt es keine Kamera, dort ist
@@ -22,19 +49,22 @@ import VisionKit
 public struct VisionKitScanner: QRCodeScanner {
     public init() {}
 
-    /// `isAvailable` ist erst nach der Freigabe der Kamera true. Vor der ersten Frage muss
-    /// der Button trotzdem erscheinen, sonst käme die Freigabe nie.
-    public var isAvailable: Bool {
-        DataScannerViewController.isSupported
-            && (DataScannerViewController.isAvailable || AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined)
+    /// Auf jedem Gerät, das scannen kann, auch ohne Freigabe: Dann erklärt das Blatt, warum
+    /// die Kamera fehlt, statt dass der Knopf ohne Grund verschwindet.
+    public var isAvailable: Bool { DataScannerViewController.isSupported }
+
+    public func currentAccess() -> CameraAccess? {
+        guard let access = CameraAccess(AVCaptureDevice.authorizationStatus(for: .video)) else { return nil }
+        // Freigegeben, aber VisionKit kann trotzdem nicht scannen (etwa über eine
+        // Geräteverwaltung): wie gesperrt, sonst bliebe die Kamera schwarz.
+        return access == .granted && !DataScannerViewController.isAvailable ? .restricted : access
     }
 
-    public func requestAccess() async -> Bool {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .notDetermined: await AVCaptureDevice.requestAccess(for: .video)
-        case .authorized: true
-        default: false
-        }
+    public func requestAccess() async -> CameraAccess {
+        if let access = currentAccess() { return access }
+        // Danach den Status lesen statt der Antwort: Auch eine Sperre ergibt `false`.
+        _ = await AVCaptureDevice.requestAccess(for: .video)
+        return currentAccess() ?? .denied
     }
 
     public func makeView(onCode: @escaping @MainActor (String) -> Void) -> AnyView {

@@ -647,6 +647,40 @@
         }
       }
     },
+    "login.scan.restricted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera Restricted"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera gesperrt"
+          }
+        }
+      }
+    },
+    "login.scan.restricted.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera is restricted on this iPhone, for example by Screen Time. Sign in with the code from the web app instead."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kamera ist auf diesem iPhone gesperrt, etwa über Bildschirmzeit. Melde dich stattdessen mit dem Code aus der Web-App an."
+          }
+        }
+      }
+    },
     "login.signIn": {
       "extractionState": "manual",
       "localizations": {
