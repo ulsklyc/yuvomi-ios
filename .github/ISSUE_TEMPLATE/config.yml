@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature Request / Idea
+    url: https://github.com/ulsklyc/yuvomi/discussions/new?category=ideas
+    about: Share and discuss ideas in the Yuvomi Discussions, shared by the app and the server. Issues are reserved for bugs and work that's already committed to.
+  - name: Problem in the web app or the server
+    url: https://github.com/ulsklyc/yuvomi/issues/new/choose
+    about: If the web app shows the same problem, it belongs to the server repository.
+  - name: Security vulnerability
+    url: https://github.com/ulsklyc/yuvomi-ios/security/advisories/new
+    about: Never as a public issue. Report it privately; see SECURITY.md.
