@@ -22,7 +22,7 @@ struct YuvomiApp: App {
                         ReminderCard(model: app.reminderSettings)
                     }
                     // Nach der Anmeldung und beim Start mit gespeicherter Anmeldung.
-                    .task { await app.refreshReminders() }
+                    .task { await app.refreshRemindersAndList() }
                     .sheet(isPresented: $app.showsSettings) {
                         SettingsView(session: session, reminders: app.reminderSettings, onSignOut: { await app.session.signOut() })
                     }
@@ -80,7 +80,7 @@ final class AppModel {
     /// Abgehakt, aber die offene Liste hat es noch nicht neu geladen: Sie lädt beim nächsten
     /// Wechsel in den Vordergrund, nach dem Abgleich. Bleibt gesetzt, solange ein Abhaken noch
     /// in der Warteschlange liegt, denn erst nach dem Senden zeigt die Liste es.
-    private var listIsStale = false
+    private var listIsStale: Bool
     private let replies = UserDefaultsReplyQueue()
 
     /// Die Serveradresse ist kein Geheimnis und liegt in den UserDefaults. Mit den Widgets
@@ -89,6 +89,8 @@ final class AppModel {
     nonisolated static let refreshTaskID = "cloud.yuvomi.ios.reminders"
 
     init() {
+        // Ein Abhaken, das ein früherer Lauf gemerkt hat, gilt auch nach einem Neustart.
+        listIsStale = replies.replies.contains { $0.kind == .checkOff }
         let session = SessionState(store: store, revoker: YuvomiSessionRevoker())
         self.session = session
         if let server = UserDefaults.standard.url(forKey: Self.serverKey) {
@@ -133,6 +135,12 @@ final class AppModel {
     /// sendet gemerkte Rückmeldungen zuerst, sonst zeigte die Liste die Aufgabe weiter offen.
     func becameActive() async {
         restoreIfReadable()
+        await refreshRemindersAndList()
+    }
+
+    /// Abgleichen und danach die Liste neu laden, falls ein Abhaken sie veraltet hat. Auch beim
+    /// Start: Die Liste lädt sonst womöglich, bevor ein gemerktes Abhaken beim Server ist.
+    func refreshRemindersAndList() async {
         await refreshReminders()
         await reloadListIfStale()
     }
