@@ -59,6 +59,7 @@ let package = Package(
         // Die Antworten aus Fixtures/demo liegen außerhalb von Sources/, weil das
         // Abzugsskript sie dort ablegt. SPM bindet Ressourcen nur innerhalb des
         // Target-Ordners ein, deshalb zeigt das Target direkt auf Fixtures/.
+        // `derived` sind Testvarianten, von Hand aus `demo` abgeleitet (siehe Fixtures/README.md).
         .target(
             name: "YuvomiFixtures",
             dependencies: [
@@ -68,7 +69,7 @@ let package = Package(
             path: "Fixtures",
             exclude: ["README.md", "check-fixtures.mjs", "dump-fixtures.mjs"],
             sources: ["Swift"],
-            resources: [.copy("demo")]
+            resources: [.copy("demo"), .copy("derived")]
         ),
         .testTarget(name: "YuvomiCoreTests", dependencies: ["YuvomiCore", "YuvomiFixtures"]),
         .testTarget(name: "YuvomiAPITests", dependencies: ["YuvomiAPI", "YuvomiFixtures"]),

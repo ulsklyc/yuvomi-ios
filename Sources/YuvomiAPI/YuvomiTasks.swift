@@ -49,17 +49,21 @@ extension APIError {
 
 extension TaskSummary {
     init(_ item: Components.Schemas.TaskListItem) {
+        // In Antworten sind Enums seit scripts/prune-spec.mjs einfache Strings. Ein Wert, den
+        // diese App-Version nicht kennt, wird `.unknown`, statt die ganze Liste zu kippen.
         let status: TaskStatus = switch item.status {
-        case .open: .open
-        case .inProgress: .inProgress
-        case .done: .done
+        case "open": .open
+        case "in_progress": .inProgress
+        case "done": .done
+        default: .unknown
         }
         let priority: TaskPriority = switch item.priority {
-        case .none: .none
-        case .low: .low
-        case .medium: .medium
-        case .high: .high
-        case .urgent: .urgent
+        case "none": .none
+        case "low": .low
+        case "medium": .medium
+        case "high": .high
+        case "urgent": .urgent
+        default: .unknown
         }
         self.init(
             id: item.id,

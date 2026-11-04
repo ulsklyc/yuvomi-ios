@@ -11,7 +11,7 @@ import YuvomiFixtures
 
     @Test func instanceAndSignIn() async throws {
         let version = try await client.getVersion().ok.body.json
-        #expect(version.product == .yuvomi)
+        #expect(version.product == "yuvomi")
         #expect(version.clientApi == 1)
         _ = try await client.getSignInOptions().ok.body.json
         _ = try await client.signInWithPassword(body: .json(.init(username: "alex", password: "demo1234"))).ok.body.json
@@ -53,6 +53,16 @@ import YuvomiFixtures
         let now = Date()
         _ = try await client.listUpcomingReminders(query: .init(from: now, to: now.addingTimeInterval(14 * 86_400))).ok.body.json
         _ = try await client.listPendingReminders().ok.body.json
+    }
+
+    /// Ein unbekannter Wert in einer Antwort, hier ein neuer Status und eine neue Priorität,
+    /// kippt nicht die ganze Liste (Fixtures/derived, abgeleitet aus tasks.json).
+    @Test func unknownValuesInAResponseStillDecode() async throws {
+        let variant = FixtureTransport.Response(body: try Fixtures.derived("tasks-unknown-values"))
+        let client = Client(serverURL: URL(string: "https://fixture.invalid")!, transport: FixtureTransport(overrides: ["listTasks": variant]))
+        let tasks = try await client.listTasks().ok.body.json
+        #expect(tasks.data.count == 21)
+        #expect(tasks.data.first?.status == "waiting")
     }
 
     /// Wächter: Jede Fixture-Datei hat einen Eintrag in FixtureTransport.defaults.

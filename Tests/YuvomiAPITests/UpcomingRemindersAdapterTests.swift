@@ -29,6 +29,21 @@ import YuvomiFixtures
         #expect(request.headerFields[.authorization] == "Bearer ydc_FIXTURE_CREDENTIAL")
     }
 
+    /// Fixtures/derived/reminders-upcoming-unknown-type.json: Eine Erinnerung mit einer Herkunft,
+    /// die die App nicht abfragt, kippt die Antwort nicht. Die bekannte bleibt, die fremde fällt
+    /// weg (siehe `UpcomingReminder.init?`).
+    @Test func aReminderOfAnUnknownTypeLeavesTheOthersIntact() async throws {
+        let variant = FixtureTransport.Response(body: try Fixtures.derived("reminders-upcoming-unknown-type"))
+        let reminders = YuvomiUpcomingReminders(server: server, credential: "c", transport: FixtureTransport(overrides: ["listUpcomingReminders": variant]))
+
+        let list = try await reminders.upcoming(from: from, to: to)
+
+        #expect(list == [UpcomingReminder(
+            id: 1, origin: .task, entityID: 2, title: "Pay electricity bill",
+            firesAt: try #require(ISO8601DateFormatter().date(from: "2026-11-04T07:00:00Z"))
+        )])
+    }
+
     /// Auch mit unlesbarem Body: Sonst behielte die App ein widerrufenes Credential.
     @Test(arguments: [
         FixtureTransport.Response(status: .unauthorized, body: Data()),

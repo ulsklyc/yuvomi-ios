@@ -236,14 +236,7 @@ extension Components {
             /// 1 for an all-day event, in the form 0 or 1. Start and end are then normally `YYYY-MM-DD`.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/all_day`.
-            internal enum AllDayPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 for an all-day event, in the form 0 or 1. Start and end are then normally `YYYY-MM-DD`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/all_day`.
-            internal var allDay: Components.Schemas.CalendarEvent.AllDayPayload
+            internal var allDay: Swift.Int
             /// IANA zone an imported or synchronized event was written in; its start and end then usually are instants with `Z`. Null for an event carrying household wall-clock time.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/tzid`.
@@ -261,24 +254,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/recurrence_rule`.
             internal var recurrenceRule: Swift.String?
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case assignees = "assignees"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/visibility`.
-            internal var visibility: Components.Schemas.CalendarEvent.VisibilityPayload?
+            internal var visibility: Swift.String?
             /// 1 when the event shows as a countdown.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/countdown`.
-            internal enum CountdownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the event shows as a countdown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/countdown`.
-            internal var countdown: Components.Schemas.CalendarEvent.CountdownPayload?
+            internal var countdown: Swift.Int?
             /// The primary assignee.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/assigned_to`.
@@ -310,17 +290,7 @@ extension Components {
             /// Where the event lives. `local` also for one sent to a provider that has not come back from the sync yet, and for an imported one.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/external_source`.
-            internal enum ExternalSourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case local = "local"
-                case google = "google"
-                case apple = "apple"
-                case ics = "ics"
-                case caldav = "caldav"
-            }
-            /// Where the event lives. `local` also for one sent to a provider that has not come back from the sync yet, and for an imported one.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/external_source`.
-            internal var externalSource: Components.Schemas.CalendarEvent.ExternalSourcePayload?
+            internal var externalSource: Swift.String?
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/external_calendar_id`.
             internal var externalCalendarId: Swift.String?
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/external_object_url`.
@@ -360,47 +330,19 @@ extension Components {
             /// 1 once a synced event was edited in Yuvomi.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/user_modified`.
-            internal enum UserModifiedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 once a synced event was edited in Yuvomi.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/user_modified`.
-            internal var userModified: Components.Schemas.CalendarEvent.UserModifiedPayload?
+            internal var userModified: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/color_modified`.
-            internal enum ColorModifiedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/color_modified`.
-            internal var colorModified: Components.Schemas.CalendarEvent.ColorModifiedPayload?
+            internal var colorModified: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/series_authored`.
-            internal enum SeriesAuthoredPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/series_authored`.
-            internal var seriesAuthored: Components.Schemas.CalendarEvent.SeriesAuthoredPayload?
+            internal var seriesAuthored: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/outbound_dirty`.
-            internal enum OutboundDirtyPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/outbound_dirty`.
-            internal var outboundDirty: Components.Schemas.CalendarEvent.OutboundDirtyPayload?
+            internal var outboundDirty: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/outbound_attempts`.
@@ -424,14 +366,7 @@ extension Components {
             /// Only on a generated event.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/birthday_event_kind`.
-            internal enum BirthdayEventKindPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case birthday = "birthday"
-                case nameDay = "name_day"
-            }
-            /// Only on a generated event.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/birthday_event_kind`.
-            internal var birthdayEventKind: Components.Schemas.CalendarEvent.BirthdayEventKindPayload?
+            internal var birthdayEventKind: Swift.String?
             /// `MM-DD`, only on a generated event.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/name_day`.
@@ -439,25 +374,11 @@ extension Components {
             /// Present on a row expanded from a series: 0 on the first slot of the series, 1 on every later one.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/is_recurring_instance`.
-            internal enum IsRecurringInstancePayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Present on a row expanded from a series: 0 on the first slot of the series, 1 on every later one.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/is_recurring_instance`.
-            internal var isRecurringInstance: Components.Schemas.CalendarEvent.IsRecurringInstancePayload?
+            internal var isRecurringInstance: Swift.Int?
             /// Present on a row expanded from a series: 1 for its first occurrence.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/is_series_start`.
-            internal enum IsSeriesStartPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Present on a row expanded from a series: 1 for its first occurrence.
-            ///
-            /// - Remark: Generated from `#/components/schemas/CalendarEvent/is_series_start`.
-            internal var isSeriesStart: Components.Schemas.CalendarEvent.IsSeriesStartPayload?
+            internal var isSeriesStart: Swift.Int?
             /// The event's own colour as #RRGGBB, or null when it has none. Null is the normal state for an event nobody picked a colour for: it then borrows the colour of the first assigned member, and failing that cal_color. On PUT the field distinguishes two cases - omit it to leave the colour untouched, send null to deliberately clear it.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/color`.
@@ -614,13 +535,13 @@ extension Components {
                 description: Swift.String? = nil,
                 startDatetime: Components.Schemas.CalendarDateOrDateTime,
                 endDatetime: Swift.String? = nil,
-                allDay: Components.Schemas.CalendarEvent.AllDayPayload,
+                allDay: Swift.Int,
                 tzid: Swift.String? = nil,
                 location: Swift.String? = nil,
                 icon: Swift.String? = nil,
                 recurrenceRule: Swift.String? = nil,
-                visibility: Components.Schemas.CalendarEvent.VisibilityPayload? = nil,
-                countdown: Components.Schemas.CalendarEvent.CountdownPayload? = nil,
+                visibility: Swift.String? = nil,
+                countdown: Swift.Int? = nil,
                 assignedTo: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
@@ -629,7 +550,7 @@ extension Components {
                 creatorName: Swift.String? = nil,
                 createdAt: Foundation.Date? = nil,
                 updatedAt: Foundation.Date? = nil,
-                externalSource: Components.Schemas.CalendarEvent.ExternalSourcePayload? = nil,
+                externalSource: Swift.String? = nil,
                 externalCalendarId: Swift.String? = nil,
                 externalObjectUrl: Swift.String? = nil,
                 subscriptionId: Swift.Int? = nil,
@@ -644,19 +565,19 @@ extension Components {
                 targetCaldavCalendarUrl: Swift.String? = nil,
                 targetOutlookAccountId: Swift.Int? = nil,
                 targetOutlookCalendarId: Swift.String? = nil,
-                userModified: Components.Schemas.CalendarEvent.UserModifiedPayload? = nil,
-                colorModified: Components.Schemas.CalendarEvent.ColorModifiedPayload? = nil,
-                seriesAuthored: Components.Schemas.CalendarEvent.SeriesAuthoredPayload? = nil,
-                outboundDirty: Components.Schemas.CalendarEvent.OutboundDirtyPayload? = nil,
+                userModified: Swift.Int? = nil,
+                colorModified: Swift.Int? = nil,
+                seriesAuthored: Swift.Int? = nil,
+                outboundDirty: Swift.Int? = nil,
                 outboundAttempts: Swift.Int? = nil,
                 outboundMoveTo: Swift.String? = nil,
                 housekeepingVisitId: Swift.Int? = nil,
                 birthdayName: Swift.String? = nil,
                 birthdayDate: Swift.String? = nil,
-                birthdayEventKind: Components.Schemas.CalendarEvent.BirthdayEventKindPayload? = nil,
+                birthdayEventKind: Swift.String? = nil,
                 nameDay: Swift.String? = nil,
-                isRecurringInstance: Components.Schemas.CalendarEvent.IsRecurringInstancePayload? = nil,
-                isSeriesStart: Components.Schemas.CalendarEvent.IsSeriesStartPayload? = nil,
+                isRecurringInstance: Swift.Int? = nil,
+                isSeriesStart: Swift.Int? = nil,
                 color: Swift.String? = nil,
                 calColor: Swift.String? = nil,
                 localCalendarId: Swift.Int? = nil,
@@ -932,19 +853,13 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/ClientPermissions/modules`.
             internal struct ModulesPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/ClientPermissions/modules/additionalProperties`.
-                internal enum AdditionalPropertiesPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case none = "none"
-                    case read = "read"
-                    case write = "write"
-                }
                 /// A container of undocumented properties.
-                internal var additionalProperties: [String: Components.Schemas.ClientPermissions.ModulesPayload.AdditionalPropertiesPayload]
+                internal var additionalProperties: [String: Swift.String]
                 /// Creates a new `ModulesPayload`.
                 ///
                 /// - Parameters:
                 ///   - additionalProperties: A container of undocumented properties.
-                internal init(additionalProperties: [String: Components.Schemas.ClientPermissions.ModulesPayload.AdditionalPropertiesPayload] = .init()) {
+                internal init(additionalProperties: [String: Swift.String] = .init()) {
                     self.additionalProperties = additionalProperties
                 }
                 internal init(from decoder: any Swift.Decoder) throws {
@@ -962,18 +877,13 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/ClientPermissions/widgets`.
             internal struct WidgetsPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/ClientPermissions/widgets/additionalProperties`.
-                internal enum AdditionalPropertiesPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case none = "none"
-                    case allow = "allow"
-                }
                 /// A container of undocumented properties.
-                internal var additionalProperties: [String: Components.Schemas.ClientPermissions.WidgetsPayload.AdditionalPropertiesPayload]
+                internal var additionalProperties: [String: Swift.String]
                 /// Creates a new `WidgetsPayload`.
                 ///
                 /// - Parameters:
                 ///   - additionalProperties: A container of undocumented properties.
-                internal init(additionalProperties: [String: Components.Schemas.ClientPermissions.WidgetsPayload.AdditionalPropertiesPayload] = .init()) {
+                internal init(additionalProperties: [String: Swift.String] = .init()) {
                     self.additionalProperties = additionalProperties
                 }
                 internal init(from decoder: any Swift.Decoder) throws {
@@ -991,18 +901,13 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/ClientPermissions/capabilities`.
             internal struct CapabilitiesPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/ClientPermissions/capabilities/additionalProperties`.
-                internal enum AdditionalPropertiesPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case none = "none"
-                    case allow = "allow"
-                }
                 /// A container of undocumented properties.
-                internal var additionalProperties: [String: Components.Schemas.ClientPermissions.CapabilitiesPayload.AdditionalPropertiesPayload]
+                internal var additionalProperties: [String: Swift.String]
                 /// Creates a new `CapabilitiesPayload`.
                 ///
                 /// - Parameters:
                 ///   - additionalProperties: A container of undocumented properties.
-                internal init(additionalProperties: [String: Components.Schemas.ClientPermissions.CapabilitiesPayload.AdditionalPropertiesPayload] = .init()) {
+                internal init(additionalProperties: [String: Swift.String] = .init()) {
                     self.additionalProperties = additionalProperties
                 }
                 internal init(from decoder: any Swift.Decoder) throws {
@@ -1050,12 +955,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/name`.
             internal var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/kind`.
-            internal enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case birthday = "birthday"
-                case nameDay = "name_day"
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardBirthday/kind`.
-            internal var kind: Components.Schemas.DashboardBirthday.KindPayload
+            internal var kind: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/next_date`.
             internal var nextDate: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/days_until`.
@@ -1063,12 +963,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/birth_date`.
             internal var birthDate: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/year_unknown`.
-            internal enum YearUnknownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardBirthday/year_unknown`.
-            internal var yearUnknown: Components.Schemas.DashboardBirthday.YearUnknownPayload?
+            internal var yearUnknown: Swift.Int?
             /// `MM-DD`.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardBirthday/name_day`.
@@ -1140,11 +1035,11 @@ extension Components {
             internal init(
                 id: Swift.Int,
                 name: Swift.String,
-                kind: Components.Schemas.DashboardBirthday.KindPayload,
+                kind: Swift.String,
                 nextDate: Swift.String,
                 daysUntil: Swift.Int,
                 birthDate: Swift.String,
-                yearUnknown: Components.Schemas.DashboardBirthday.YearUnknownPayload? = nil,
+                yearUnknown: Swift.Int? = nil,
                 nameDay: Swift.String? = nil,
                 nextBirthday: Swift.String? = nil,
                 nextAge: Swift.Int? = nil,
@@ -1221,13 +1116,7 @@ extension Components {
         /// - Remark: Generated from `#/components/schemas/DashboardCountdown`.
         internal struct DashboardCountdown: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/DashboardCountdown/source`.
-            internal enum SourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case event = "event"
-                case task = "task"
-                case document = "document"
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardCountdown/source`.
-            internal var source: Components.Schemas.DashboardCountdown.SourcePayload
+            internal var source: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardCountdown/id`.
             internal var id: Swift.Int
             /// - Remark: Generated from `#/components/schemas/DashboardCountdown/title`.
@@ -1296,7 +1185,7 @@ extension Components {
             ///   - reminderOwnerId: Only on an appointment that replaces one occurrence.
             ///   - reminderAnchorStart: Only on an appointment that replaces one occurrence.
             internal init(
-                source: Components.Schemas.DashboardCountdown.SourcePayload,
+                source: Swift.String,
                 id: Swift.Int,
                 title: Swift.String,
                 date: Swift.String,
@@ -1557,26 +1446,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardNote/color`.
             internal var color: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardNote/pinned`.
-            internal enum PinnedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardNote/pinned`.
-            internal var pinned: Components.Schemas.DashboardNote.PinnedPayload
+            internal var pinned: Swift.Int
             /// - Remark: Generated from `#/components/schemas/DashboardNote/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardNote/visibility`.
-            internal var visibility: Components.Schemas.DashboardNote.VisibilityPayload?
+            internal var visibility: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardNote/locked`.
-            internal enum LockedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardNote/locked`.
-            internal var locked: Components.Schemas.DashboardNote.LockedPayload?
+            internal var locked: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/DashboardNote/created_by`.
             internal var createdBy: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/DashboardNote/author_name`.
@@ -1610,9 +1484,9 @@ extension Components {
                 title: Swift.String? = nil,
                 content: Swift.String,
                 color: Swift.String? = nil,
-                pinned: Components.Schemas.DashboardNote.PinnedPayload,
-                visibility: Components.Schemas.DashboardNote.VisibilityPayload? = nil,
-                locked: Components.Schemas.DashboardNote.LockedPayload? = nil,
+                pinned: Swift.Int,
+                visibility: Swift.String? = nil,
+                locked: Swift.Int? = nil,
                 createdBy: Swift.Int? = nil,
                 authorName: Swift.String? = nil,
                 authorColor: Swift.String? = nil,
@@ -2559,16 +2433,7 @@ extension Components {
             /// `approver` sees every participant and all open requests, `self` only the own row and requests, `family` everybody by name without requests. Null without access to the module.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardRewards/view`.
-            internal enum ViewPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case approver = "approver"
-                case _self = "self"
-                case family = "family"
-                case _empty_ = ""
-            }
-            /// `approver` sees every participant and all open requests, `self` only the own row and requests, `family` everybody by name without requests. Null without access to the module.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardRewards/view`.
-            internal var view: Components.Schemas.DashboardRewards.ViewPayload?
+            internal var view: Swift.String?
             /// The caller. Missing without access to the module.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardRewards/me`.
@@ -2686,12 +2551,7 @@ extension Components {
                 /// - Remark: Generated from `#/components/schemas/DashboardRewards/RecentPayload/delta`.
                 internal var delta: Swift.Int
                 /// - Remark: Generated from `#/components/schemas/DashboardRewards/RecentPayload/type`.
-                internal enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case earn = "earn"
-                    case bonus = "bonus"
-                }
-                /// - Remark: Generated from `#/components/schemas/DashboardRewards/RecentPayload/type`.
-                internal var _type: Components.Schemas.DashboardRewards.RecentPayloadPayload._TypePayload
+                internal var _type: Swift.String
                 /// - Remark: Generated from `#/components/schemas/DashboardRewards/RecentPayload/reason`.
                 internal var reason: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/DashboardRewards/RecentPayload/created_at`.
@@ -2705,7 +2565,7 @@ extension Components {
                 ///   - createdAt:
                 internal init(
                     delta: Swift.Int,
-                    _type: Components.Schemas.DashboardRewards.RecentPayloadPayload._TypePayload,
+                    _type: Swift.String,
                     reason: Swift.String? = nil,
                     createdAt: Foundation.Date
                 ) {
@@ -2737,7 +2597,7 @@ extension Components {
             ///   - catalog:
             ///   - recent:
             internal init(
-                view: Components.Schemas.DashboardRewards.ViewPayload? = nil,
+                view: Swift.String? = nil,
                 me: Swift.Int? = nil,
                 standings: Components.Schemas.DashboardRewards.StandingsPayload,
                 participantCount: Swift.Int,
@@ -2771,13 +2631,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardShift/date_key`.
             internal var dateKey: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardShift/source`.
-            internal enum SourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case pattern = "pattern"
-                case override = "override"
-                case extra = "extra"
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardShift/source`.
-            internal var source: Components.Schemas.DashboardShift.SourcePayload
+            internal var source: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardShift/crosses_midnight`.
             internal var crossesMidnight: Swift.Bool
             /// - Remark: Generated from `#/components/schemas/DashboardShift/shift_type`.
@@ -2844,7 +2698,7 @@ extension Components {
             ///   - shiftType:
             internal init(
                 dateKey: Swift.String,
-                source: Components.Schemas.DashboardShift.SourcePayload,
+                source: Swift.String,
                 crossesMidnight: Swift.Bool,
                 shiftType: Components.Schemas.DashboardShift.ShiftTypePayload
             ) {
@@ -2869,11 +2723,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardShoppingItem/quantity`.
             internal var quantity: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardShoppingItem/is_checked`.
-            internal enum IsCheckedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardShoppingItem/is_checked`.
-            internal var isChecked: Components.Schemas.DashboardShoppingItem.IsCheckedPayload
+            internal var isChecked: Swift.Int
             /// Creates a new `DashboardShoppingItem`.
             ///
             /// - Parameters:
@@ -2885,7 +2735,7 @@ extension Components {
                 id: Swift.Int,
                 name: Swift.String,
                 quantity: Swift.String? = nil,
-                isChecked: Components.Schemas.DashboardShoppingItem.IsCheckedPayload
+                isChecked: Swift.Int
             ) {
                 self.id = id
                 self.name = name
@@ -3013,12 +2863,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardSplitBalance/PositionsPayload`.
             internal struct PositionsPayloadPayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/DashboardSplitBalance/PositionsPayload/direction`.
-                internal enum DirectionPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case owe = "owe"
-                    case owed = "owed"
-                }
-                /// - Remark: Generated from `#/components/schemas/DashboardSplitBalance/PositionsPayload/direction`.
-                internal var direction: Components.Schemas.DashboardSplitBalance.PositionsPayloadPayload.DirectionPayload
+                internal var direction: Swift.String
                 /// - Remark: Generated from `#/components/schemas/DashboardSplitBalance/PositionsPayload/userId`.
                 internal var userId: Swift.Int
                 /// - Remark: Generated from `#/components/schemas/DashboardSplitBalance/PositionsPayload/name`.
@@ -3047,7 +2892,7 @@ extension Components {
                 ///   - amountMinor:
                 ///   - amount: The same value as a decimal string.
                 internal init(
-                    direction: Components.Schemas.DashboardSplitBalance.PositionsPayloadPayload.DirectionPayload,
+                    direction: Swift.String,
                     userId: Swift.Int,
                     name: Swift.String,
                     groupId: Swift.Int,
@@ -3114,27 +2959,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardTask/category`.
             internal var category: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardTask/priority`.
-            internal enum PriorityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case none = "none"
-                case low = "low"
-                case medium = "medium"
-                case high = "high"
-                case urgent = "urgent"
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/priority`.
-            internal var priority: Components.Schemas.DashboardTask.PriorityPayload
+            internal var priority: Swift.String
             /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/status`.
-            internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-            }
-            /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/status`.
-            internal var status: Components.Schemas.DashboardTask.StatusPayload
+            internal var status: Swift.String
             /// `YYYY-MM-DD`, a plain calendar day without a time zone.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/start_date`.
@@ -3160,14 +2989,7 @@ extension Components {
             /// 1 when the task repeats, in the form 0 or 1.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/is_recurring`.
-            internal enum IsRecurringPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task repeats, in the form 0 or 1.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/is_recurring`.
-            internal var isRecurring: Components.Schemas.DashboardTask.IsRecurringPayload
+            internal var isRecurring: Swift.Int
             /// RRULE of the series. A task synced over CalDAV may carry more than the vocabulary the API accepts.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/recurrence_rule`.
@@ -3175,14 +2997,7 @@ extension Components {
             /// 1 when the next occurrence counts from the day of completion instead of the due date.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/recurrence_from_completion`.
-            internal enum RecurrenceFromCompletionPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the next occurrence counts from the day of completion instead of the due date.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/recurrence_from_completion`.
-            internal var recurrenceFromCompletion: Components.Schemas.DashboardTask.RecurrenceFromCompletionPayload?
+            internal var recurrenceFromCompletion: Swift.Int?
             /// The task this one followed in its series.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/recurrence_origin_id`.
@@ -3192,35 +3007,15 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardTask/points`.
             internal var points: Swift.Int
             /// - Remark: Generated from `#/components/schemas/DashboardTask/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case assignees = "assignees"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/visibility`.
-            internal var visibility: Components.Schemas.DashboardTask.VisibilityPayload
+            internal var visibility: Swift.String
             /// 1 when the task shows as a countdown.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/countdown`.
-            internal enum CountdownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task shows as a countdown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/countdown`.
-            internal var countdown: Components.Schemas.DashboardTask.CountdownPayload
+            internal var countdown: Swift.Int
             /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/locked`.
-            internal enum LockedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/locked`.
-            internal var locked: Components.Schemas.DashboardTask.LockedPayload
+            internal var locked: Swift.Int
             /// Rank in the hand order of the category, null without a rank.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/sort_order`.
@@ -3240,14 +3035,7 @@ extension Components {
             /// `caldav` for a task that lives on a CalDAV reminder list.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/external_source`.
-            internal enum ExternalSourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case local = "local"
-                case caldav = "caldav"
-            }
-            /// `caldav` for a task that lives on a CalDAV reminder list.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/external_source`.
-            internal var externalSource: Components.Schemas.DashboardTask.ExternalSourcePayload
+            internal var externalSource: Swift.String
             /// - Remark: Generated from `#/components/schemas/DashboardTask/external_uid`.
             internal var externalUid: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardTask/external_account_id`.
@@ -3263,14 +3051,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/outbound_dirty`.
-            internal enum OutboundDirtyPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/outbound_dirty`.
-            internal var outboundDirty: Components.Schemas.DashboardTask.OutboundDirtyPayload?
+            internal var outboundDirty: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/outbound_attempts`.
@@ -3278,14 +3059,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/seen_on_server`.
-            internal enum SeenOnServerPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/DashboardTask/seen_on_server`.
-            internal var seenOnServer: Components.Schemas.DashboardTask.SeenOnServerPayload?
+            internal var seenOnServer: Swift.Int?
             /// Name of `assigned_to`.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/assigned_name`.
@@ -3341,36 +3115,36 @@ extension Components {
                 title: Swift.String,
                 description: Swift.String? = nil,
                 category: Swift.String,
-                priority: Components.Schemas.DashboardTask.PriorityPayload,
-                status: Components.Schemas.DashboardTask.StatusPayload,
+                priority: Swift.String,
+                status: Swift.String,
                 startDate: Swift.String? = nil,
                 dueDate: Swift.String? = nil,
                 dueTime: Swift.String? = nil,
                 assignedTo: Swift.Int? = nil,
                 createdBy: Swift.Int,
                 parentTaskId: Swift.Int? = nil,
-                isRecurring: Components.Schemas.DashboardTask.IsRecurringPayload,
+                isRecurring: Swift.Int,
                 recurrenceRule: Swift.String? = nil,
-                recurrenceFromCompletion: Components.Schemas.DashboardTask.RecurrenceFromCompletionPayload? = nil,
+                recurrenceFromCompletion: Swift.Int? = nil,
                 recurrenceOriginId: Swift.Int? = nil,
                 recurrenceSeriesId: Swift.Int? = nil,
                 points: Swift.Int,
-                visibility: Components.Schemas.DashboardTask.VisibilityPayload,
-                countdown: Components.Schemas.DashboardTask.CountdownPayload,
-                locked: Components.Schemas.DashboardTask.LockedPayload,
+                visibility: Swift.String,
+                countdown: Swift.Int,
+                locked: Swift.Int,
                 sortOrder: Swift.Int? = nil,
                 archivedAt: Foundation.Date? = nil,
                 createdAt: Foundation.Date,
                 updatedAt: Foundation.Date,
-                externalSource: Components.Schemas.DashboardTask.ExternalSourcePayload,
+                externalSource: Swift.String,
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
-                outboundDirty: Components.Schemas.DashboardTask.OutboundDirtyPayload? = nil,
+                outboundDirty: Swift.Int? = nil,
                 outboundAttempts: Swift.Int? = nil,
-                seenOnServer: Components.Schemas.DashboardTask.SeenOnServerPayload? = nil,
+                seenOnServer: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
                 assignedUsers: [Components.Schemas.AssignedPerson]
@@ -3653,12 +3427,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/DashboardWeekEvent/end_datetime`.
             internal var endDatetime: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardWeekEvent/all_day`.
-            internal enum AllDayPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// - Remark: Generated from `#/components/schemas/DashboardWeekEvent/all_day`.
-            internal var allDay: Components.Schemas.DashboardWeekEvent.AllDayPayload
+            internal var allDay: Swift.Int
             /// - Remark: Generated from `#/components/schemas/DashboardWeekEvent/color`.
             internal var color: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardWeekEvent/cal_color`.
@@ -3693,7 +3462,7 @@ extension Components {
                 title: Swift.String,
                 startDatetime: Swift.String,
                 endDatetime: Swift.String? = nil,
-                allDay: Components.Schemas.DashboardWeekEvent.AllDayPayload,
+                allDay: Swift.Int,
                 color: Swift.String? = nil,
                 calColor: Swift.String? = nil,
                 assignedTo: Swift.Int? = nil,
@@ -3801,17 +3570,7 @@ extension Components {
         /// Stable machine-readable code for document-storage failures.
         ///
         /// - Remark: Generated from `#/components/schemas/DocumentStorageErrorCode`.
-        internal enum DocumentStorageErrorCode: String, Codable, Hashable, Sendable, CaseIterable {
-            case documentStorageInvalidConfig = "DOCUMENT_STORAGE_INVALID_CONFIG"
-            case documentStorageNotConfigured = "DOCUMENT_STORAGE_NOT_CONFIGURED"
-            case documentStorageUploadFailed = "DOCUMENT_STORAGE_UPLOAD_FAILED"
-            case documentStorageReadFailed = "DOCUMENT_STORAGE_READ_FAILED"
-            case documentStorageDeleteFailed = "DOCUMENT_STORAGE_DELETE_FAILED"
-            case documentStorageCleanupFailed = "DOCUMENT_STORAGE_CLEANUP_FAILED"
-            case documentStorageTooLarge = "DOCUMENT_STORAGE_TOO_LARGE"
-            case documentStorageConnectionTestFailed = "DOCUMENT_STORAGE_CONNECTION_TEST_FAILED"
-            case documentStorageConfigProtected = "DOCUMENT_STORAGE_CONFIG_PROTECTED"
-        }
+        internal typealias DocumentStorageErrorCode = Swift.String
         /// - Remark: Generated from `#/components/schemas/LocalCalendarListItem`.
         internal struct LocalCalendarListItem: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/LocalCalendarListItem/id`.
@@ -4047,12 +3806,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/NoteCategory/name`.
             internal var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/NoteCategory/scope`.
-            internal enum ScopePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case personal = "personal"
-                case household = "household"
-            }
-            /// - Remark: Generated from `#/components/schemas/NoteCategory/scope`.
-            internal var scope: Components.Schemas.NoteCategory.ScopePayload
+            internal var scope: Swift.String
             /// - Remark: Generated from `#/components/schemas/NoteCategory/owner_user_id`.
             internal var ownerUserId: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/NoteCategory/sort_order`.
@@ -4068,7 +3822,7 @@ extension Components {
             internal init(
                 id: Swift.Int,
                 name: Swift.String,
-                scope: Components.Schemas.NoteCategory.ScopePayload,
+                scope: Swift.String,
                 ownerUserId: Swift.Int? = nil,
                 sortOrder: Swift.Int
             ) {
@@ -4155,11 +3909,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/PendingReminder/remind_at`.
             internal var remindAt: Swift.String
             /// - Remark: Generated from `#/components/schemas/PendingReminder/dismissed`.
-            internal enum DismissedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-            }
-            /// - Remark: Generated from `#/components/schemas/PendingReminder/dismissed`.
-            internal var dismissed: Components.Schemas.PendingReminder.DismissedPayload?
+            internal var dismissed: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/PendingReminder/pushed_at`.
             internal var pushedAt: Swift.String?
             /// Set on a reminder inherited from the person who created the entity.
@@ -4214,7 +3964,7 @@ extension Components {
                 entityId: Swift.Int,
                 entityTitle: Swift.String? = nil,
                 remindAt: Swift.String,
-                dismissed: Components.Schemas.PendingReminder.DismissedPayload? = nil,
+                dismissed: Swift.Int? = nil,
                 pushedAt: Swift.String? = nil,
                 assignedFrom: Swift.Int? = nil,
                 createdBy: Swift.Int,
@@ -4319,12 +4069,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/ReminderMoveNotice/target_list_name`.
             internal var targetListName: Swift.String
             /// - Remark: Generated from `#/components/schemas/ReminderMoveNotice/reason`.
-            internal enum ReasonPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case refused = "refused"
-                case waited = "waited"
-            }
-            /// - Remark: Generated from `#/components/schemas/ReminderMoveNotice/reason`.
-            internal var reason: Components.Schemas.ReminderMoveNotice.ReasonPayload
+            internal var reason: Swift.String
             /// Creates a new `ReminderMoveNotice`.
             ///
             /// - Parameters:
@@ -4338,7 +4083,7 @@ extension Components {
                 backListId: Swift.Int? = nil,
                 backListName: Swift.String,
                 targetListName: Swift.String,
-                reason: Components.Schemas.ReminderMoveNotice.ReasonPayload
+                reason: Swift.String
             ) {
                 self.itemName = itemName
                 self.backListId = backListId
@@ -4502,12 +4247,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/ShoppingItem/category`.
             internal var category: Swift.String
             /// - Remark: Generated from `#/components/schemas/ShoppingItem/is_checked`.
-            internal enum IsCheckedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// - Remark: Generated from `#/components/schemas/ShoppingItem/is_checked`.
-            internal var isChecked: Components.Schemas.ShoppingItem.IsCheckedPayload
+            internal var isChecked: Swift.Int
             /// - Remark: Generated from `#/components/schemas/ShoppingItem/notes`.
             internal var notes: Swift.String?
             /// - Remark: Generated from `#/components/schemas/ShoppingItem/url`.
@@ -4590,7 +4330,7 @@ extension Components {
                 name: Swift.String,
                 quantity: Swift.String? = nil,
                 category: Swift.String,
-                isChecked: Components.Schemas.ShoppingItem.IsCheckedPayload,
+                isChecked: Swift.Int,
                 notes: Swift.String? = nil,
                 url: Swift.String? = nil,
                 priceCents: Swift.Int? = nil,
@@ -4985,14 +4725,7 @@ extension Components {
                 /// 0 on a list that mirrors a CalDAV reminder list which is read-only for its account.
                 ///
                 /// - Remark: Generated from `#/components/schemas/ShoppingListSummary/value2/accepts_new_items`.
-                internal enum AcceptsNewItemsPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                    case _0 = 0
-                    case _1 = 1
-                }
-                /// 0 on a list that mirrors a CalDAV reminder list which is read-only for its account.
-                ///
-                /// - Remark: Generated from `#/components/schemas/ShoppingListSummary/value2/accepts_new_items`.
-                internal var acceptsNewItems: Components.Schemas.ShoppingListSummary.Value2Payload.AcceptsNewItemsPayload
+                internal var acceptsNewItems: Swift.Int
                 /// Creates a new `Value2Payload`.
                 ///
                 /// - Parameters:
@@ -5002,7 +4735,7 @@ extension Components {
                 internal init(
                     itemTotal: Swift.Int,
                     itemChecked: Swift.Int,
-                    acceptsNewItems: Components.Schemas.ShoppingListSummary.Value2Payload.AcceptsNewItemsPayload
+                    acceptsNewItems: Swift.Int
                 ) {
                     self.itemTotal = itemTotal
                     self.itemChecked = itemChecked
@@ -5273,27 +5006,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/Task/category`.
             internal var category: Swift.String
             /// - Remark: Generated from `#/components/schemas/Task/priority`.
-            internal enum PriorityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case none = "none"
-                case low = "low"
-                case medium = "medium"
-                case high = "high"
-                case urgent = "urgent"
-            }
-            /// - Remark: Generated from `#/components/schemas/Task/priority`.
-            internal var priority: Components.Schemas.Task.PriorityPayload
+            internal var priority: Swift.String
             /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/status`.
-            internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-            }
-            /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/status`.
-            internal var status: Components.Schemas.Task.StatusPayload
+            internal var status: Swift.String
             /// `YYYY-MM-DD`, a plain calendar day without a time zone.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/start_date`.
@@ -5319,14 +5036,7 @@ extension Components {
             /// 1 when the task repeats, in the form 0 or 1.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/is_recurring`.
-            internal enum IsRecurringPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task repeats, in the form 0 or 1.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/is_recurring`.
-            internal var isRecurring: Components.Schemas.Task.IsRecurringPayload
+            internal var isRecurring: Swift.Int
             /// RRULE of the series. A task synced over CalDAV may carry more than the vocabulary the API accepts.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/recurrence_rule`.
@@ -5334,14 +5044,7 @@ extension Components {
             /// 1 when the next occurrence counts from the day of completion instead of the due date.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/recurrence_from_completion`.
-            internal enum RecurrenceFromCompletionPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the next occurrence counts from the day of completion instead of the due date.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/recurrence_from_completion`.
-            internal var recurrenceFromCompletion: Components.Schemas.Task.RecurrenceFromCompletionPayload?
+            internal var recurrenceFromCompletion: Swift.Int?
             /// The task this one followed in its series.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/recurrence_origin_id`.
@@ -5351,35 +5054,15 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/Task/points`.
             internal var points: Swift.Int
             /// - Remark: Generated from `#/components/schemas/Task/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case assignees = "assignees"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/Task/visibility`.
-            internal var visibility: Components.Schemas.Task.VisibilityPayload
+            internal var visibility: Swift.String
             /// 1 when the task shows as a countdown.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/countdown`.
-            internal enum CountdownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task shows as a countdown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/countdown`.
-            internal var countdown: Components.Schemas.Task.CountdownPayload
+            internal var countdown: Swift.Int
             /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
             ///
             /// - Remark: Generated from `#/components/schemas/Task/locked`.
-            internal enum LockedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/locked`.
-            internal var locked: Components.Schemas.Task.LockedPayload
+            internal var locked: Swift.Int
             /// Rank in the hand order of the category, null without a rank.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/sort_order`.
@@ -5399,14 +5082,7 @@ extension Components {
             /// `caldav` for a task that lives on a CalDAV reminder list.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/external_source`.
-            internal enum ExternalSourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case local = "local"
-                case caldav = "caldav"
-            }
-            /// `caldav` for a task that lives on a CalDAV reminder list.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/external_source`.
-            internal var externalSource: Components.Schemas.Task.ExternalSourcePayload
+            internal var externalSource: Swift.String
             /// - Remark: Generated from `#/components/schemas/Task/external_uid`.
             internal var externalUid: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Task/external_account_id`.
@@ -5422,14 +5098,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/outbound_dirty`.
-            internal enum OutboundDirtyPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/outbound_dirty`.
-            internal var outboundDirty: Components.Schemas.Task.OutboundDirtyPayload?
+            internal var outboundDirty: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/outbound_attempts`.
@@ -5437,14 +5106,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/seen_on_server`.
-            internal enum SeenOnServerPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Task/seen_on_server`.
-            internal var seenOnServer: Components.Schemas.Task.SeenOnServerPayload?
+            internal var seenOnServer: Swift.Int?
             /// Name of `assigned_to`.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/assigned_name`.
@@ -5510,36 +5172,36 @@ extension Components {
                 title: Swift.String,
                 description: Swift.String? = nil,
                 category: Swift.String,
-                priority: Components.Schemas.Task.PriorityPayload,
-                status: Components.Schemas.Task.StatusPayload,
+                priority: Swift.String,
+                status: Swift.String,
                 startDate: Swift.String? = nil,
                 dueDate: Swift.String? = nil,
                 dueTime: Swift.String? = nil,
                 assignedTo: Swift.Int? = nil,
                 createdBy: Swift.Int,
                 parentTaskId: Swift.Int? = nil,
-                isRecurring: Components.Schemas.Task.IsRecurringPayload,
+                isRecurring: Swift.Int,
                 recurrenceRule: Swift.String? = nil,
-                recurrenceFromCompletion: Components.Schemas.Task.RecurrenceFromCompletionPayload? = nil,
+                recurrenceFromCompletion: Swift.Int? = nil,
                 recurrenceOriginId: Swift.Int? = nil,
                 recurrenceSeriesId: Swift.Int? = nil,
                 points: Swift.Int,
-                visibility: Components.Schemas.Task.VisibilityPayload,
-                countdown: Components.Schemas.Task.CountdownPayload,
-                locked: Components.Schemas.Task.LockedPayload,
+                visibility: Swift.String,
+                countdown: Swift.Int,
+                locked: Swift.Int,
                 sortOrder: Swift.Int? = nil,
                 archivedAt: Foundation.Date? = nil,
                 createdAt: Foundation.Date,
                 updatedAt: Foundation.Date,
-                externalSource: Components.Schemas.Task.ExternalSourcePayload,
+                externalSource: Swift.String,
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
-                outboundDirty: Components.Schemas.Task.OutboundDirtyPayload? = nil,
+                outboundDirty: Swift.Int? = nil,
                 outboundAttempts: Swift.Int? = nil,
-                seenOnServer: Components.Schemas.Task.SeenOnServerPayload? = nil,
+                seenOnServer: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
                 assignedAvatar: Swift.String? = nil,
@@ -5759,27 +5421,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TaskDetail/category`.
             internal var category: Swift.String
             /// - Remark: Generated from `#/components/schemas/TaskDetail/priority`.
-            internal enum PriorityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case none = "none"
-                case low = "low"
-                case medium = "medium"
-                case high = "high"
-                case urgent = "urgent"
-            }
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/priority`.
-            internal var priority: Components.Schemas.TaskDetail.PriorityPayload
+            internal var priority: Swift.String
             /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/status`.
-            internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-            }
-            /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/status`.
-            internal var status: Components.Schemas.TaskDetail.StatusPayload
+            internal var status: Swift.String
             /// `YYYY-MM-DD`, a plain calendar day without a time zone.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/start_date`.
@@ -5805,14 +5451,7 @@ extension Components {
             /// 1 when the task repeats, in the form 0 or 1.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/is_recurring`.
-            internal enum IsRecurringPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task repeats, in the form 0 or 1.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/is_recurring`.
-            internal var isRecurring: Components.Schemas.TaskDetail.IsRecurringPayload
+            internal var isRecurring: Swift.Int
             /// RRULE of the series. A task synced over CalDAV may carry more than the vocabulary the API accepts.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/recurrence_rule`.
@@ -5820,14 +5459,7 @@ extension Components {
             /// 1 when the next occurrence counts from the day of completion instead of the due date.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/recurrence_from_completion`.
-            internal enum RecurrenceFromCompletionPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the next occurrence counts from the day of completion instead of the due date.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/recurrence_from_completion`.
-            internal var recurrenceFromCompletion: Components.Schemas.TaskDetail.RecurrenceFromCompletionPayload?
+            internal var recurrenceFromCompletion: Swift.Int?
             /// The task this one followed in its series.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/recurrence_origin_id`.
@@ -5837,35 +5469,15 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TaskDetail/points`.
             internal var points: Swift.Int
             /// - Remark: Generated from `#/components/schemas/TaskDetail/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case assignees = "assignees"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/visibility`.
-            internal var visibility: Components.Schemas.TaskDetail.VisibilityPayload
+            internal var visibility: Swift.String
             /// 1 when the task shows as a countdown.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/countdown`.
-            internal enum CountdownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task shows as a countdown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/countdown`.
-            internal var countdown: Components.Schemas.TaskDetail.CountdownPayload
+            internal var countdown: Swift.Int
             /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/locked`.
-            internal enum LockedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/locked`.
-            internal var locked: Components.Schemas.TaskDetail.LockedPayload
+            internal var locked: Swift.Int
             /// Rank in the hand order of the category, null without a rank.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/sort_order`.
@@ -5885,14 +5497,7 @@ extension Components {
             /// `caldav` for a task that lives on a CalDAV reminder list.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/external_source`.
-            internal enum ExternalSourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case local = "local"
-                case caldav = "caldav"
-            }
-            /// `caldav` for a task that lives on a CalDAV reminder list.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/external_source`.
-            internal var externalSource: Components.Schemas.TaskDetail.ExternalSourcePayload
+            internal var externalSource: Swift.String
             /// - Remark: Generated from `#/components/schemas/TaskDetail/external_uid`.
             internal var externalUid: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TaskDetail/external_account_id`.
@@ -5908,14 +5513,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/outbound_dirty`.
-            internal enum OutboundDirtyPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/outbound_dirty`.
-            internal var outboundDirty: Components.Schemas.TaskDetail.OutboundDirtyPayload?
+            internal var outboundDirty: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/outbound_attempts`.
@@ -5923,14 +5521,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/seen_on_server`.
-            internal enum SeenOnServerPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskDetail/seen_on_server`.
-            internal var seenOnServer: Components.Schemas.TaskDetail.SeenOnServerPayload?
+            internal var seenOnServer: Swift.Int?
             /// Name of `assigned_to`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/assigned_name`.
@@ -6009,36 +5600,36 @@ extension Components {
                 title: Swift.String,
                 description: Swift.String? = nil,
                 category: Swift.String,
-                priority: Components.Schemas.TaskDetail.PriorityPayload,
-                status: Components.Schemas.TaskDetail.StatusPayload,
+                priority: Swift.String,
+                status: Swift.String,
                 startDate: Swift.String? = nil,
                 dueDate: Swift.String? = nil,
                 dueTime: Swift.String? = nil,
                 assignedTo: Swift.Int? = nil,
                 createdBy: Swift.Int,
                 parentTaskId: Swift.Int? = nil,
-                isRecurring: Components.Schemas.TaskDetail.IsRecurringPayload,
+                isRecurring: Swift.Int,
                 recurrenceRule: Swift.String? = nil,
-                recurrenceFromCompletion: Components.Schemas.TaskDetail.RecurrenceFromCompletionPayload? = nil,
+                recurrenceFromCompletion: Swift.Int? = nil,
                 recurrenceOriginId: Swift.Int? = nil,
                 recurrenceSeriesId: Swift.Int? = nil,
                 points: Swift.Int,
-                visibility: Components.Schemas.TaskDetail.VisibilityPayload,
-                countdown: Components.Schemas.TaskDetail.CountdownPayload,
-                locked: Components.Schemas.TaskDetail.LockedPayload,
+                visibility: Swift.String,
+                countdown: Swift.Int,
+                locked: Swift.Int,
                 sortOrder: Swift.Int? = nil,
                 archivedAt: Foundation.Date? = nil,
                 createdAt: Foundation.Date,
                 updatedAt: Foundation.Date,
-                externalSource: Components.Schemas.TaskDetail.ExternalSourcePayload,
+                externalSource: Swift.String,
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
-                outboundDirty: Components.Schemas.TaskDetail.OutboundDirtyPayload? = nil,
+                outboundDirty: Swift.Int? = nil,
                 outboundAttempts: Swift.Int? = nil,
-                seenOnServer: Components.Schemas.TaskDetail.SeenOnServerPayload? = nil,
+                seenOnServer: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
                 assignedAvatar: Swift.String? = nil,
@@ -6231,27 +5822,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TaskListItem/category`.
             internal var category: Swift.String
             /// - Remark: Generated from `#/components/schemas/TaskListItem/priority`.
-            internal enum PriorityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case none = "none"
-                case low = "low"
-                case medium = "medium"
-                case high = "high"
-                case urgent = "urgent"
-            }
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/priority`.
-            internal var priority: Components.Schemas.TaskListItem.PriorityPayload
+            internal var priority: Swift.String
             /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/status`.
-            internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-            }
-            /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/status`.
-            internal var status: Components.Schemas.TaskListItem.StatusPayload
+            internal var status: Swift.String
             /// `YYYY-MM-DD`, a plain calendar day without a time zone.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/start_date`.
@@ -6277,14 +5852,7 @@ extension Components {
             /// 1 when the task repeats, in the form 0 or 1.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/is_recurring`.
-            internal enum IsRecurringPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task repeats, in the form 0 or 1.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/is_recurring`.
-            internal var isRecurring: Components.Schemas.TaskListItem.IsRecurringPayload
+            internal var isRecurring: Swift.Int
             /// RRULE of the series. A task synced over CalDAV may carry more than the vocabulary the API accepts.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/recurrence_rule`.
@@ -6292,14 +5860,7 @@ extension Components {
             /// 1 when the next occurrence counts from the day of completion instead of the due date.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/recurrence_from_completion`.
-            internal enum RecurrenceFromCompletionPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the next occurrence counts from the day of completion instead of the due date.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/recurrence_from_completion`.
-            internal var recurrenceFromCompletion: Components.Schemas.TaskListItem.RecurrenceFromCompletionPayload?
+            internal var recurrenceFromCompletion: Swift.Int?
             /// The task this one followed in its series.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/recurrence_origin_id`.
@@ -6309,35 +5870,15 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TaskListItem/points`.
             internal var points: Swift.Int
             /// - Remark: Generated from `#/components/schemas/TaskListItem/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case assignees = "assignees"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/visibility`.
-            internal var visibility: Components.Schemas.TaskListItem.VisibilityPayload
+            internal var visibility: Swift.String
             /// 1 when the task shows as a countdown.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/countdown`.
-            internal enum CountdownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task shows as a countdown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/countdown`.
-            internal var countdown: Components.Schemas.TaskListItem.CountdownPayload
+            internal var countdown: Swift.Int
             /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/locked`.
-            internal enum LockedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/locked`.
-            internal var locked: Components.Schemas.TaskListItem.LockedPayload
+            internal var locked: Swift.Int
             /// Rank in the hand order of the category, null without a rank.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/sort_order`.
@@ -6357,14 +5898,7 @@ extension Components {
             /// `caldav` for a task that lives on a CalDAV reminder list.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/external_source`.
-            internal enum ExternalSourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case local = "local"
-                case caldav = "caldav"
-            }
-            /// `caldav` for a task that lives on a CalDAV reminder list.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/external_source`.
-            internal var externalSource: Components.Schemas.TaskListItem.ExternalSourcePayload
+            internal var externalSource: Swift.String
             /// - Remark: Generated from `#/components/schemas/TaskListItem/external_uid`.
             internal var externalUid: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TaskListItem/external_account_id`.
@@ -6380,14 +5914,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/outbound_dirty`.
-            internal enum OutboundDirtyPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/outbound_dirty`.
-            internal var outboundDirty: Components.Schemas.TaskListItem.OutboundDirtyPayload?
+            internal var outboundDirty: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/outbound_attempts`.
@@ -6395,14 +5922,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/seen_on_server`.
-            internal enum SeenOnServerPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskListItem/seen_on_server`.
-            internal var seenOnServer: Components.Schemas.TaskListItem.SeenOnServerPayload?
+            internal var seenOnServer: Swift.Int?
             /// Name of `assigned_to`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/assigned_name`.
@@ -6482,36 +6002,36 @@ extension Components {
                 title: Swift.String,
                 description: Swift.String? = nil,
                 category: Swift.String,
-                priority: Components.Schemas.TaskListItem.PriorityPayload,
-                status: Components.Schemas.TaskListItem.StatusPayload,
+                priority: Swift.String,
+                status: Swift.String,
                 startDate: Swift.String? = nil,
                 dueDate: Swift.String? = nil,
                 dueTime: Swift.String? = nil,
                 assignedTo: Swift.Int? = nil,
                 createdBy: Swift.Int,
                 parentTaskId: Swift.Int? = nil,
-                isRecurring: Components.Schemas.TaskListItem.IsRecurringPayload,
+                isRecurring: Swift.Int,
                 recurrenceRule: Swift.String? = nil,
-                recurrenceFromCompletion: Components.Schemas.TaskListItem.RecurrenceFromCompletionPayload? = nil,
+                recurrenceFromCompletion: Swift.Int? = nil,
                 recurrenceOriginId: Swift.Int? = nil,
                 recurrenceSeriesId: Swift.Int? = nil,
                 points: Swift.Int,
-                visibility: Components.Schemas.TaskListItem.VisibilityPayload,
-                countdown: Components.Schemas.TaskListItem.CountdownPayload,
-                locked: Components.Schemas.TaskListItem.LockedPayload,
+                visibility: Swift.String,
+                countdown: Swift.Int,
+                locked: Swift.Int,
                 sortOrder: Swift.Int? = nil,
                 archivedAt: Foundation.Date? = nil,
                 createdAt: Foundation.Date,
                 updatedAt: Foundation.Date,
-                externalSource: Components.Schemas.TaskListItem.ExternalSourcePayload,
+                externalSource: Swift.String,
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
-                outboundDirty: Components.Schemas.TaskListItem.OutboundDirtyPayload? = nil,
+                outboundDirty: Swift.Int? = nil,
                 outboundAttempts: Swift.Int? = nil,
-                seenOnServer: Components.Schemas.TaskListItem.SeenOnServerPayload? = nil,
+                seenOnServer: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
                 assignedAvatar: Swift.String? = nil,
@@ -6676,33 +6196,12 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/users`.
             internal var users: Components.Schemas.TaskOptionsResponse.UsersPayload
-            /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/PrioritiesPayload`.
-            internal enum PrioritiesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case none = "none"
-                case low = "low"
-                case medium = "medium"
-                case high = "high"
-                case urgent = "urgent"
-            }
             /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/priorities`.
-            internal typealias PrioritiesPayload = [Components.Schemas.TaskOptionsResponse.PrioritiesPayloadPayload]
-            /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/priorities`.
-            internal var priorities: Components.Schemas.TaskOptionsResponse.PrioritiesPayload
-            /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/StatusesPayload`.
-            internal enum StatusesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-                case archived = "archived"
-            }
+            internal var priorities: [Swift.String]
             /// What the `status` filter and input take. `archived` stands for the archive here; a task never reads back with it.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/statuses`.
-            internal typealias StatusesPayload = [Components.Schemas.TaskOptionsResponse.StatusesPayloadPayload]
-            /// What the `status` filter and input take. `archived` stands for the archive here; a task never reads back with it.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/statuses`.
-            internal var statuses: Components.Schemas.TaskOptionsResponse.StatusesPayload
+            internal var statuses: [Swift.String]
             /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/categories`.
             internal var categories: [Components.Schemas.TaskCategory]
             /// - Remark: Generated from `#/components/schemas/TaskOptionsResponse/TagsPayload`.
@@ -6751,8 +6250,8 @@ extension Components {
             ///   - defaultPoints: Points a new top-level task takes when the request names none. 0 means no default.
             internal init(
                 users: Components.Schemas.TaskOptionsResponse.UsersPayload,
-                priorities: Components.Schemas.TaskOptionsResponse.PrioritiesPayload,
-                statuses: Components.Schemas.TaskOptionsResponse.StatusesPayload,
+                priorities: [Swift.String],
+                statuses: [Swift.String],
                 categories: [Components.Schemas.TaskCategory],
                 tags: Components.Schemas.TaskOptionsResponse.TagsPayload,
                 defaultPoints: Swift.Int
@@ -6829,15 +6328,7 @@ extension Components {
                 /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
                 ///
                 /// - Remark: Generated from `#/components/schemas/TaskStatusResponse/data/status`.
-                internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case open = "open"
-                    case inProgress = "in_progress"
-                    case done = "done"
-                }
-                /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-                ///
-                /// - Remark: Generated from `#/components/schemas/TaskStatusResponse/data/status`.
-                internal var status: Components.Schemas.TaskStatusResponse.DataPayload.StatusPayload
+                internal var status: Swift.String
                 /// UTC instant with `Z`, null while the task is not filed away.
                 ///
                 /// - Remark: Generated from `#/components/schemas/TaskStatusResponse/data/archived_at`.
@@ -6855,7 +6346,7 @@ extension Components {
                 ///   - nextDueDate: `YYYY-MM-DD`. Left out after sending `archived`.
                 internal init(
                     id: Swift.Int,
-                    status: Components.Schemas.TaskStatusResponse.DataPayload.StatusPayload,
+                    status: Swift.String,
                     archivedAt: Foundation.Date? = nil,
                     nextDueDate: Swift.String? = nil
                 ) {
@@ -6895,15 +6386,7 @@ extension Components {
             /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskSubtaskSummary/status`.
-            internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-            }
-            /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskSubtaskSummary/status`.
-            internal var status: Components.Schemas.TaskSubtaskSummary.StatusPayload
+            internal var status: Swift.String
             /// Creates a new `TaskSubtaskSummary`.
             ///
             /// - Parameters:
@@ -6913,7 +6396,7 @@ extension Components {
             internal init(
                 id: Swift.Int,
                 title: Swift.String,
-                status: Components.Schemas.TaskSubtaskSummary.StatusPayload
+                status: Swift.String
             ) {
                 self.id = id
                 self.title = title
@@ -6946,27 +6429,11 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/category`.
             internal var category: Swift.String
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/priority`.
-            internal enum PriorityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case none = "none"
-                case low = "low"
-                case medium = "medium"
-                case high = "high"
-                case urgent = "urgent"
-            }
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/priority`.
-            internal var priority: Components.Schemas.TaskUpdated.PriorityPayload
+            internal var priority: Swift.String
             /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/status`.
-            internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case open = "open"
-                case inProgress = "in_progress"
-                case done = "done"
-            }
-            /// The state of the task. `archived` is not a status here: filing away is the separate axis `archived_at`.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/status`.
-            internal var status: Components.Schemas.TaskUpdated.StatusPayload
+            internal var status: Swift.String
             /// `YYYY-MM-DD`, a plain calendar day without a time zone.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/start_date`.
@@ -6992,14 +6459,7 @@ extension Components {
             /// 1 when the task repeats, in the form 0 or 1.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/is_recurring`.
-            internal enum IsRecurringPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task repeats, in the form 0 or 1.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/is_recurring`.
-            internal var isRecurring: Components.Schemas.TaskUpdated.IsRecurringPayload
+            internal var isRecurring: Swift.Int
             /// RRULE of the series. A task synced over CalDAV may carry more than the vocabulary the API accepts.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/recurrence_rule`.
@@ -7007,14 +6467,7 @@ extension Components {
             /// 1 when the next occurrence counts from the day of completion instead of the due date.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/recurrence_from_completion`.
-            internal enum RecurrenceFromCompletionPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the next occurrence counts from the day of completion instead of the due date.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/recurrence_from_completion`.
-            internal var recurrenceFromCompletion: Components.Schemas.TaskUpdated.RecurrenceFromCompletionPayload?
+            internal var recurrenceFromCompletion: Swift.Int?
             /// The task this one followed in its series.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/recurrence_origin_id`.
@@ -7024,35 +6477,15 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/points`.
             internal var points: Swift.Int
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/visibility`.
-            internal enum VisibilityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case all = "all"
-                case assignees = "assignees"
-                case _private = "private"
-            }
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/visibility`.
-            internal var visibility: Components.Schemas.TaskUpdated.VisibilityPayload
+            internal var visibility: Swift.String
             /// 1 when the task shows as a countdown.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/countdown`.
-            internal enum CountdownPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the task shows as a countdown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/countdown`.
-            internal var countdown: Components.Schemas.TaskUpdated.CountdownPayload
+            internal var countdown: Swift.Int
             /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/locked`.
-            internal enum LockedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// 1 when the definition of the task is closed to everyone but its creator and administrators (#830).
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/locked`.
-            internal var locked: Components.Schemas.TaskUpdated.LockedPayload
+            internal var locked: Swift.Int
             /// Rank in the hand order of the category, null without a rank.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/sort_order`.
@@ -7072,14 +6505,7 @@ extension Components {
             /// `caldav` for a task that lives on a CalDAV reminder list.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/external_source`.
-            internal enum ExternalSourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case local = "local"
-                case caldav = "caldav"
-            }
-            /// `caldav` for a task that lives on a CalDAV reminder list.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/external_source`.
-            internal var externalSource: Components.Schemas.TaskUpdated.ExternalSourcePayload
+            internal var externalSource: Swift.String
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/external_uid`.
             internal var externalUid: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/external_account_id`.
@@ -7095,14 +6521,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/outbound_dirty`.
-            internal enum OutboundDirtyPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/outbound_dirty`.
-            internal var outboundDirty: Components.Schemas.TaskUpdated.OutboundDirtyPayload?
+            internal var outboundDirty: Swift.Int?
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/outbound_attempts`.
@@ -7110,14 +6529,7 @@ extension Components {
             /// Bookkeeping of the sync; says nothing a client acts on.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/seen_on_server`.
-            internal enum SeenOnServerPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-                case _1 = 1
-            }
-            /// Bookkeeping of the sync; says nothing a client acts on.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TaskUpdated/seen_on_server`.
-            internal var seenOnServer: Components.Schemas.TaskUpdated.SeenOnServerPayload?
+            internal var seenOnServer: Swift.Int?
             /// Name of `assigned_to`.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/assigned_name`.
@@ -7191,36 +6603,36 @@ extension Components {
                 title: Swift.String,
                 description: Swift.String? = nil,
                 category: Swift.String,
-                priority: Components.Schemas.TaskUpdated.PriorityPayload,
-                status: Components.Schemas.TaskUpdated.StatusPayload,
+                priority: Swift.String,
+                status: Swift.String,
                 startDate: Swift.String? = nil,
                 dueDate: Swift.String? = nil,
                 dueTime: Swift.String? = nil,
                 assignedTo: Swift.Int? = nil,
                 createdBy: Swift.Int,
                 parentTaskId: Swift.Int? = nil,
-                isRecurring: Components.Schemas.TaskUpdated.IsRecurringPayload,
+                isRecurring: Swift.Int,
                 recurrenceRule: Swift.String? = nil,
-                recurrenceFromCompletion: Components.Schemas.TaskUpdated.RecurrenceFromCompletionPayload? = nil,
+                recurrenceFromCompletion: Swift.Int? = nil,
                 recurrenceOriginId: Swift.Int? = nil,
                 recurrenceSeriesId: Swift.Int? = nil,
                 points: Swift.Int,
-                visibility: Components.Schemas.TaskUpdated.VisibilityPayload,
-                countdown: Components.Schemas.TaskUpdated.CountdownPayload,
-                locked: Components.Schemas.TaskUpdated.LockedPayload,
+                visibility: Swift.String,
+                countdown: Swift.Int,
+                locked: Swift.Int,
                 sortOrder: Swift.Int? = nil,
                 archivedAt: Foundation.Date? = nil,
                 createdAt: Foundation.Date,
                 updatedAt: Foundation.Date,
-                externalSource: Components.Schemas.TaskUpdated.ExternalSourcePayload,
+                externalSource: Swift.String,
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
-                outboundDirty: Components.Schemas.TaskUpdated.OutboundDirtyPayload? = nil,
+                outboundDirty: Swift.Int? = nil,
                 outboundAttempts: Swift.Int? = nil,
-                seenOnServer: Components.Schemas.TaskUpdated.SeenOnServerPayload? = nil,
+                seenOnServer: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
                 assignedAvatar: Swift.String? = nil,
@@ -7395,12 +6807,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/TwoFactorVerifyResponse/csrfToken`.
             internal var csrfToken: Swift.String
             /// - Remark: Generated from `#/components/schemas/TwoFactorVerifyResponse/twoFactorMethod`.
-            internal enum TwoFactorMethodPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case totp = "totp"
-                case recovery = "recovery"
-            }
-            /// - Remark: Generated from `#/components/schemas/TwoFactorVerifyResponse/twoFactorMethod`.
-            internal var twoFactorMethod: Components.Schemas.TwoFactorVerifyResponse.TwoFactorMethodPayload
+            internal var twoFactorMethod: Swift.String
             /// - Remark: Generated from `#/components/schemas/TwoFactorVerifyResponse/recoveryRemaining`.
             internal var recoveryRemaining: Swift.Int
             /// Creates a new `TwoFactorVerifyResponse`.
@@ -7421,7 +6828,7 @@ extension Components {
                 initialsRoster: [Swift.String],
                 othersCanRead: [Swift.String],
                 csrfToken: Swift.String,
-                twoFactorMethod: Components.Schemas.TwoFactorVerifyResponse.TwoFactorMethodPayload,
+                twoFactorMethod: Swift.String,
                 recoveryRemaining: Swift.Int
             ) {
                 self.user = user
@@ -7463,11 +6870,7 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/UpcomingReminder/remind_at`.
             internal var remindAt: Swift.String
             /// - Remark: Generated from `#/components/schemas/UpcomingReminder/dismissed`.
-            internal enum DismissedPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                case _0 = 0
-            }
-            /// - Remark: Generated from `#/components/schemas/UpcomingReminder/dismissed`.
-            internal var dismissed: Components.Schemas.UpcomingReminder.DismissedPayload?
+            internal var dismissed: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/UpcomingReminder/pushed_at`.
             internal var pushedAt: Swift.String?
             /// Set on a reminder inherited from the person who created the entity.
@@ -7527,7 +6930,7 @@ extension Components {
                 entityId: Swift.Int,
                 entityTitle: Swift.String? = nil,
                 remindAt: Swift.String,
-                dismissed: Components.Schemas.UpcomingReminder.DismissedPayload? = nil,
+                dismissed: Swift.Int? = nil,
                 pushedAt: Swift.String? = nil,
                 assignedFrom: Swift.Int? = nil,
                 createdBy: Swift.Int,
@@ -7605,24 +7008,9 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/User/avatar_data`.
             internal var avatarData: Swift.String?
             /// - Remark: Generated from `#/components/schemas/User/role`.
-            internal enum RolePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case admin = "admin"
-                case member = "member"
-            }
-            /// - Remark: Generated from `#/components/schemas/User/role`.
-            internal var role: Components.Schemas.User.RolePayload
+            internal var role: Swift.String
             /// - Remark: Generated from `#/components/schemas/User/family_role`.
-            internal enum FamilyRolePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case dad = "dad"
-                case mom = "mom"
-                case parent = "parent"
-                case child = "child"
-                case grandparent = "grandparent"
-                case relative = "relative"
-                case other = "other"
-            }
-            /// - Remark: Generated from `#/components/schemas/User/family_role`.
-            internal var familyRole: Components.Schemas.User.FamilyRolePayload
+            internal var familyRole: Swift.String
             /// What kind of account this is, for example `family`, `split_guest` or `display`.
             ///
             /// - Remark: Generated from `#/components/schemas/User/access_scope`.
@@ -7720,8 +7108,8 @@ extension Components {
                 displayName: Swift.String,
                 avatarColor: Swift.String,
                 avatarData: Swift.String? = nil,
-                role: Components.Schemas.User.RolePayload,
-                familyRole: Components.Schemas.User.FamilyRolePayload,
+                role: Swift.String,
+                familyRole: Swift.String,
                 accessScope: Swift.String? = nil,
                 createdAt: Foundation.Date? = nil,
                 deactivatedAt: Foundation.Date? = nil,
@@ -7784,13 +7172,7 @@ extension Components {
             /// Identifies a Yuvomi instance. `app_name` cannot do that: a household can rename it.
             ///
             /// - Remark: Generated from `#/components/schemas/VersionResponse/product`.
-            internal enum ProductPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case yuvomi = "yuvomi"
-            }
-            /// Identifies a Yuvomi instance. `app_name` cannot do that: a household can rename it.
-            ///
-            /// - Remark: Generated from `#/components/schemas/VersionResponse/product`.
-            internal var product: Components.Schemas.VersionResponse.ProductPayload
+            internal var product: Swift.String
             /// The contract a native client relies on. It rises only when a client cannot work without the change, not with every release, so a client can tell a server that is too old before anyone signs in. 0 means no contract yet. 1 covers signed-in devices and pairing, `GET /reminders/upcoming` with `fires_at`, and the operations a native client is built from.
             ///
             /// - Remark: Generated from `#/components/schemas/VersionResponse/client_api`.
@@ -7819,7 +7201,7 @@ extension Components {
             ///   - maxUploadBytes: The largest upload this server accepts. Only with a valid credential, like `version`: before sign-in there is nothing to upload.
             internal init(
                 version: Swift.String? = nil,
-                product: Components.Schemas.VersionResponse.ProductPayload,
+                product: Swift.String,
                 clientApi: Swift.Int,
                 appName: Swift.String,
                 setupRequired: Swift.Bool,
