@@ -240,10 +240,11 @@ final class AppModel {
         await reminders.reply(reply, session: current, keepWithoutSession: locked)
         background.end()
         // Ist die Liste offen, zeigt sie die abgehakte Aufgabe nicht mehr. Im Hintergrund erst
-        // beim nächsten Wechsel in den Vordergrund.
+        // beim nächsten Wechsel in den Vordergrund. Ohne darauf zu warten: iOS wartet bis zum
+        // Ende dieser Methode, das Neuladen gehört nicht mehr zur Rückmeldung.
         guard reply.kind == .checkOff else { return }
         listIsStale = true
-        if application.applicationState == .active { await reloadListIfStale() }
+        if application.applicationState == .active { Task { await reloadListIfStale() } }
     }
 
     /// Lädt die offene Liste neu, wenn ein Abhaken sie veraltet hat. Liegt noch ein Abhaken in
