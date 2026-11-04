@@ -34,11 +34,14 @@ public struct YuvomiTasks: TaskReading {
 extension APIError {
     /// Wie `ServerProbeError(classifying:)`: ohne Antwort nicht erreichbar, sonst unerwartet.
     /// Eine 401 bleibt eine 401, auch wenn sich ihr Body nicht lesen lässt: Sonst behielte
-    /// die App ein widerrufenes Credential.
+    /// die App ein widerrufenes Credential. Ebenso 403 und 404: Beide sind endgültig, ein
+    /// zweiter Versuch brächte nichts.
     init(classifying error: any Error) {
         switch (error as? ClientError)?.response?.status {
         case nil: self = .unreachable
         case .unauthorized: self = .unauthorized
+        case .forbidden: self = .forbidden
+        case .notFound: self = .notFound
         default: self = .unexpectedResponse
         }
     }

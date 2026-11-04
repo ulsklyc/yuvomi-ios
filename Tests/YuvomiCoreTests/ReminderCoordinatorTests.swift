@@ -35,15 +35,18 @@ final class Gate: @unchecked Sendable {
     let gate = Gate()
 
     func coordinator(onUnauthorized: @escaping @MainActor (Session) -> Void = { _ in }) -> ReminderCoordinator {
-        source.result = .success([UpcomingReminder(id: 1, origin: .task, title: "Strom zahlen", firesAt: now.addingTimeInterval(3600))])
+        source.result = .success([UpcomingReminder(id: 1, origin: .task, entityID: 101, title: "Strom zahlen", firesAt: now.addingTimeInterval(3600))])
         let gate = gate
         source.whileWaiting = { await gate.wait() }
         let source = source
         return ReminderCoordinator(
             makeSource: { _ in source },
+            makeWriter: { _ in FakeWriter(log: EventLog()) },
             scheduler: scheduler,
+            queue: FakeReplyQueue(),
             now: { [now] in now },
-            onUnauthorized: onUnauthorized
+            onUnauthorized: onUnauthorized,
+            onNotCheckedOff: { _ in }
         )
     }
 
@@ -63,7 +66,7 @@ final class Gate: @unchecked Sendable {
         gate.open()
         _ = await (first.value, off.value, on.value)
 
-        #expect(Set(scheduler.planned.keys) == ["reminder.1"])
+        #expect(Set(scheduler.planned.keys) == ["reminder.1.task.101"])
     }
 
     @Test func signingOutDuringTheFetchLeavesNothingBehind() async {
@@ -89,7 +92,7 @@ final class Gate: @unchecked Sendable {
         _ = await (first.value, second.value)
 
         #expect(source.windows.count == 1)
-        #expect(Set(scheduler.planned.keys) == ["reminder.1"])
+        #expect(Set(scheduler.planned.keys) == ["reminder.1.task.101"])
     }
 
     /// Anhängen nur an einen laufenden Abgleich. Sonst gliche nach dem ersten Abgleich nichts
@@ -118,7 +121,7 @@ final class Gate: @unchecked Sendable {
     /// Startet iOS die App nur für den Hintergrund-Abgleich, gibt es keine View, die auf das
     /// Ende der Sitzung reagiert. Der Abgleich räumt selbst ab.
     @Test func aRevokedCredentialLeavesNothingBehind() async {
-        await scheduler.plan([PlannedNotification(id: "reminder.9", origin: .event, title: "Filmabend", firesAt: now.addingTimeInterval(7200))])
+        await scheduler.plan([PlannedNotification(id: "reminder.9.event.109", reminderID: 9, origin: .event, entityID: 109, title: "Filmabend", firesAt: now.addingTimeInterval(7200))])
         let reminders = coordinator()
         source.result = .failure(.unauthorized)
         gate.open()

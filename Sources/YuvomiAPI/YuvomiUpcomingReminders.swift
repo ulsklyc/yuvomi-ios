@@ -42,6 +42,6 @@ extension UpcomingReminder {
         case "event": origin = .event
         default: return nil
         }
-        self.init(id: row.id, origin: origin, title: row.entityTitle ?? "", firesAt: row.firesAt)
+        self.init(id: row.id, origin: origin, entityID: row.entityId, title: row.entityTitle ?? "", firesAt: row.firesAt)
     }
 }
