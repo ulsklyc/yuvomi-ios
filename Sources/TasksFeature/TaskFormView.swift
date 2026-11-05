@@ -86,7 +86,6 @@ struct TaskFormView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: person.name)
-                                .foregroundStyle(.primary)
                             if position == 0 {
                                 Text("tasks.form.assignees.lead", bundle: .module)
                                     .font(.footnote)
@@ -96,12 +95,14 @@ struct TaskFormView: View {
                         Spacer()
                         if position != nil {
                             Image(systemName: "checkmark")
-                                .foregroundStyle(.tint)
+                                .foregroundStyle(Color.accentColor)
                                 .accessibilityHidden(true)
                         }
                     }
                     .contentShape(.rect)
                 }
+                // Im `Form` färbt ein Knopf sein Label in der Akzentfarbe. Die Namen sind keine Aktion.
+                .tint(.primary)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(position != nil ? .isSelected : [])
             }
