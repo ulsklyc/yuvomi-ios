@@ -15,6 +15,8 @@ public enum TaskNotice: Hashable, Sendable {
     case changed
     /// 409 beim Anlegen: Derselbe Versuch läuft noch, gleich nochmal (Q14).
     case stillRunning
+    /// 403 `task_locked`: Nur wer die Aufgabe angelegt hat, darf sie ändern (Q13).
+    case locked
 
     /// Für die Fehler ohne eigene Folge. 401 behandelt der Aufrufer vorher.
     init(_ error: APIError) {
@@ -22,8 +24,8 @@ public enum TaskNotice: Hashable, Sendable {
         case .unreachable: self = .unreachable
         case .forbidden: self = .readOnly
         case .notFound: self = .gone
-        // `.locked` bekommt in F3 einen eigenen Hinweis; Abhaken und Ankreuzen lösen ihn nicht aus.
-        case .unauthorized, .conflict, .locked, .unexpectedResponse: self = .unexpectedResponse
+        case .locked: self = .locked
+        case .unauthorized, .conflict, .unexpectedResponse: self = .unexpectedResponse
         }
     }
 
@@ -35,6 +37,7 @@ public enum TaskNotice: Hashable, Sendable {
         case .gone: "tasks.notice.gone"
         case .changed: "tasks.notice.changed"
         case .stillRunning: "tasks.notice.stillRunning"
+        case .locked: "tasks.notice.locked"
         }
     }
 }

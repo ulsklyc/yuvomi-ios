@@ -35,7 +35,7 @@ let packing = TaskDetail(
 /// Seam 4, Laden: Was das Detail nach `load()` zeigt.
 @MainActor @Suite struct TaskDetailModelTests {
     func model(_ reading: FakeDetail, onUnauthorized: @escaping @MainActor () -> Void = {}) -> TaskDetailModel {
-        TaskDetailModel(taskID: 24, tasks: reading, writer: FakeWriter(), onUnauthorized: onUnauthorized)
+        TaskDetailModel(taskID: 24, tasks: reading, writer: FakeWriter(), editor: FakeEditor(), onUnauthorized: onUnauthorized)
     }
 
     @Test func loadsTheTask() async {

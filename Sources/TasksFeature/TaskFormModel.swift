@@ -2,17 +2,22 @@ import Foundation
 import Observation
 import YuvomiCore
 
-/// Zustand des Formulars im Sheet (Q2): Entwurf, Optionen, Senden und Fehler. Je geöffnetem
-/// Sheet ein Modell, wie ein Formular-Store, der mit dem Dialog entsteht und mit ihm geht.
+/// Zustand des Formulars im Sheet (Q2): Entwurf, Optionen, Senden und Fehler, fürs Anlegen und
+/// fürs Ändern. Je geöffnetem Sheet ein Modell, wie ein Formular-Store, der mit dem Dialog
+/// entsteht und mit ihm geht.
 @MainActor @Observable
 public final class TaskFormModel: Identifiable {
     /// Wie das Sheet endet, wenn nicht die Person es schließt.
     public enum Outcome: Hashable, Sendable {
-        /// Der Server hat angelegt.
-        case saved
-        /// 403: Die Person darf Aufgaben nur ansehen (Q13).
-        case readOnly
+        /// Der Server hat gesichert. Beim Ändern mit dem Stand danach (Q11), beim Anlegen `nil`.
+        case saved(TaskDetail?)
+        /// Ein Fehler, der das Sheet schließt (Q13): `.forbidden`, `.locked` oder `.notFound`.
+        /// Die Folgen trägt der Besitzer.
+        case failed(APIError)
     }
+
+    /// Die Aufgabe, die das Formular ändert. `nil` beim Anlegen.
+    public let taskID: Int?
 
     public var draft: TaskDraft
     /// Der Stand beim Öffnen. Ohne Abweichung davon ist „Sichern“ aus (Q9).
@@ -36,16 +41,22 @@ public final class TaskFormModel: Identifiable {
     private var attempt: (changes: TaskChanges, key: String)?
 
     /// - Parameters:
+    ///   - task: Der gespeicherte Stand fürs Ändern, `nil` fürs Anlegen.
     ///   - now: Für den Vorschlag bei Datum und Uhrzeit; in Tests fest.
-    ///   - onFinished: Gesichert oder Nur-lesen. Der Aufrufer schließt das Sheet.
+    ///   - options: Schon geladene Optionen, etwa vom Detail. Dann lädt das Formular sie nicht neu.
+    ///   - onFinished: Gesichert oder ein Fehler nach Q13. Der Aufrufer schließt das Sheet.
     public init(
+        editing task: TaskDetail? = nil, options: TaskOptions? = nil,
         editor: any TaskEditing, now: @escaping () -> Date = Date.init, timeZone: TimeZone = .current,
         makeKey: @escaping () -> String = { UUID().uuidString },
         onUnauthorized: @escaping @MainActor () -> Void,
         onFinished: @escaping @MainActor (Outcome) async -> Void
     ) {
-        self.draft = TaskDraft()
-        self.base = TaskDraft()
+        self.taskID = task?.id
+        let base = task.map(TaskDraft.init) ?? TaskDraft()
+        self.base = base
+        self.draft = base
+        self.options = options
         self.editor = editor
         self.now = now
         self.timeZone = timeZone
@@ -54,12 +65,28 @@ public final class TaskFormModel: Identifiable {
         self.onFinished = onFinished
     }
 
+    public var isEditing: Bool { taskID != nil }
     public var hasChanges: Bool { !draft.changes(from: base).isEmpty }
     public var canSave: Bool { hasChanges && draft.problems.isEmpty && !isSaving }
     /// Wem sich die Aufgabe zuweisen lässt. `nil` bei einer Person allein (Q10) oder ohne Optionen.
     public var assignablePeople: [TaskOptions.Person]? {
         guard let people = options?.people, people.count > 1 else { return nil }
         return people
+    }
+
+    /// Die Prioritäten zur Wahl. Eine unbekannte vom Server bleibt dabei, sonst zeigte der
+    /// Picker beim Ändern nichts an (Review F3).
+    public var priorityChoices: [TaskPriority] {
+        TaskPriority.settable.contains(base.priority) ? TaskPriority.settable : TaskPriority.settable + [base.priority]
+    }
+
+    /// Die Kategorien zur Wahl, leer ohne Optionen. Eine gespeicherte, die es nicht mehr gibt,
+    /// bleibt dabei und zeigt ihren Key.
+    public var categoryChoices: [TaskCategory] {
+        guard let categories = options?.categories, !categories.isEmpty,
+              !categories.contains(where: { $0.key == base.category })
+        else { return options?.categories ?? [] }
+        return categories + [TaskCategory(key: base.category, name: nil, labelKey: nil)]
     }
 
     /// Ab 4500 Zeichen die Zahl für den Zähler, gezählt wie am Server (Q18).
@@ -134,12 +161,13 @@ public final class TaskFormModel: Identifiable {
     }
 
     public func loadOptions() async {
+        guard options == nil else { return }
         do throws(APIError) {
             options = try await editor.options()
         } catch .unauthorized {
             onUnauthorized()
         } catch .forbidden {
-            await onFinished(.readOnly)
+            await onFinished(.failed(.forbidden))
         } catch {
             // Ohne Optionen fehlen nur Zuständige und Kategorien, der Rest geht.
         }
@@ -148,23 +176,28 @@ public final class TaskFormModel: Identifiable {
     public func save() async {
         guard canSave else { return }
         let changes = draft.changes(from: base)
-        let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
-        attempt = (changes, key)
         isSaving = true
         notice = nil
         defer { isSaving = false }
         do throws(APIError) {
-            _ = try await editor.create(draft, parent: nil, idempotencyKey: key)
-            await onFinished(.saved)
+            if let taskID {
+                // PUT ist idempotent und braucht keinen Schlüssel.
+                await onFinished(.saved(try await editor.update(task: taskID, changes)))
+            } else {
+                let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
+                attempt = (changes, key)
+                _ = try await editor.create(draft, parent: nil, idempotencyKey: key)
+                await onFinished(.saved(nil))
+            }
         } catch .unauthorized {
             onUnauthorized()
-        } catch .forbidden {
-            await onFinished(.readOnly)
         } catch .conflict {
             notice = .stillRunning
         } catch {
-            // `.locked` und `.notFound` kommen erst mit Unteraufgaben (F4) und Ändern (F3).
-            notice = TaskNotice(error)
+            switch error {
+            case .forbidden, .locked, .notFound: await onFinished(.failed(error))
+            default: notice = TaskNotice(error)
+            }
         }
     }
 }

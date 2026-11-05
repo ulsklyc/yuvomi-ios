@@ -52,11 +52,25 @@ public final class TaskDetailModel {
     /// Darf die Person schreiben? Fragt die Liste, damit ein 403 überall gleich wirkt.
     public var canWrite: Bool { mayWrite() }
 
+    /// Darf die Person die Aufgabe ändern und löschen (Q7)? Nicht bei Nur-lesen, und eine
+    /// gesperrte nur, wenn sie sie selbst angelegt hat. Fehlt die Angabe, gilt sie als fremd.
+    public var canEdit: Bool {
+        guard canWrite, let task = loaded else { return false }
+        return task.isEditable(by: memberID())
+    }
+    /// Das offene Formular fürs Ändern, sonst `nil`. Setzt die View es auf `nil`, ist das Abbrechen.
+    public var form: TaskFormModel?
+    public private(set) var isDeleting = false
+    /// Kategorien aus `meta/options`, für den Namen einer eigenen Kategorie (Q8).
+    public private(set) var options: TaskOptions?
+
     /// Wie in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt.
     private var generation = 0
     private let tasks: any TaskReading
     private let writer: any TaskWriting
+    private let editor: any TaskEditing
     private let mayWrite: @MainActor () -> Bool
+    private let memberID: @MainActor () -> Int?
     private let onUnauthorized: @MainActor () -> Void
     private let onStatusChanged: @MainActor () -> Void
     private let onTicked: @MainActor () -> Void
@@ -64,45 +78,57 @@ public final class TaskDetailModel {
     private let onSubtaskGone: @MainActor (Int) -> Void
     private let onForbidden: @MainActor () -> Void
     private let onGone: @MainActor () -> Void
+    private let onDeleted: @MainActor () -> Void
 
     /// - Parameters:
     ///   - onStatusChanged: Abhaken oder Wieder öffnen ist beim Server (Aufgabe oder Unteraufgabe).
     ///   - onTicked: Ein Punkt der Checkliste ist beim Server.
     ///   - onForbidden: 403, ab jetzt nur lesen.
+    ///   - memberID: Die Id der Person aus `/auth/me`, für gesperrte Aufgaben (Q7).
+    ///   - onStatusChanged: Auch nach einem Ändern (Q11).
     ///   - onGone: Die Aufgabe gibt es nicht mehr (404). Der Besitzer schließt das Detail.
+    ///   - onDeleted: Die Person hat sie gelöscht. Der Besitzer schließt das Detail ohne Hinweis.
     public convenience init(
-        taskID: Int, tasks: any TaskReading, writer: any TaskWriting,
+        taskID: Int, tasks: any TaskReading, writer: any TaskWriting, editor: any TaskEditing,
         mayWrite: @escaping @MainActor () -> Bool = { true },
+        memberID: @escaping @MainActor () -> Int? = { nil },
         onUnauthorized: @escaping @MainActor () -> Void,
         onStatusChanged: @escaping @MainActor () -> Void = {},
         onTicked: @escaping @MainActor () -> Void = {},
         onForbidden: @escaping @MainActor () -> Void = {},
-        onGone: @escaping @MainActor () -> Void = {}
+        onGone: @escaping @MainActor () -> Void = {},
+        onDeleted: @escaping @MainActor () -> Void = {}
     ) {
         self.init(
-            taskID: taskID, tasks: tasks, writer: writer, overlay: StatusOverlay(), mayWrite: mayWrite,
+            taskID: taskID, tasks: tasks, writer: writer, editor: editor, overlay: StatusOverlay(),
+            mayWrite: mayWrite, memberID: memberID,
             onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged, onTicked: onTicked,
-            onRolledBack: { _, _ in }, onSubtaskGone: { _ in }, onForbidden: onForbidden, onGone: onGone
+            onRolledBack: { _, _ in }, onSubtaskGone: { _ in }, onForbidden: onForbidden, onGone: onGone,
+            onDeleted: onDeleted
         )
     }
 
     /// Mit der Überlagerung der Liste, die das Detail baut.
     init(
-        taskID: Int, tasks: any TaskReading, writer: any TaskWriting, overlay: StatusOverlay,
+        taskID: Int, tasks: any TaskReading, writer: any TaskWriting, editor: any TaskEditing, overlay: StatusOverlay,
         mayWrite: @escaping @MainActor () -> Bool,
+        memberID: @escaping @MainActor () -> Int?,
         onUnauthorized: @escaping @MainActor () -> Void,
         onStatusChanged: @escaping @MainActor () -> Void,
         onTicked: @escaping @MainActor () -> Void,
         onRolledBack: @escaping @MainActor (Int, TaskStatus) -> Void,
         onSubtaskGone: @escaping @MainActor (Int) -> Void,
         onForbidden: @escaping @MainActor () -> Void,
-        onGone: @escaping @MainActor () -> Void
+        onGone: @escaping @MainActor () -> Void,
+        onDeleted: @escaping @MainActor () -> Void
     ) {
         self.taskID = taskID
         self.overlay = overlay
         self.tasks = tasks
         self.writer = writer
+        self.editor = editor
         self.mayWrite = mayWrite
+        self.memberID = memberID
         self.onUnauthorized = onUnauthorized
         self.onStatusChanged = onStatusChanged
         self.onTicked = onTicked
@@ -110,6 +136,7 @@ public final class TaskDetailModel {
         self.onSubtaskGone = onSubtaskGone
         self.onForbidden = onForbidden
         self.onGone = onGone
+        self.onDeleted = onDeleted
     }
 
     public func load() async {
@@ -119,12 +146,13 @@ public final class TaskDetailModel {
         let ticks = tickCount
         // Nach einem Fehler zeigt „Erneut versuchen“ wieder den Ladekreis.
         if case .failed = state { state = .loading }
+        // Die Kategorien einmal je Detail, neben der Aufgabe her. Ohne sie zeigt es den Key.
+        let editor = options == nil ? editor : nil
+        async let fetched = try? await editor?.options()
         do throws(APIError) {
             var task = try await tasks.task(id: taskID)
             guard mine == generation else { return }
-            for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
-            let gone = overlay.gone(since: mark)
-            task.subtasks.removeAll { gone.contains($0.id) }
+            overlaid(&task, since: mark)
             // Ebenso die Beschreibung: Kam ein Ankreuzen nach dem Start dieser Anfrage zurück,
             // ist seine Antwort neuer als diese.
             if let ticked = tickedDescription {
@@ -132,6 +160,8 @@ public final class TaskDetailModel {
             }
             state = .loaded(task)
             refreshProblem = nil
+            // Erst nach der Aufgabe: Ohne Optionen fehlt nur der Name der Kategorie.
+            if let fetched = await fetched { options = fetched }
         } catch .unauthorized {
             onUnauthorized()
         } catch .notFound {
@@ -148,6 +178,14 @@ public final class TaskDetailModel {
                 state = .failed(problem)
             }
         }
+    }
+
+    /// Laufende und seit `mark` bestätigte Statuswechsel und Löschungen über eine Antwort legen,
+    /// deren Anfrage bei `mark` begann.
+    private func overlaid(_ task: inout TaskDetail, since mark: Int) {
+        for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
+        let gone = overlay.gone(since: mark)
+        task.subtasks.removeAll { gone.contains($0.id) }
     }
 
     /// Abhaken oder wieder öffnen, je nach Status der Aufgabe (Knopf im Kopf).
@@ -253,6 +291,80 @@ public final class TaskDetailModel {
         guard loaded?.subtasks.contains(where: { $0.id == id }) == true else { return }
         update { $0.subtasks.removeAll { $0.id == id } }
         notice = .gone
+    }
+
+    /// Die Kategorie zum Key, mit Namen aus `meta/options`. Ohne Optionen nur der Key (Q8).
+    public func category(for key: String) -> TaskCategory {
+        options?.category(for: key) ?? TaskCategory(key: key, name: nil, labelKey: nil)
+    }
+
+    /// „Bearbeiten“: das Formular mit dem gespeicherten Stand (Q2, Q9).
+    public func startEditing() {
+        guard canEdit, let task = loaded else { return }
+        // Was davor schon lief oder danach bestätigt wird, kennt die Antwort aufs Sichern womöglich nicht.
+        let mark = overlay.mark
+        let ticks = tickCount
+        form = TaskFormModel(
+            editing: task, options: options, editor: editor, onUnauthorized: onUnauthorized,
+            onFinished: { [weak self] outcome in
+                await self?.finishEditing(outcome, since: mark, ticks: ticks, description: task.description)
+            }
+        )
+    }
+
+    /// Sheet zu, dann die Folgen nach Q11 und Q13.
+    /// - Parameters:
+    ///   - ticks, description: Stand beim Öffnen. Ein seitdem bestätigtes Ankreuzen ist neuer als
+    ///     die Antwort, solange das Formular die Beschreibung nicht geändert hat (Codex-Review F3).
+    private func finishEditing(
+        _ outcome: TaskFormModel.Outcome, since mark: Int, ticks: Int, description: String?
+    ) async {
+        form = nil
+        switch outcome {
+        case .saved(let saved):
+            // Ein Laden, das vor dem Sichern begann, kennt die Änderung nicht mehr.
+            generation += 1
+            if var task = saved {
+                overlaid(&task, since: mark)
+                if let ticked = tickedDescription, ticked.count > ticks, task.description == description {
+                    task.description = ticked.text
+                }
+                state = .loaded(task)
+            }
+            refreshProblem = nil
+            onStatusChanged()
+        case .failed(let error):
+            await failEditing(error)
+        }
+    }
+
+    /// Löschen nach der Rückfrage der View (Q3). Ohne Rückgängig; 404 gilt als Erfolg.
+    public func delete() async {
+        guard canEdit, !isDeleting else { return }
+        isDeleting = true
+        notice = nil
+        defer { isDeleting = false }
+        do throws(APIError) {
+            try await editor.delete(task: taskID)
+        } catch .notFound {
+            // Schon weg: gilt als gelöscht.
+        } catch .unauthorized {
+            onUnauthorized()
+            return
+        } catch {
+            await failEditing(error)
+            return
+        }
+        // Ein Laden, das noch läuft, meldete sonst die eigene Löschung als 404 (Codex-Review F3).
+        generation += 1
+        onDeleted()
+    }
+
+    /// Wie `fail`. Ist die Aufgabe inzwischen gesperrt, lädt das Detail neu und blendet dann
+    /// Bearbeiten und Löschen aus (Q13).
+    private func failEditing(_ error: APIError) async {
+        fail(error)
+        if error == .locked { await load() }
     }
 
     /// Gemeinsame Folgen nach Q13 für 403, 404 und den Rest.

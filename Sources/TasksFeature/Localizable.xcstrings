@@ -173,6 +173,120 @@
         }
       }
     },
+    "tasks.delete.confirm": {
+      "comment": "Knopf in der Rückfrage: löscht die Aufgabe.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "tasks.delete.message": {
+      "comment": "Rückfrage vor dem Löschen, immer am Ende.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das lässt sich nicht rückgängig machen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This can't be undone."
+          }
+        }
+      }
+    },
+    "tasks.delete.series": {
+      "comment": "Rückfrage vor dem Löschen einer wiederkehrenden Aufgabe.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Serie endet damit."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The series ends with it."
+          }
+        }
+      }
+    },
+    "tasks.delete.subtasks %lld": {
+      "comment": "Rückfrage vor dem Löschen: Zahl der Unteraufgaben, die mitgehen.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ihre Unteraufgabe wird mitgelöscht."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ihre %lld Unteraufgaben werden mitgelöscht."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Its subtask will be deleted too."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Its %lld subtasks will be deleted too."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "tasks.delete.title": {
+      "comment": "Titel der Rückfrage vor dem Löschen.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Aufgabe löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this task?"
+          }
+        }
+      }
+    },
     "tasks.detail.assignees %@": {
       "extractionState": "manual",
       "localizations": {
@@ -207,6 +321,42 @@
         }
       }
     },
+    "tasks.detail.delete": {
+      "comment": "Knopf unten im Detail, öffnet die Rückfrage.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabe löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Task"
+          }
+        }
+      }
+    },
+    "tasks.detail.deleting": {
+      "comment": "VoiceOver: Das Löschen läuft.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird gelöscht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting"
+          }
+        }
+      }
+    },
     "tasks.detail.due %@": {
       "extractionState": "manual",
       "localizations": {
@@ -220,6 +370,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fällig %@"
+          }
+        }
+      }
+    },
+    "tasks.detail.edit": {
+      "comment": "Knopf oben rechts im Detail: öffnet das Formular mit dem gespeicherten Stand.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bearbeiten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
           }
         }
       }
@@ -844,6 +1012,24 @@
         }
       }
     },
+    "tasks.form.edit": {
+      "comment": "Titel des Sheets fürs Ändern einer Aufgabe.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabe bearbeiten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Task"
+          }
+        }
+      }
+    },
     "tasks.form.keepEditing": {
       "extractionState": "manual",
       "localizations": {
@@ -875,6 +1061,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "New Task"
+          }
+        }
+      }
+    },
+    "tasks.form.priority.unknown": {
+      "comment": "Wahl im Formular für eine Priorität, die die App nicht kennt (neuere Server-Version).",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
           }
         }
       }
@@ -998,6 +1202,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "This task no longer exists."
+          }
+        }
+      }
+    },
+    "tasks.notice.locked": {
+      "comment": "Hinweis nach 403 task_locked: Nur wer die Aufgabe angelegt hat, darf sie ändern.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Aufgabe ist gesperrt. Nur wer sie angelegt hat, darf sie ändern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This task is locked. Only the person who created it can change it."
           }
         }
       }

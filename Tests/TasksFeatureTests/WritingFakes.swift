@@ -86,14 +86,15 @@ final class Gate: Sendable {
 /// Port-Fake für `/auth/me`.
 struct FakePermissions: MemberPermissions {
     var result: Result<Bool, APIError> = .success(true)
+    var id = 1
 
     func member() async throws(APIError) -> Member {
-        Member(id: 1, mayWriteTasks: try result.get())
+        Member(id: id, mayWriteTasks: try result.get())
     }
 }
 
 /// Port-Fake fürs Anlegen, Ändern und Löschen. Merkt sich jeden Aufruf. Mit `gate.close()`
-/// wartet `create`, bis der Test das Tor öffnet.
+/// wartet jeder Aufruf außer `options`, bis der Test das Tor öffnet.
 final class FakeEditor: TaskEditing, Sendable {
     static let household = TaskOptions(
         people: [TaskOptions.Person(id: 1, name: "Alex"), TaskOptions.Person(id: 3, name: "Emma")],
@@ -119,11 +120,24 @@ final class FakeEditor: TaskEditing, Sendable {
         return try created.withLock { $0 }.get()
     }
 
+    /// Ohne Einstellung antwortet `update` mit `packing` samt den Änderungen am Titel.
+    let updated = Mutex<Result<TaskDetail, APIError>?>(nil)
+    let updates = Mutex<[(id: Int, changes: TaskChanges)]>([])
+    let deleted = Mutex<Result<Void, APIError>>(.success(()))
+    let deletes = Mutex<[Int]>([])
+
     func update(task id: Int, _ changes: TaskChanges) async throws(APIError) -> TaskDetail {
-        throw .unexpectedResponse
+        updates.withLock { $0.append((id, changes)) }
+        await gate.pass()
+        if let result = updated.withLock({ $0 }) { return try result.get() }
+        var task = packing
+        if let title = changes.title { task.title = title }
+        return task
     }
 
     func delete(task id: Int) async throws(APIError) {
-        throw .unexpectedResponse
+        deletes.withLock { $0.append(id) }
+        await gate.pass()
+        try deleted.withLock { $0 }.get()
     }
 }

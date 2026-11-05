@@ -41,6 +41,12 @@ public final class TaskListModel {
 
     /// Darf die Person Aufgaben schreiben? Aus `/auth/me` beim Laden, ein 403 stellt es ab (Q4).
     public private(set) var canWrite = true
+    /// Die Id der Person aus `/auth/me`. Nur wer eine gesperrte Aufgabe angelegt hat, darf sie
+    /// ändern (Q7). Bis zur ersten Antwort unbekannt: Gesperrte gelten dann als fremd.
+    private var memberID: Int?
+    /// Was die Person hier gelöscht hat. Ein Laden, das davor begann, meldet es nicht als
+    /// „gibt es nicht mehr“ (Review F3).
+    private var deletedHere: Set<Int> = []
     /// Statuswechsel, die gerade laufen oder ein Laden noch nicht kennt. Jedes Detail teilt sie,
     /// so schreibt keines dieselbe Aufgabe ein zweites Mal dazwischen (Codex-Review E3).
     private let overlay = StatusOverlay()
@@ -90,10 +96,10 @@ public final class TaskListModel {
         let mark = overlay.mark
         // Die Rechte laufen neben der Liste her. Ohne Antwort bleibt es beim bisherigen Stand,
         // anfangs erlaubt: Der Server prüft ohnehin (Q4).
-        async let mayWrite = try? await permissions.member().mayWriteTasks
+        async let fetchedMember = try? await permissions.member()
         do throws(APIError) {
             var all = try await tasks.tasks()
-            let may = await mayWrite
+            let member = await fetchedMember
             guard mine == generation else { return }
             // `/tasks` kann älter sein als ein Abhaken, das noch läuft oder seit dem Start fertig
             // wurde: dessen Ziel gilt weiter, und zwar vor dem Filtern der erledigten. Sonst
@@ -105,9 +111,10 @@ public final class TaskListModel {
             let gone = overlay.gone(since: mark)
             all.removeAll { gone.contains($0.id) }
             state = .loaded(Self.sections(all, today: today(), keeping: Set(overlaid.keys)))
-            canWrite = may ?? canWrite
+            canWrite = member?.mayWriteTasks ?? canWrite
+            memberID = member?.id ?? memberID
             refreshProblem = nil
-            notice = gone.isEmpty ? nil : .gone
+            notice = gone.subtracting(deletedHere).isEmpty ? nil : .gone
         } catch .unauthorized {
             onUnauthorized()
         } catch {
@@ -201,9 +208,9 @@ public final class TaskListModel {
         case .saved:
             onStatusChanged()
             await load()
-        case .readOnly:
-            canWrite = false
-            notice = .readOnly
+        case .failed(let error):
+            if error == .forbidden { canWrite = false }
+            notice = TaskNotice(error)
         }
     }
 
@@ -213,8 +220,9 @@ public final class TaskListModel {
         if let model = details[id] { return model }
         let made = WeakDetail()
         let model = TaskDetailModel(
-            taskID: id, tasks: tasks, writer: writer, overlay: overlay,
+            taskID: id, tasks: tasks, writer: writer, editor: editor, overlay: overlay,
             mayWrite: { [weak self] in self?.canWrite ?? false },
+            memberID: { [weak self] in self?.memberID },
             onUnauthorized: onUnauthorized,
             // Das Detail bleibt offen, die Liste dahinter lädt neu (Q12).
             onStatusChanged: { [weak self] in
@@ -239,7 +247,8 @@ public final class TaskListModel {
                 for detail in details.values { detail.removeSubtask(subtask) }
             },
             onForbidden: { [weak self] in self?.canWrite = false },
-            onGone: { [weak self] in self?.close(id) }
+            onGone: { [weak self] in self?.close(id) },
+            onDeleted: { [weak self] in self?.deleted(id) }
         )
         made.model = model
         details[id] = model
@@ -272,10 +281,23 @@ public final class TaskListModel {
 
     /// Die Aufgabe gibt es nicht mehr: Detail zu, Zeile weg, Hinweis in der Liste (Q8, Q12).
     public func close(_ id: Int) {
+        drop(id)
+        notice = .gone
+    }
+
+    /// Die Person hat die Aufgabe gelöscht: Detail zu, Zeile weg, ohne Hinweis. Die
+    /// Erinnerungen gleichen ab (Q3, Q11).
+    private func deleted(_ id: Int) {
+        deletedHere.insert(id)
+        drop(id)
+        onStatusChanged()
+    }
+
+    /// Auch ein Laden, das davor begann, bringt die Zeile nicht zurück (Issue #24).
+    private func drop(_ id: Int) {
         overlay.markGone(id)
         path.removeAll { $0 == id }
         remove(id)
-        notice = .gone
     }
 
     /// - Parameter keeping: Ids, die auch erledigt stehen bleiben: gerade in der App abgehakt (Q14).

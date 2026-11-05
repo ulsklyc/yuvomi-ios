@@ -57,7 +57,7 @@ import YuvomiCore
         #expect(sent.first?.draft.title == "Water the plants")
         #expect(sent.first?.parent == nil)
         #expect(sent.first?.key == "key-1")
-        #expect(log.outcomes == [.saved])
+        #expect(log.outcomes == [.saved(nil)])
         #expect(form.notice == nil)
     }
 
@@ -79,7 +79,7 @@ import YuvomiCore
         await form.save()
 
         #expect(editor.creates.withLock { $0.map(\.key) } == ["key-1", "key-1"])
-        #expect(log.outcomes == [.saved])
+        #expect(log.outcomes == [.saved(nil)])
     }
 
     /// Ändert die Person nach einem Fehler etwas, ist es eine andere Anfrage: Mit dem alten
@@ -136,7 +136,7 @@ import YuvomiCore
 
         await form.save()
 
-        #expect(log.outcomes == [.readOnly])
+        #expect(log.outcomes == [.failed(.forbidden)])
     }
 
     @Test func unauthorizedSignsOut() async {
@@ -202,7 +202,7 @@ import YuvomiCore
         let form = form(log)
         await form.loadOptions()
 
-        #expect(log.outcomes == [.readOnly])
+        #expect(log.outcomes == [.failed(.forbidden)])
     }
 
     /// Q17: Das Datum beginnt heute, die Uhrzeit zur nächsten vollen Stunde.
