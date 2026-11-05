@@ -278,6 +278,26 @@ import YuvomiCore
         #expect(second.state == .loaded(ticked))
     }
 
+    /// Liste und Detail teilen, was gerade geschrieben wird: Läuft das Abhaken aus der Liste,
+    /// zeigt das Detail es und schreibt nicht ein zweites Mal dazwischen (Codex-Review E3).
+    @Test func theDetailWaitsForTheListsWriteOfTheSameTask() async {
+        let list = await loadedList([task(24), task(2)])
+        writer.hold()
+        let checking = Task { await list.toggle(24) }
+        await writer.untilWaiting()
+
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        #expect(detail.writingStatus.contains(24))
+        #expect(detail.state == .loaded({ var t = packing; t.status = .done; return t }()))
+        await detail.toggleStatus()
+        writer.release()
+        await checking.value
+
+        #expect(writer.calls.withLock { $0 } == ["status 24 done"])
+    }
+
     @Test func aForbiddenDetailMakesTheListReadOnly() async {
         let list = await loadedList([task(24)])
         list.path = [24]

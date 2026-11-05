@@ -41,10 +41,12 @@ public final class TaskListModel {
 
     /// Darf die Person Aufgaben schreiben? Aus `/auth/me` beim Laden, ein 403 stellt es ab (Q4).
     public private(set) var canWrite = true
-    /// Aufgaben, deren Statuswechsel gerade läuft, mit dem Ziel. Ihr Kreis ist so lange
-    /// gesperrt (Q13), und ein Laden dazwischen behält den Haken.
-    @ObservationIgnored private var overlay = StatusOverlay()
-    public private(set) var writing: Set<Int> = []
+    /// Statuswechsel, die gerade laufen oder ein Laden noch nicht kennt. Jedes Detail teilt sie,
+    /// so schreibt keines dieselbe Aufgabe ein zweites Mal dazwischen (Codex-Review E3).
+    private let overlay = StatusOverlay()
+    /// Aufgaben, deren Statuswechsel gerade läuft, auch aus einem Detail. Ihr Kreis ist so
+    /// lange gesperrt (Q13).
+    public var writing: Set<Int> { overlay.writing }
     /// Hinweis nach einem gescheiterten Schreiben, bis zum nächsten Versuch oder Laden.
     public private(set) var notice: TaskNotice?
 
@@ -126,12 +128,8 @@ public final class TaskListModel {
         let target: TaskStatus = before.status == .done ? .open : .done
         notice = nil
         overlay.begin(id, to: target)
-        writing = overlay.writing
         var confirmed: TaskStatus?
-        defer {
-            overlay.finish(id, confirmed: confirmed)
-            writing = overlay.writing
-        }
+        defer { overlay.finish(id, confirmed: confirmed) }
         update(id) { $0.status = target }
         do throws(APIError) {
             _ = try await writer.setStatus(task: id, to: target)
@@ -184,7 +182,7 @@ public final class TaskListModel {
         if let model = details[id] { return model }
         let made = WeakDetail()
         let model = TaskDetailModel(
-            taskID: id, tasks: tasks, writer: writer,
+            taskID: id, tasks: tasks, writer: writer, overlay: overlay,
             mayWrite: { [weak self] in self?.canWrite ?? false },
             onUnauthorized: onUnauthorized,
             // Das Detail bleibt offen, die Liste dahinter lädt neu (Q12).

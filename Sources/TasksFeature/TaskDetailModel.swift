@@ -31,10 +31,11 @@ public final class TaskDetailModel {
     public private(set) var notice: TaskNotice?
     /// Hat das Abhaken eine Serie fortgesetzt: die Fälligkeit des nächsten Vorkommens (Q12).
     public private(set) var nextDue: CalendarDay?
-    /// Aufgabe und Unteraufgaben, deren Statuswechsel gerade läuft.
-    public private(set) var writingStatus: Set<Int> = []
-    /// Laufende und seit dem Start eines Ladens bestätigte Statuswechsel (Codex-Review E3).
-    @ObservationIgnored private var overlay = StatusOverlay()
+    /// Aufgabe und Unteraufgaben, deren Statuswechsel gerade läuft, auch aus der Liste.
+    public var writingStatus: Set<Int> { overlay.writing }
+    /// Laufende und seit dem Start eines Ladens bestätigte Statuswechsel, geteilt mit der Liste
+    /// (Codex-Review E3).
+    private let overlay: StatusOverlay
     /// Die zuletzt vom Server bestätigte Beschreibung nach einem Ankreuzen, mit dessen Nummer.
     /// Ein Laden, das davor begann, übernimmt sie statt seines älteren Texts (Codex-Review E3).
     @ObservationIgnored private var tickCount = 0
@@ -64,7 +65,7 @@ public final class TaskDetailModel {
     ///   - onTicked: Ein Punkt der Checkliste ist beim Server.
     ///   - onForbidden: 403, ab jetzt nur lesen.
     ///   - onGone: Die Aufgabe gibt es nicht mehr (404). Der Besitzer schließt das Detail.
-    public init(
+    public convenience init(
         taskID: Int, tasks: any TaskReading, writer: any TaskWriting,
         mayWrite: @escaping @MainActor () -> Bool = { true },
         onUnauthorized: @escaping @MainActor () -> Void,
@@ -73,7 +74,25 @@ public final class TaskDetailModel {
         onForbidden: @escaping @MainActor () -> Void = {},
         onGone: @escaping @MainActor () -> Void = {}
     ) {
+        self.init(
+            taskID: taskID, tasks: tasks, writer: writer, overlay: StatusOverlay(), mayWrite: mayWrite,
+            onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged, onTicked: onTicked,
+            onForbidden: onForbidden, onGone: onGone
+        )
+    }
+
+    /// Mit der Überlagerung der Liste, die das Detail baut.
+    init(
+        taskID: Int, tasks: any TaskReading, writer: any TaskWriting, overlay: StatusOverlay,
+        mayWrite: @escaping @MainActor () -> Bool,
+        onUnauthorized: @escaping @MainActor () -> Void,
+        onStatusChanged: @escaping @MainActor () -> Void,
+        onTicked: @escaping @MainActor () -> Void,
+        onForbidden: @escaping @MainActor () -> Void,
+        onGone: @escaping @MainActor () -> Void
+    ) {
         self.taskID = taskID
+        self.overlay = overlay
         self.tasks = tasks
         self.writer = writer
         self.mayWrite = mayWrite
@@ -179,12 +198,8 @@ public final class TaskDetailModel {
         let target: TaskStatus = before == .done ? .open : .done
         notice = nil
         overlay.begin(id, to: target)
-        writingStatus = overlay.writing
         var confirmed: TaskStatus?
-        defer {
-            overlay.finish(id, confirmed: confirmed)
-            writingStatus = overlay.writing
-        }
+        defer { overlay.finish(id, confirmed: confirmed) }
         update { Self.set(id, to: target, in: &$0) }
         do throws(APIError) {
             let change = try await writer.setStatus(task: id, to: target)
