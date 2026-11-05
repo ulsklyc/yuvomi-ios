@@ -303,14 +303,22 @@ public final class TaskDetailModel {
         guard canEdit, let task = loaded else { return }
         // Was davor schon lief oder danach bestätigt wird, kennt die Antwort aufs Sichern womöglich nicht.
         let mark = overlay.mark
+        let ticks = tickCount
         form = TaskFormModel(
             editing: task, options: options, editor: editor, onUnauthorized: onUnauthorized,
-            onFinished: { [weak self] outcome in await self?.finishEditing(outcome, since: mark) }
+            onFinished: { [weak self] outcome in
+                await self?.finishEditing(outcome, since: mark, ticks: ticks, description: task.description)
+            }
         )
     }
 
     /// Sheet zu, dann die Folgen nach Q11 und Q13.
-    private func finishEditing(_ outcome: TaskFormModel.Outcome, since mark: Int) async {
+    /// - Parameters:
+    ///   - ticks, description: Stand beim Öffnen. Ein seitdem bestätigtes Ankreuzen ist neuer als
+    ///     die Antwort, solange das Formular die Beschreibung nicht geändert hat (Codex-Review F3).
+    private func finishEditing(
+        _ outcome: TaskFormModel.Outcome, since mark: Int, ticks: Int, description: String?
+    ) async {
         form = nil
         switch outcome {
         case .saved(let saved):
@@ -318,6 +326,9 @@ public final class TaskDetailModel {
             generation += 1
             if var task = saved {
                 overlaid(&task, since: mark)
+                if let ticked = tickedDescription, ticked.count > ticks, task.description == description {
+                    task.description = ticked.text
+                }
                 state = .loaded(task)
             }
             refreshProblem = nil
@@ -344,6 +355,8 @@ public final class TaskDetailModel {
             await failEditing(error)
             return
         }
+        // Ein Laden, das noch läuft, meldete sonst die eigene Löschung als 404 (Codex-Review F3).
+        generation += 1
         onDeleted()
     }
 

@@ -217,6 +217,49 @@ import YuvomiCore
         await checking.value
     }
 
+    /// Ein Ankreuzen, das bestätigt wird, während die Antwort aufs Sichern unterwegs ist, bleibt
+    /// stehen, wenn das Formular die Beschreibung nicht geändert hat (Codex-Review F3).
+    @Test func aConfirmedTickSurvivesTheAnswer() async {
+        let detail = await loadedDetail()
+        writer.tick.withLock { $0 = .success("- [x] Pack sleeping bags") }
+        writer.hold()
+        let ticking = Task { await detail.tick(line: 0) }
+        await writer.untilWaiting()
+        detail.startEditing()
+        detail.form?.draft.title = "Pack for the trip"
+        editor.gate.close()
+        let saving = Task { await detail.form?.save() }
+        await editor.gate.untilWaiting()
+        writer.release()
+        await ticking.value
+        editor.gate.open()
+        await saving.value
+
+        guard case .loaded(let task) = detail.state else {
+            Issue.record("nicht geladen")
+            return
+        }
+        #expect(task.title == "Pack for the trip")
+        #expect(task.description == "- [x] Pack sleeping bags")
+    }
+
+    /// Ein Laden, das beim Löschen noch lief, meldet danach kein „gibt es nicht mehr“
+    /// (Codex-Review F3).
+    @Test func deletingCancelsAPendingLoad() async {
+        let detail = await loadedDetail()
+        reading.result.withLock { $0 = .failure(.notFound) }
+        reading.gate.close()
+        let loading = Task { await detail.load() }
+        await reading.gate.untilWaiting()
+
+        await detail.delete()
+        reading.gate.open()
+        await loading.value
+
+        #expect(calls.deleted == 1)
+        #expect(calls.gone == 0)
+    }
+
     /// Q13: gesperrt beim Sichern: Hinweis, Sheet zu, das Detail lädt neu.
     @Test func lockedOnSaveReloads() async {
         let detail = await loadedDetail()
