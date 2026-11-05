@@ -134,8 +134,9 @@ public final class TaskDetailModel {
             onUnauthorized()
         } catch .conflict {
             // Jemand hat die Beschreibung geändert: neu laden statt eine falsche Zeile zu haken.
-            notice = .changed
+            // Den Hinweis gibt es nur, wenn das Neuladen geklappt hat, sonst steht sein Fehler da.
             await load()
+            if refreshProblem == nil, loaded != nil { notice = .changed }
         } catch {
             fail(error)
         }
@@ -147,7 +148,7 @@ public final class TaskDetailModel {
     }
 
     /// Ein Statuswechsel für die Aufgabe (`id == taskID`) oder eine ihrer Unteraufgaben.
-    private func write(_ id: Int, from before: TaskStatus, to target: TaskStatus, apply: @escaping (inout TaskDetail, TaskStatus) -> Void) async {
+    private func write(_ id: Int, from before: TaskStatus, to target: TaskStatus, apply: (inout TaskDetail, TaskStatus) -> Void) async {
         guard mayWrite(), !writingStatus.contains(id) else { return }
         notice = nil
         writingStatus.insert(id)
@@ -159,6 +160,10 @@ public final class TaskDetailModel {
             onStatusChanged()
         } catch .unauthorized {
             onUnauthorized()
+        } catch .notFound where id != taskID {
+            // Nur die Unteraufgabe ist weg, die Aufgabe selbst steht noch.
+            update { $0.subtasks.removeAll { $0.id == id } }
+            notice = .gone
         } catch {
             update { apply(&$0, before) }
             fail(error)

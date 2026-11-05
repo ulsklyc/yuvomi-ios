@@ -41,8 +41,10 @@ public final class TaskListModel {
 
     /// Darf die Person Aufgaben schreiben? Aus `/auth/me` beim Laden, ein 403 stellt es ab (Q4).
     public private(set) var canWrite = true
-    /// Aufgaben, deren Statuswechsel gerade läuft. Ihr Kreis ist so lange gesperrt (Q13).
-    public private(set) var writing: Set<Int> = []
+    /// Aufgaben, deren Statuswechsel gerade läuft, mit dem Ziel. Ihr Kreis ist so lange
+    /// gesperrt (Q13), und ein Laden dazwischen behält den Haken.
+    private var pending: [Int: TaskStatus] = [:]
+    public var writing: Set<Int> { Set(pending.keys) }
     /// Hinweis nach einem gescheiterten Schreiben, bis zum nächsten Versuch oder Laden.
     public private(set) var notice: TaskNotice?
 
@@ -86,6 +88,8 @@ public final class TaskListModel {
             let may = await mayWrite
             guard mine == generation else { return }
             state = .loaded(Self.sections(all, today: today()))
+            // `/tasks` kann älter sein als ein laufendes Abhaken: dessen Ziel gilt weiter.
+            for (id, target) in pending { update(id) { $0.status = target } }
             canWrite = may ?? canWrite
             refreshProblem = nil
             notice = nil
@@ -106,11 +110,11 @@ public final class TaskListModel {
     /// sofort und springt bei einem Fehler zurück (Q3, Q13). Die abgehakte Zeile bleibt bis
     /// zum nächsten Laden stehen (Q14).
     public func toggle(_ id: Int) async {
-        guard canWrite, !writing.contains(id), let before = summary(id) else { return }
+        guard canWrite, pending[id] == nil, let before = summary(id) else { return }
         let target: TaskStatus = before.status == .done ? .open : .done
         notice = nil
-        writing.insert(id)
-        defer { writing.remove(id) }
+        pending[id] = target
+        defer { pending[id] = nil }
         update(id) { $0.status = target }
         do throws(APIError) {
             _ = try await writer.setStatus(task: id, to: target)

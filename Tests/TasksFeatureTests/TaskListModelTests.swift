@@ -6,13 +6,19 @@ import YuvomiCore
 /// Port-Fake: was `GET /tasks` liefert.
 final class FakeTasks: TaskReading, @unchecked Sendable {
     var result: Result<[TaskSummary], APIError>
+    /// Was `GET /tasks/{id}` liefert, ohne Wert 404.
+    var detail: TaskDetail?
 
-    init(_ result: Result<[TaskSummary], APIError>) {
+    init(_ result: Result<[TaskSummary], APIError>, detail: TaskDetail? = nil) {
         self.result = result
+        self.detail = detail
     }
 
     func tasks() async throws(APIError) -> [TaskSummary] { try result.get() }
-    func task(id: Int) async throws(APIError) -> TaskDetail { throw .notFound }
+    func task(id: Int) async throws(APIError) -> TaskDetail {
+        guard let detail else { throw .notFound }
+        return detail
+    }
 }
 
 func task(_ id: Int, due: CalendarDay? = nil, time: String? = nil, status: TaskStatus = .open) -> TaskSummary {

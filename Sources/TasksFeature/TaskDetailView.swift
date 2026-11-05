@@ -180,6 +180,8 @@ struct DescriptionBlockRow: View {
                 .foregroundStyle(checked ? Color.accentColor : .secondary)
                 .contentTransition(.symbolEffect(.replace))
         }
+        // Die ganze Zeile nimmt den Tipp an, nicht nur der Text.
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityValue(Text(checked ? "tasks.detail.checked" : "tasks.detail.unchecked", bundle: .module))

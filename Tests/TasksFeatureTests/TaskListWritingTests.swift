@@ -14,7 +14,7 @@ import YuvomiCore
         onStatusChanged: @escaping @MainActor () -> Void = {}
     ) async -> TaskListModel {
         let list = TaskListModel(
-            tasks: FakeTasks(.success(tasks)), writer: writer, permissions: permissions,
+            tasks: FakeTasks(.success(tasks), detail: packing), writer: writer, permissions: permissions,
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged
         )
@@ -67,6 +67,22 @@ import YuvomiCore
 
         #expect(writer.calls.withLock { $0 } == ["status 1 done"])
         #expect(list.writing.isEmpty)
+    }
+
+    /// Lädt die Liste, während das Abhaken noch läuft, bleibt der Haken stehen: Die Antwort
+    /// von `/tasks` kann älter sein als das Abhaken.
+    @Test func aLoadDuringAWriteKeepsTheCheckMark() async {
+        let list = await loadedList()
+        writer.hold()
+
+        let writing = Task { await list.toggle(1) }
+        await writer.untilWaiting()
+        await list.load()
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1, status: .done), task(2)])]))
+        writer.release()
+        await writing.value
+
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1, status: .done), task(2)])]))
     }
 
     @Test(arguments: [(APIError.unreachable, TaskNotice.unreachable), (.unexpectedResponse, .unexpectedResponse), (.conflict, .unexpectedResponse)])
@@ -142,5 +158,34 @@ import YuvomiCore
         await list.toggle(1)
 
         #expect(list.notice == nil)
+    }
+
+    /// Das Detail aus der Liste: 404 schließt es und nimmt die Zeile weg, 403 schaltet die
+    /// ganze Liste auf Nur-lesen.
+    @Test func aDetailThatIsGoneClosesInTheList() async {
+        let list = await loadedList([task(24), task(2)])
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        writer.status.withLock { $0 = .failure(.notFound) }
+
+        await detail.toggleStatus()
+
+        #expect(list.path.isEmpty)
+        #expect(list.notice == .gone)
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(2)])]))
+    }
+
+    @Test func aForbiddenDetailMakesTheListReadOnly() async {
+        let list = await loadedList([task(24)])
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        writer.status.withLock { $0 = .failure(.forbidden) }
+
+        await detail.toggleStatus()
+
+        #expect(list.canWrite == false)
+        #expect(detail.canWrite == false)
     }
 }

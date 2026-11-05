@@ -152,6 +152,30 @@ import YuvomiCore
         #expect(detail.notice == .unreachable)
     }
 
+    /// Nur die Unteraufgabe ist weg: Sie verschwindet, das Detail bleibt offen.
+    @Test func aDeletedSubtaskLeavesOnlyTheSubtask() async {
+        writer.status.withLock { $0 = .failure(.notFound) }
+        let detail = await loadedDetail()
+
+        await detail.toggleSubtask(25)
+
+        #expect(task(of: detail)?.subtasks.isEmpty == true)
+        #expect(detail.notice == .gone)
+        #expect(calls.gone == 0)
+    }
+
+    /// Scheitert das Neuladen nach einem 409, steht der Fehler da, nicht „Hier ist sie neu“.
+    @Test func aConflictWhoseReloadFailsSaysSo() async {
+        writer.tick.withLock { $0 = .failure(.conflict) }
+        let detail = await loadedDetail()
+        reading.result.withLock { $0 = .failure(.unreachable) }
+
+        await detail.tick(line: 0)
+
+        #expect(detail.notice == nil)
+        #expect(detail.refreshProblem == .unreachable)
+    }
+
     /// 403: Hinweis, und die Liste schaltet auf Nur-lesen.
     @Test func forbiddenSwitchesToReadOnly() async {
         writer.status.withLock { $0 = .failure(.forbidden) }
