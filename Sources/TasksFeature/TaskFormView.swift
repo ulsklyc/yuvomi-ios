@@ -120,15 +120,15 @@ struct TaskFormView: View {
     private var detailsSection: some View {
         Section {
             Picker(selection: $model.draft.priority) {
-                ForEach(TaskPriority.settable, id: \.self) { priority in
+                ForEach(model.priorityChoices, id: \.self) { priority in
                     Text(priority.choiceLabel, bundle: .module).tag(priority)
                 }
             } label: {
                 Label { Text("tasks.detail.priority", bundle: .module) } icon: { Image(systemName: "flag") }
             }
-            if let categories = model.options?.categories, !categories.isEmpty {
+            if !model.categoryChoices.isEmpty {
                 Picker(selection: $model.draft.category) {
-                    ForEach(categories) { category in
+                    ForEach(model.categoryChoices) { category in
                         Text(verbatim: category.localizedTitle).tag(category.key)
                     }
                 } label: {
@@ -200,7 +200,7 @@ extension TaskCategory {
 
 extension TaskPriority {
     var choiceLabel: LocalizedStringKey {
-        label ?? "tasks.detail.priority.none"
+        label ?? (self == .unknown ? "tasks.form.priority.unknown" : "tasks.detail.priority.none")
     }
 }
 

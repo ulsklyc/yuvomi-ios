@@ -44,6 +44,9 @@ public final class TaskListModel {
     /// Die Id der Person aus `/auth/me`. Nur wer eine gesperrte Aufgabe angelegt hat, darf sie
     /// ändern (Q7). Bis zur ersten Antwort unbekannt: Gesperrte gelten dann als fremd.
     private var memberID: Int?
+    /// Was die Person hier gelöscht hat. Ein Laden, das davor begann, meldet es nicht als
+    /// „gibt es nicht mehr“ (Review F3).
+    private var deletedHere: Set<Int> = []
     /// Statuswechsel, die gerade laufen oder ein Laden noch nicht kennt. Jedes Detail teilt sie,
     /// so schreibt keines dieselbe Aufgabe ein zweites Mal dazwischen (Codex-Review E3).
     private let overlay = StatusOverlay()
@@ -111,7 +114,7 @@ public final class TaskListModel {
             canWrite = member?.mayWriteTasks ?? canWrite
             memberID = member?.id ?? memberID
             refreshProblem = nil
-            notice = gone.isEmpty ? nil : .gone
+            notice = gone.subtracting(deletedHere).isEmpty ? nil : .gone
         } catch .unauthorized {
             onUnauthorized()
         } catch {
@@ -285,6 +288,7 @@ public final class TaskListModel {
     /// Die Person hat die Aufgabe gelöscht: Detail zu, Zeile weg, ohne Hinweis. Die
     /// Erinnerungen gleichen ab (Q3, Q11).
     private func deleted(_ id: Int) {
+        deletedHere.insert(id)
         drop(id)
         onStatusChanged()
     }

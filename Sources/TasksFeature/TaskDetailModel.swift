@@ -152,9 +152,7 @@ public final class TaskDetailModel {
         do throws(APIError) {
             var task = try await tasks.task(id: taskID)
             guard mine == generation else { return }
-            for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
-            let gone = overlay.gone(since: mark)
-            task.subtasks.removeAll { gone.contains($0.id) }
+            overlaid(&task, since: mark)
             // Ebenso die Beschreibung: Kam ein Ankreuzen nach dem Start dieser Anfrage zurück,
             // ist seine Antwort neuer als diese.
             if let ticked = tickedDescription {
@@ -180,6 +178,14 @@ public final class TaskDetailModel {
                 state = .failed(problem)
             }
         }
+    }
+
+    /// Laufende und seit `mark` bestätigte Statuswechsel und Löschungen über eine Antwort legen,
+    /// deren Anfrage bei `mark` begann.
+    private func overlaid(_ task: inout TaskDetail, since mark: Int) {
+        for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
+        let gone = overlay.gone(since: mark)
+        task.subtasks.removeAll { gone.contains($0.id) }
     }
 
     /// Abhaken oder wieder öffnen, je nach Status der Aufgabe (Knopf im Kopf).
@@ -295,20 +301,25 @@ public final class TaskDetailModel {
     /// „Bearbeiten“: das Formular mit dem gespeicherten Stand (Q2, Q9).
     public func startEditing() {
         guard canEdit, let task = loaded else { return }
+        // Was davor schon lief oder danach bestätigt wird, kennt die Antwort aufs Sichern womöglich nicht.
+        let mark = overlay.mark
         form = TaskFormModel(
             editing: task, options: options, editor: editor, onUnauthorized: onUnauthorized,
-            onFinished: { [weak self] outcome in await self?.finishEditing(outcome) }
+            onFinished: { [weak self] outcome in await self?.finishEditing(outcome, since: mark) }
         )
     }
 
     /// Sheet zu, dann die Folgen nach Q11 und Q13.
-    private func finishEditing(_ outcome: TaskFormModel.Outcome) async {
+    private func finishEditing(_ outcome: TaskFormModel.Outcome, since mark: Int) async {
         form = nil
         switch outcome {
-        case .saved(let task):
+        case .saved(let saved):
             // Ein Laden, das vor dem Sichern begann, kennt die Änderung nicht mehr.
             generation += 1
-            if let task { state = .loaded(task) }
+            if var task = saved {
+                overlaid(&task, since: mark)
+                state = .loaded(task)
+            }
             refreshProblem = nil
             onStatusChanged()
         case .failed(let error):

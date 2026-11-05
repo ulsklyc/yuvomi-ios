@@ -74,6 +74,21 @@ public final class TaskFormModel: Identifiable {
         return people
     }
 
+    /// Die Prioritäten zur Wahl. Eine unbekannte vom Server bleibt dabei, sonst zeigte der
+    /// Picker beim Ändern nichts an (Review F3).
+    public var priorityChoices: [TaskPriority] {
+        TaskPriority.settable.contains(base.priority) ? TaskPriority.settable : TaskPriority.settable + [base.priority]
+    }
+
+    /// Die Kategorien zur Wahl, leer ohne Optionen. Eine gespeicherte, die es nicht mehr gibt,
+    /// bleibt dabei und zeigt ihren Key.
+    public var categoryChoices: [TaskCategory] {
+        guard let categories = options?.categories, !categories.isEmpty,
+              !categories.contains(where: { $0.key == base.category })
+        else { return options?.categories ?? [] }
+        return categories + [TaskCategory(key: base.category, name: nil, labelKey: nil)]
+    }
+
     /// Ab 4500 Zeichen die Zahl für den Zähler, gezählt wie am Server (Q18).
     public var descriptionCount: Int? {
         let count = draft.descriptionLength

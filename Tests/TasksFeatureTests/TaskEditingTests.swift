@@ -47,6 +47,19 @@ import YuvomiCore
         #expect(log.outcomes == [.saved(saved)])
     }
 
+    /// Unbekanntes vom Server bleibt im Picker wählbar, sonst stünde er leer da (Review F3).
+    @Test func storedValuesStayChoosable() async {
+        var odd = stored
+        odd.priority = .unknown
+        odd.category = "garden"
+        let form = TaskFormModel(editing: odd, editor: editor, onUnauthorized: {}, onFinished: { _ in })
+        await form.loadOptions()
+
+        #expect(form.priorityChoices == TaskPriority.settable + [.unknown])
+        #expect(form.categoryChoices.map(\.key) == ["household", "misc", "garden"])
+        #expect(self.form().priorityChoices == TaskPriority.settable)
+    }
+
     @Test func clearingTheDateClearsTheTime() async {
         let form = form()
         form.hasDue = false
@@ -99,6 +112,7 @@ import YuvomiCore
 @MainActor @Suite struct TaskDetailEditingTests {
     let reading = FakeDetail(.success(packing))
     let editor = FakeEditor()
+    let writer = FakeWriter()
 
     final class Calls {
         var statusChanged = 0
@@ -111,7 +125,7 @@ import YuvomiCore
     func loadedDetail(mayWrite: Bool = true, memberID: Int? = 1) async -> TaskDetailModel {
         let calls = calls
         let detail = TaskDetailModel(
-            taskID: 24, tasks: reading, writer: FakeWriter(), editor: editor,
+            taskID: 24, tasks: reading, writer: writer, editor: editor,
             mayWrite: { mayWrite }, memberID: { memberID },
             onUnauthorized: {},
             onStatusChanged: { calls.statusChanged += 1 },
@@ -180,6 +194,27 @@ import YuvomiCore
         }
         #expect(task.title == "Pack for the trip")
         #expect(calls.statusChanged == 1)
+    }
+
+    /// Ein Abhaken, das beim Sichern noch läuft, gilt auch über der Antwort (Review F3).
+    @Test func aRunningCheckOffSurvivesTheAnswer() async {
+        let detail = await loadedDetail()
+        writer.hold()
+        let checking = Task { await detail.toggleStatus() }
+        await writer.untilWaiting()
+        detail.startEditing()
+        detail.form?.draft.title = "Pack for the trip"
+
+        await detail.form?.save()
+
+        guard case .loaded(let task) = detail.state else {
+            Issue.record("nicht geladen")
+            return
+        }
+        #expect(task.title == "Pack for the trip")
+        #expect(task.status == .done)
+        writer.release()
+        await checking.value
     }
 
     /// Q13: gesperrt beim Sichern: Hinweis, Sheet zu, das Detail lädt neu.
@@ -323,6 +358,25 @@ import YuvomiCore
         #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1)])]))
         #expect(list.notice == nil)
         #expect(changed == 1)
+    }
+
+    /// Auch wenn währenddessen ein Laden der Liste läuft: Wer selbst löscht, bekommt keinen
+    /// Hinweis „gibt es nicht mehr“ (Review F3).
+    @Test func deletingDuringALoadShowsNoNotice() async {
+        let list = await list()
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        reading.gate.close()
+        let loading = Task { await list.load() }
+        await reading.gate.untilWaiting()
+
+        await detail.delete()
+        reading.gate.open()
+        await loading.value
+
+        #expect(list.notice == nil)
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1)])]))
     }
 
     /// Q7: Die Liste kennt die eigene Id aus `/auth/me` und gibt sie dem Detail.

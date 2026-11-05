@@ -1065,6 +1065,24 @@
         }
       }
     },
+    "tasks.form.priority.unknown": {
+      "comment": "Wahl im Formular für eine Priorität, die die App nicht kennt (neuere Server-Version).",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
+          }
+        }
+      }
+    },
     "tasks.form.save": {
       "extractionState": "manual",
       "localizations": {
