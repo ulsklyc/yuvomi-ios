@@ -253,6 +253,31 @@ import YuvomiCore
         #expect(second.state == .loaded(done))
     }
 
+    /// Ebenso beim Ankreuzen: Das neu geöffnete Detail lädt nach der Antwort neu (Codex-Review E3).
+    @Test func aReopenedDetailRefreshesAfterAnEarlierTick() async {
+        let list = await loadedList([task(24), task(2)])
+        list.path = [24]
+        let first = list.detail(for: 24)
+        await first.load()
+        writer.tick.withLock { $0 = .success("- [x] Pack sleeping bags") }
+        writer.hold()
+        let ticking = Task { await first.tick(line: 0) }
+        await writer.untilWaiting()
+
+        list.path = []
+        list.path = [24]
+        let second = list.detail(for: 24)
+        await second.load()
+        var ticked = packing
+        ticked.description = "- [x] Pack sleeping bags"
+        reading.detail = ticked
+        writer.release()
+        await ticking.value
+        for _ in 0..<100 where second.state != .loaded(ticked) { await Task.yield() }
+
+        #expect(second.state == .loaded(ticked))
+    }
+
     @Test func aForbiddenDetailMakesTheListReadOnly() async {
         let list = await loadedList([task(24)])
         list.path = [24]

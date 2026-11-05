@@ -191,13 +191,15 @@ public final class TaskListModel {
             onStatusChanged: { [weak self] in
                 guard let self else { return }
                 onStatusChanged()
-                // Inzwischen zu und wieder offen: Das neue Detail lud womöglich vor dem Wechsel
-                // (Codex-Review E3).
-                let reopened = details[id].flatMap { $0 === made.model ? nil : $0 }
+                let reopened = newer(than: made, id)
                 Task {
                     await self.load()
                     await reopened?.load()
                 }
+            },
+            onTicked: { [weak self] in
+                guard let reopened = self?.newer(than: made, id) else { return }
+                Task { await reopened.load() }
             },
             onForbidden: { [weak self] in self?.canWrite = false },
             onGone: { [weak self] in self?.close(id) }
@@ -205,6 +207,12 @@ public final class TaskListModel {
         made.model = model
         details[id] = model
         return model
+    }
+
+    /// Ein Detail derselben Aufgabe, das nach `made` entstand: zu und wieder offen, während
+    /// `made` noch schrieb. Es lud womöglich vor dem Schreiben (Codex-Review E3).
+    private func newer(than made: WeakDetail, _ id: Int) -> TaskDetailModel? {
+        details[id].flatMap { $0 === made.model ? nil : $0 }
     }
 
     /// Die Aufgabe gibt es nicht mehr: Detail zu, Zeile weg, Hinweis in der Liste (Q8, Q12).

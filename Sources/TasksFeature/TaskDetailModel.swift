@@ -55,11 +55,13 @@ public final class TaskDetailModel {
     private let mayWrite: @MainActor () -> Bool
     private let onUnauthorized: @MainActor () -> Void
     private let onStatusChanged: @MainActor () -> Void
+    private let onTicked: @MainActor () -> Void
     private let onForbidden: @MainActor () -> Void
     private let onGone: @MainActor () -> Void
 
     /// - Parameters:
     ///   - onStatusChanged: Abhaken oder Wieder öffnen ist beim Server (Aufgabe oder Unteraufgabe).
+    ///   - onTicked: Ein Punkt der Checkliste ist beim Server.
     ///   - onForbidden: 403, ab jetzt nur lesen.
     ///   - onGone: Die Aufgabe gibt es nicht mehr (404). Der Besitzer schließt das Detail.
     public init(
@@ -67,6 +69,7 @@ public final class TaskDetailModel {
         mayWrite: @escaping @MainActor () -> Bool = { true },
         onUnauthorized: @escaping @MainActor () -> Void,
         onStatusChanged: @escaping @MainActor () -> Void = {},
+        onTicked: @escaping @MainActor () -> Void = {},
         onForbidden: @escaping @MainActor () -> Void = {},
         onGone: @escaping @MainActor () -> Void = {}
     ) {
@@ -76,6 +79,7 @@ public final class TaskDetailModel {
         self.mayWrite = mayWrite
         self.onUnauthorized = onUnauthorized
         self.onStatusChanged = onStatusChanged
+        self.onTicked = onTicked
         self.onForbidden = onForbidden
         self.onGone = onGone
     }
@@ -151,6 +155,7 @@ public final class TaskDetailModel {
             tickCount += 1
             tickedDescription = (tickCount, description)
             update { $0.description = description }
+            onTicked()
         } catch .unauthorized {
             onUnauthorized()
         } catch .conflict {
