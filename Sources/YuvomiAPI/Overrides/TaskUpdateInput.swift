@@ -25,8 +25,11 @@ struct TaskUpdateInput: Codable, Hashable, Sendable {
     var locked: Bool? = nil
     var syncTarget: Patch<String> = .unset
     var status: String? = nil
+    var rotationMode: Patch<String> = .unset
+    /// Kein `Patch`: `null` ist 400.
+    var rotationPool: [Int]? = nil
 
-    enum CodingKeys: String, CodingKey {
+    enum CodingKeys: String, CodingKey, CaseIterable {
         case title
         case description
         case category
@@ -45,6 +48,8 @@ struct TaskUpdateInput: Codable, Hashable, Sendable {
         case locked
         case syncTarget = "sync_target"
         case status
+        case rotationMode = "rotation_mode"
+        case rotationPool = "rotation_pool"
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -67,6 +72,8 @@ struct TaskUpdateInput: Codable, Hashable, Sendable {
         try container.encodeIfPresent(locked, forKey: .locked)
         try container.encode(syncTarget, forKey: .syncTarget)
         try container.encodeIfPresent(status, forKey: .status)
+        try container.encode(rotationMode, forKey: .rotationMode)
+        try container.encodeIfPresent(rotationPool, forKey: .rotationPool)
     }
 
     init(from decoder: any Decoder) throws {
@@ -89,6 +96,8 @@ struct TaskUpdateInput: Codable, Hashable, Sendable {
         locked = try container.decodeIfPresent(Bool.self, forKey: .locked)
         syncTarget = try container.decode(Patch<String>.self, forKey: .syncTarget)
         status = try container.decodeIfPresent(String.self, forKey: .status)
+        rotationMode = try container.decode(Patch<String>.self, forKey: .rotationMode)
+        rotationPool = try container.decodeIfPresent([Int].self, forKey: .rotationPool)
     }
 }
 
@@ -111,7 +120,9 @@ extension TaskUpdateInput {
         countdown: Bool? = nil,
         locked: Bool? = nil,
         syncTarget: Patch<String> = .unset,
-        status: String? = nil
+        status: String? = nil,
+        rotationMode: Patch<String> = .unset,
+        rotationPool: [Int]? = nil
     ) {
         self.title = title
         self.description = description
@@ -131,5 +142,7 @@ extension TaskUpdateInput {
         self.locked = locked
         self.syncTarget = syncTarget
         self.status = status
+        self.rotationMode = rotationMode
+        self.rotationPool = rotationPool
     }
 }

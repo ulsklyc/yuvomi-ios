@@ -83,10 +83,8 @@ public struct YuvomiTasks: TaskReading, TaskWriting {
                 path: .init(id: id), body: .json(.init(line: line, checked: checked, expect: expect))
             )
         } catch {
-            // Ein 409 ohne lesbaren Body ist hier trotzdem der Konflikt um die Zeile. Bei den
-            // übrigen Operationen bedeutet 409 etwas anderes, deshalb nicht im allgemeinen Teil.
-            if (error as? ClientError)?.response?.status == .conflict { throw .conflict }
-            throw APIError(classifying: error)
+            // Ein 409 ohne lesbaren Body ist hier trotzdem der Konflikt um die Zeile.
+            throw APIError(classifying: error, conflict: true)
         }
         switch output {
         case .ok(let ok):
@@ -114,7 +112,7 @@ public struct YuvomiMemberPermissions: MemberPermissions {
     /// Nur `write` erlaubt Schreiben. Ein Wert, den diese App-Version nicht kennt, gilt als
     /// nicht erlaubt: Der Server prüft ohnehin, und ein Haken, der zurückspringt, ist das
     /// kleinere Übel als einer, den es nicht gibt.
-    public func mayWriteTasks() async throws(APIError) -> Bool {
+    public func member() async throws(APIError) -> Member {
         let output: Operations.GetCurrentUser.Output
         do {
             output = try await client.getCurrentUser()
@@ -124,7 +122,11 @@ public struct YuvomiMemberPermissions: MemberPermissions {
         switch output {
         case .ok(let ok):
             guard case .json(let me) = ok.body else { throw .unexpectedResponse }
-            return me.permissions.modules.additionalProperties["tasks"] == "write"
+            return Member(
+                id: me.user.id,
+                mayWriteTasks: me.permissions.modules.additionalProperties["tasks"] == "write",
+                householdSize: me.householdSize
+            )
         case .unauthorized: throw .unauthorized
         default: throw .unexpectedResponse
         }
@@ -136,12 +138,15 @@ extension APIError {
     /// Eine 401 bleibt eine 401, auch wenn sich ihr Body nicht lesen lässt: Sonst behielte
     /// die App ein widerrufenes Credential. Ebenso 403 und 404: Beide sind endgültig, ein
     /// zweiter Versuch brächte nichts.
-    init(classifying error: any Error) {
+    ///
+    /// 409 nur mit `conflict`: Für die Operationen, die es dokumentieren (Ankreuzen, Anlegen).
+    init(classifying error: any Error, conflict: Bool = false) {
         switch (error as? ClientError)?.response?.status {
         case nil: self = .unreachable
         case .unauthorized: self = .unauthorized
         case .forbidden: self = .forbidden
         case .notFound: self = .notFound
+        case .conflict where conflict: self = .conflict
         default: self = .unexpectedResponse
         }
     }
@@ -169,6 +174,18 @@ extension TaskPriority {
         case "high": .high
         case "urgent": .urgent
         default: .unknown
+        }
+    }
+
+    /// Der Wert für den Server, `nil` bei `.unknown`: Den kann die App nicht setzen.
+    var server: String? {
+        switch self {
+        case .none: "none"
+        case .low: "low"
+        case .medium: "medium"
+        case .high: "high"
+        case .urgent: "urgent"
+        case .unknown: nil
         }
     }
 }
@@ -201,8 +218,32 @@ extension TaskSummary {
     }
 }
 
+/// Die Felder, die `TaskDetail` liest. Das Detail (`GET`) und die Antwort von `PUT` haben sie
+/// gleich, die Antwort von `PUT` nur ohne Dokumente.
+protocol TaskDetailFields {
+    var id: Int { get }
+    var title: String { get }
+    var status: String { get }
+    var priority: String { get }
+    var startDate: String? { get }
+    var dueDate: String? { get }
+    var dueTime: String? { get }
+    var assignedUsers: [Components.Schemas.AssignedPerson] { get }
+    var description: String? { get }
+    var subtasks: [Components.Schemas.Task] { get }
+    var tags: [String] { get }
+    var points: Int { get }
+    var isRecurring: Int { get }
+    var locked: Int { get }
+    var category: String { get }
+    var createdBy: Int { get }
+}
+
+extension Components.Schemas.TaskDetail: TaskDetailFields {}
+extension Components.Schemas.TaskUpdated: TaskDetailFields {}
+
 extension TaskDetail {
-    init(_ task: Components.Schemas.TaskDetail) {
+    init(_ task: some TaskDetailFields) {
         self.init(
             id: task.id,
             title: task.title,
@@ -212,12 +253,15 @@ extension TaskDetail {
             due: task.dueDate.flatMap(CalendarDay.init(iso:)),
             dueTime: task.dueTime,
             assignees: task.assignedUsers.map(\.displayName),
+            assigneeIDs: task.assignedUsers.map(\.id),
             description: task.description,
             subtasks: task.subtasks.map(TaskSummary.init),
             tags: task.tags,
             points: task.points,
             isRecurring: task.isRecurring != 0,
-            isLocked: task.locked != 0
+            isLocked: task.locked != 0,
+            category: task.category,
+            createdBy: task.createdBy
         )
     }
 }

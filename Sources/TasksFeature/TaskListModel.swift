@@ -85,7 +85,7 @@ public final class TaskListModel {
         let mark = overlay.mark
         // Die Rechte laufen neben der Liste her. Ohne Antwort bleibt es beim bisherigen Stand,
         // anfangs erlaubt: Der Server prüft ohnehin (Q4).
-        async let mayWrite = try? await permissions.mayWriteTasks()
+        async let mayWrite = try? await permissions.member().mayWriteTasks
         do throws(APIError) {
             var all = try await tasks.tasks()
             let may = await mayWrite
