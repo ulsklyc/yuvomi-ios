@@ -35,6 +35,10 @@ public final class TaskDetailModel {
     public private(set) var writingStatus: Set<Int> = []
     /// Laufende und seit dem Start eines Ladens bestätigte Statuswechsel (Codex-Review E3).
     @ObservationIgnored private var overlay = StatusOverlay()
+    /// Die zuletzt vom Server bestätigte Beschreibung nach einem Ankreuzen, mit dessen Nummer.
+    /// Ein Laden, das davor begann, übernimmt sie statt seines älteren Texts (Codex-Review E3).
+    @ObservationIgnored private var tickCount = 0
+    @ObservationIgnored private var tickedDescription: (count: Int, text: String)?
     /// Punkte der Checkliste, deren Ankreuzen gerade läuft: Zeile → Zustand, den die Person
     /// gewählt hat. Die Ansicht zeigt ihn statt des gespeicherten, bis die Antwort da ist.
     public private(set) var ticking: [Int: Bool] = [:]
@@ -80,12 +84,18 @@ public final class TaskDetailModel {
         generation += 1
         let mine = generation
         let mark = overlay.mark
+        let ticks = tickCount
         // Nach einem Fehler zeigt „Erneut versuchen“ wieder den Ladekreis.
         if case .failed = state { state = .loading }
         do throws(APIError) {
             var task = try await tasks.task(id: taskID)
             guard mine == generation else { return }
             for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
+            // Ebenso die Beschreibung: Kam ein Ankreuzen nach dem Start dieser Anfrage zurück,
+            // ist seine Antwort neuer als diese.
+            if let ticked = tickedDescription {
+                if ticked.count > ticks { task.description = ticked.text } else { tickedDescription = nil }
+            }
             state = .loaded(task)
             refreshProblem = nil
         } catch .unauthorized {
@@ -138,6 +148,8 @@ public final class TaskDetailModel {
         defer { ticking[line] = nil }
         do throws(APIError) {
             let description = try await writer.tick(task: taskID, line: line, checked: !point.isChecked, expect: point.raw)
+            tickCount += 1
+            tickedDescription = (tickCount, description)
             update { $0.description = description }
         } catch .unauthorized {
             onUnauthorized()

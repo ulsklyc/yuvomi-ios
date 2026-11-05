@@ -85,13 +85,15 @@ public final class TaskListModel {
         // anfangs erlaubt: Der Server prüft ohnehin (Q4).
         async let mayWrite = try? await permissions.mayWriteTasks()
         do throws(APIError) {
-            let all = try await tasks.tasks()
+            var all = try await tasks.tasks()
             let may = await mayWrite
             guard mine == generation else { return }
-            state = .loaded(Self.sections(all, today: today()))
             // `/tasks` kann älter sein als ein Abhaken, das noch läuft oder seit dem Start fertig
-            // wurde: dessen Ziel gilt weiter.
-            for (id, status) in overlay.statuses(since: mark) { update(id) { $0.status = status } }
+            // wurde: dessen Ziel gilt weiter, und zwar vor dem Filtern der erledigten. Sonst
+            // fehlte eine gerade wieder geöffnete Zeile, die die Antwort noch als erledigt kennt.
+            let overlaid = overlay.statuses(since: mark)
+            for i in all.indices { if let status = overlaid[all[i].id] { all[i].status = status } }
+            state = .loaded(Self.sections(all, today: today(), keeping: Set(overlaid.keys)))
             canWrite = may ?? canWrite
             refreshProblem = nil
             notice = nil
@@ -194,9 +196,10 @@ public final class TaskListModel {
         notice = .gone
     }
 
-    static func sections(_ all: [TaskSummary], today: CalendarDay) -> [TaskSection] {
+    /// - Parameter keeping: Ids, die auch erledigt stehen bleiben: gerade in der App abgehakt (Q14).
+    static func sections(_ all: [TaskSummary], today: CalendarDay, keeping: Set<Int> = []) -> [TaskSection] {
         let open = all
-            .filter { $0.status != .done }
+            .filter { $0.status != .done || keeping.contains($0.id) }
             .sorted(by: dueFirst)
         func kind(of task: TaskSummary) -> TaskSection.Kind {
             guard let due = task.due else { return .noDate }

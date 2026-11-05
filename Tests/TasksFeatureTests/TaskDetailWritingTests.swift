@@ -106,6 +106,22 @@ import YuvomiCore
         #expect(task(of: detail)?.status == .done)
     }
 
+    /// Ein Neuladen, das vor dem Ankreuzen begann und erst danach ankommt, nimmt den Haken
+    /// nicht zurück (Codex-Review E3).
+    @Test func aLoadOlderThanATickKeepsIt() async {
+        writer.tick.withLock { $0 = .success("- [x] Pack sleeping bags") }
+        let detail = await loadedDetail()
+        reading.gate.close()
+        let loading = Task { await detail.load() }
+        await reading.gate.untilWaiting()
+
+        await detail.tick(line: 0)
+        reading.gate.open()
+        await loading.value
+
+        #expect(task(of: detail)?.description == "- [x] Pack sleeping bags")
+    }
+
     /// Immer nur ein Punkt auf einmal: Jede Antwort ist die ganze Beschreibung.
     @Test func onlyOnePointIsTickedAtATime() async {
         reading.result.withLock { $0 = .success(TaskDetail(id: 24, title: "x", status: .open, priority: .none, description: "- [ ] A\n- [ ] B")) }

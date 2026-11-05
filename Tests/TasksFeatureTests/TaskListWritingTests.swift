@@ -40,6 +40,24 @@ import YuvomiCore
         #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1, status: .done), task(2)])]))
     }
 
+    /// Wieder öffnen, während ein Laden die Aufgabe noch als erledigt liefert: Die Zeile bleibt
+    /// offen stehen, statt beim Filtern der erledigten zu verschwinden (Codex-Review E3).
+    @Test func aLoadDuringReopeningKeepsTheRow() async {
+        let list = await loadedList()
+        await list.toggle(1)
+        reading.result = .success([task(1, status: .done), task(2)])
+        writer.status.withLock { $0 = .success(StatusChange(status: .open)) }
+        writer.hold()
+        let reopening = Task { await list.toggle(1) }
+        await writer.untilWaiting()
+
+        await list.load()
+        writer.release()
+        await reopening.value
+
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1), task(2)])]))
+    }
+
     /// Abgehakt bleibt die Zeile stehen, bis die Liste das nächste Mal lädt (Q2, Q14).
     @Test func checkingOffKeepsTheRowCrossedOut() async {
         var changed = 0
