@@ -414,4 +414,47 @@ import YuvomiCore
         #expect(list.canWrite == false)
         #expect(detail.canWrite == false)
     }
+
+    /// Ein Laden, das vor einem Abhaken mit 404 begann und erst danach ankommt, holt die
+    /// entfernte Zeile nicht zurück, und der Hinweis bleibt (Codex-Review E3, Issue #24).
+    @Test func aLoadOlderThanADeletionKeepsTheRowAway() async {
+        let list = await loadedList()
+        reading.gate.close()
+        let loading = Task { await list.load() }
+        await reading.gate.untilWaiting()
+        writer.status.withLock { $0 = .failure(.notFound) }
+
+        await list.toggle(1)
+        reading.gate.open()
+        await loading.value
+
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(2)])]))
+        #expect(list.notice == .gone)
+    }
+
+    /// Ist eine Unteraufgabe beim Abhaken aus einem früheren Detail weg (404), verschwindet sie
+    /// auch im inzwischen neu geöffneten und als Zeile der Liste (Codex-Review E3, Issue #24).
+    @Test func aSubtaskGoneInAnEarlierDetailLeavesTheReopenedDetail() async {
+        let list = await loadedList([task(24), task(25), task(2)])
+        list.path = [24]
+        let first = list.detail(for: 24)
+        await first.load()
+        writer.status.withLock { $0 = .failure(.notFound) }
+        writer.hold()
+        let checking = Task { await first.toggleSubtask(25) }
+        await writer.untilWaiting()
+        list.path = []
+        list.path = [24]
+        let second = list.detail(for: 24)
+        await second.load()
+
+        writer.release()
+        await checking.value
+
+        var without = packing
+        without.subtasks = []
+        #expect(second.state == .loaded(without))
+        #expect(second.notice == .gone)
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(24), task(2)])]))
+    }
 }

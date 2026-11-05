@@ -18,6 +18,9 @@ final class StatusOverlay {
     /// ganze Beschreibung: Zwei auf einmal überschrieben sich (Issue #23).
     private var ticking: Set<Int> = []
     @ObservationIgnored private var confirmed: [(seq: Int, id: Int, status: TaskStatus)] = []
+    /// Aufgaben und Unteraufgaben, die beim Schreiben mit 404 antworteten, mit derselben Zählung.
+    /// Ein Laden, das davor begann, kennt sie noch (Issue #24).
+    @ObservationIgnored private var removed: [(seq: Int, id: Int)] = []
     @ObservationIgnored private var seq = 0
 
     /// So viele bestätigte Wechsel bleiben im Journal. Ein Laden, während dessen mehr Wechsel
@@ -54,6 +57,18 @@ final class StatusOverlay {
         seq += 1
         confirmed.append((seq, id, status))
         if confirmed.count > Self.kept { confirmed.removeFirst(confirmed.count - Self.kept) }
+    }
+
+    /// Die Aufgabe oder Unteraufgabe gibt es nicht mehr (404).
+    func markGone(_ id: Int) {
+        seq += 1
+        removed.append((seq, id))
+        if removed.count > Self.kept { removed.removeFirst(removed.count - Self.kept) }
+    }
+
+    /// Was eine Antwort, deren Anfrage bei `mark` begann, noch zeigt, obwohl es weg ist.
+    func gone(since mark: Int) -> Set<Int> {
+        Set(removed.lazy.filter { $0.seq > mark }.map(\.id))
     }
 
     /// Was über eine Antwort gehört, deren Anfrage bei `mark` begann: alles danach Bestätigte und

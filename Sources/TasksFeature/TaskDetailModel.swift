@@ -61,6 +61,7 @@ public final class TaskDetailModel {
     private let onStatusChanged: @MainActor () -> Void
     private let onTicked: @MainActor () -> Void
     private let onRolledBack: @MainActor (Int, TaskStatus) -> Void
+    private let onSubtaskGone: @MainActor (Int) -> Void
     private let onForbidden: @MainActor () -> Void
     private let onGone: @MainActor () -> Void
 
@@ -81,7 +82,7 @@ public final class TaskDetailModel {
         self.init(
             taskID: taskID, tasks: tasks, writer: writer, overlay: StatusOverlay(), mayWrite: mayWrite,
             onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged, onTicked: onTicked,
-            onRolledBack: { _, _ in }, onForbidden: onForbidden, onGone: onGone
+            onRolledBack: { _, _ in }, onSubtaskGone: { _ in }, onForbidden: onForbidden, onGone: onGone
         )
     }
 
@@ -93,6 +94,7 @@ public final class TaskDetailModel {
         onStatusChanged: @escaping @MainActor () -> Void,
         onTicked: @escaping @MainActor () -> Void,
         onRolledBack: @escaping @MainActor (Int, TaskStatus) -> Void,
+        onSubtaskGone: @escaping @MainActor (Int) -> Void,
         onForbidden: @escaping @MainActor () -> Void,
         onGone: @escaping @MainActor () -> Void
     ) {
@@ -105,6 +107,7 @@ public final class TaskDetailModel {
         self.onStatusChanged = onStatusChanged
         self.onTicked = onTicked
         self.onRolledBack = onRolledBack
+        self.onSubtaskGone = onSubtaskGone
         self.onForbidden = onForbidden
         self.onGone = onGone
     }
@@ -120,6 +123,8 @@ public final class TaskDetailModel {
             var task = try await tasks.task(id: taskID)
             guard mine == generation else { return }
             for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
+            let gone = overlay.gone(since: mark)
+            task.subtasks.removeAll { gone.contains($0.id) }
             // Ebenso die Beschreibung: Kam ein Ankreuzen nach dem Start dieser Anfrage zurück,
             // ist seine Antwort neuer als diese.
             if let ticked = tickedDescription {
@@ -223,9 +228,11 @@ public final class TaskDetailModel {
         } catch .unauthorized {
             onUnauthorized()
         } catch .notFound where id != taskID {
-            // Nur die Unteraufgabe ist weg, die Aufgabe selbst steht noch.
-            update { $0.subtasks.removeAll { $0.id == id } }
-            notice = .gone
+            // Nur die Unteraufgabe ist weg, die Aufgabe selbst steht noch. Auch in einem neu
+            // geöffneten Detail derselben Aufgabe und einem Laden, das davor begann (Issue #24).
+            overlay.markGone(id)
+            removeSubtask(id)
+            onSubtaskGone(id)
         } catch {
             update { Self.set(id, to: before, in: &$0) }
             onRolledBack(id, before)
@@ -237,6 +244,13 @@ public final class TaskDetailModel {
     /// übernommen, springt er hier ebenso zurück, ohne erneut zu laden.
     func restore(_ id: Int, to status: TaskStatus) {
         update { Self.set(id, to: status, in: &$0) }
+    }
+
+    /// Die Unteraufgabe gibt es nicht mehr. Nur ein Detail, das sie zeigt, bekommt den Hinweis.
+    func removeSubtask(_ id: Int) {
+        guard loaded?.subtasks.contains(where: { $0.id == id }) == true else { return }
+        update { $0.subtasks.removeAll { $0.id == id } }
+        notice = .gone
     }
 
     /// Gemeinsame Folgen nach Q13 für 403, 404 und den Rest.

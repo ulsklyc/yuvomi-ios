@@ -95,10 +95,14 @@ public final class TaskListModel {
             // fehlte eine gerade wieder geöffnete Zeile, die die Antwort noch als erledigt kennt.
             let overlaid = overlay.statuses(since: mark)
             for i in all.indices { if let status = overlaid[all[i].id] { all[i].status = status } }
+            // Ebenso eine Aufgabe, die seit dem Start mit 404 verschwand: Sie bleibt weg, und
+            // ihr Hinweis stehen (Issue #24).
+            let gone = overlay.gone(since: mark)
+            all.removeAll { gone.contains($0.id) }
             state = .loaded(Self.sections(all, today: today(), keeping: Set(overlaid.keys)))
             canWrite = may ?? canWrite
             refreshProblem = nil
-            notice = nil
+            if gone.isEmpty { notice = nil }
         } catch .unauthorized {
             onUnauthorized()
         } catch {
@@ -200,6 +204,13 @@ public final class TaskListModel {
                 Task { await reopened.load() }
             },
             onRolledBack: { [weak self] task, status in self?.rollBack(task, to: status) },
+            // Jedes gemerkte Detail, auch ein neu geöffnetes derselben Aufgabe, und die eigene
+            // Zeile der Unteraufgabe, falls die Liste sie zeigt (Issue #24).
+            onSubtaskGone: { [weak self] subtask in
+                guard let self else { return }
+                remove(subtask)
+                for detail in details.values { detail.removeSubtask(subtask) }
+            },
             onForbidden: { [weak self] in self?.canWrite = false },
             onGone: { [weak self] in self?.close(id) }
         )
@@ -234,6 +245,7 @@ public final class TaskListModel {
 
     /// Die Aufgabe gibt es nicht mehr: Detail zu, Zeile weg, Hinweis in der Liste (Q8, Q12).
     public func close(_ id: Int) {
+        overlay.markGone(id)
         path.removeAll { $0 == id }
         remove(id)
         notice = .gone
