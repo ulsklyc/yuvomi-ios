@@ -87,8 +87,18 @@ public final class TaskFormModel: Identifiable {
                 draft.dueTime = nil
                 return
             }
-            let hour = CalendarDay.gregorian(timeZone).component(.hour, from: now()) + 1
-            draft.dueTime = hour > 23 ? "23:59" : String(format: "%02d:00", hour)
+            // Über die Uhr statt über die Stundenzahl: Am Tag der Zeitumstellung folgt auf 01:00
+            // direkt 03:00, und 02:00 gäbe es nicht.
+            let calendar = CalendarDay.gregorian(timeZone)
+            let today = calendar.startOfDay(for: now())
+            let hour = calendar.dateInterval(of: .hour, for: now())?.start ?? now()
+            let next = hour.addingTimeInterval(3600)
+            guard calendar.isDate(next, inSameDayAs: today) else {
+                draft.dueTime = "23:59"
+                return
+            }
+            let parts = calendar.dateComponents([.hour, .minute], from: next)
+            draft.dueTime = String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
         }
     }
 
@@ -98,12 +108,13 @@ public final class TaskFormModel: Identifiable {
         set { draft.due = CalendarDay(newValue, timeZone: timeZone) }
     }
 
-    /// `HH:MM` für den Zeitwähler. Nur Stunde und Minute zählen.
+    /// `HH:MM` für den Zeitwähler, am gewählten Tag. Nur Stunde und Minute zählen.
     public var dueTimeDate: Date {
         get {
             let calendar = CalendarDay.gregorian(timeZone)
             let parts = (draft.dueTime ?? "").split(separator: ":").compactMap { Int($0) }
-            let day = calendar.startOfDay(for: now())
+            // Am gewählten Tag: An einem anderen Tag gibt es Uhrzeiten, die heute fehlen.
+            let day = draft.due?.start(timeZone: timeZone) ?? calendar.startOfDay(for: now())
             guard parts.count == 2 else { return day }
             return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: day) ?? day
         }

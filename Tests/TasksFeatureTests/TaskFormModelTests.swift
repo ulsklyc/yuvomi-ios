@@ -236,6 +236,33 @@ import YuvomiCore
         #expect(form.draft.dueTime == "15:00")
     }
 
+    /// Am Tag der Zeitumstellung gibt es 02:00 nicht: Der Vorschlag nach 01:10 ist 03:00.
+    @Test func suggestionSkipsTheMissingHour() {
+        // 2026-03-29 01:10 in Berlin, die Uhr springt um 02:00 auf 03:00.
+        let springForward = Date(timeIntervalSince1970: 1_774_743_000)
+        let form = TaskFormModel(editor: editor, now: { springForward }, timeZone: berlin, onUnauthorized: {}, onFinished: { _ in })
+
+        form.hasDue = true
+        form.hasTime = true
+
+        #expect(form.draft.dueTime == "03:00")
+    }
+
+    /// Der Zeitwähler hängt am gewählten Tag, nicht an heute: 02:30 am Tag nach der
+    /// Umstellung gibt es, auch wenn es heute fehlt.
+    @Test func timePickerUsesTheDueDay() {
+        let springForward = Date(timeIntervalSince1970: 1_774_743_000)
+        let form = TaskFormModel(editor: editor, now: { springForward }, timeZone: berlin, onUnauthorized: {}, onFinished: { _ in })
+        form.draft.due = CalendarDay(year: 2026, month: 3, day: 30)
+        form.draft.dueTime = "02:30"
+
+        let shown = CalendarDay.gregorian(berlin).dateComponents([.year, .month, .day, .hour, .minute], from: form.dueTimeDate)
+
+        #expect(shown.day == 30)
+        #expect(shown.hour == 2)
+        #expect(shown.minute == 30)
+    }
+
     /// Nach 23 Uhr gibt es keine nächste Stunde mehr am selben Tag.
     @Test func lateTimeStaysOnTheDay() {
         // 23:10 in Berlin.
