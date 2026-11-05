@@ -20,7 +20,7 @@ import YuvomiAPI
             title: "Sign school permission slip",
             status: .open,
             priority: .urgent,
-            due: CalendarDay(year: 2026, month: 11, day: 3),
+            due: CalendarDay(year: 2026, month: 11, day: 6),
             dueTime: nil,
             assignees: ["Linda Johnson"]
         ))

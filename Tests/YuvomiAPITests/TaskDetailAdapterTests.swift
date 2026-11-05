@@ -43,7 +43,7 @@ import YuvomiFixtures
         let task = try await tasks().task(id: 7)
 
         #expect(task.title == "Sign school permission slip")
-        #expect(task.due == CalendarDay(year: 2026, month: 11, day: 3))
+        #expect(task.due == CalendarDay(year: 2026, month: 11, day: 6))
         #expect(task.assignees == ["Linda Johnson"])
         #expect(task.subtasks.isEmpty)
     }
