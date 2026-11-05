@@ -24,6 +24,12 @@ final class Gate: @unchecked Sendable {
         lock.unlock()
         all.forEach { $0.resume() }
     }
+
+    /// Bis eine Anfrage am Tor wartet. Anders als ein paar `Task.yield()` hält das auch unter
+    /// der Last der ganzen Suite (#30).
+    func untilWaiting() async {
+        while lock.withLock({ waiting.isEmpty }) { await Task.yield() }
+    }
 }
 
 @MainActor @Suite struct ReminderCoordinatorTests {
@@ -58,7 +64,7 @@ final class Gate: @unchecked Sendable {
     @Test func switchingOffAndOnQuicklyEndsWithPlannedReminders() async {
         let reminders = coordinator()
         let first = Task { await reminders.sync(session) }
-        await settle()
+        await gate.untilWaiting()
         let off = Task { await reminders.clear() }
         let on = Task { await reminders.sync(session) }
         await settle()
@@ -72,7 +78,7 @@ final class Gate: @unchecked Sendable {
     @Test func signingOutDuringTheFetchLeavesNothingBehind() async {
         let reminders = coordinator()
         let sync = Task { await reminders.sync(session) }
-        await settle()
+        await gate.untilWaiting()
         let signOut = Task { await reminders.clear() }
         await settle()
 
@@ -85,6 +91,7 @@ final class Gate: @unchecked Sendable {
     @Test func aSecondSyncWhileOneRunsJoinsIt() async {
         let reminders = coordinator()
         let first = Task { await reminders.sync(session) }
+        await gate.untilWaiting()
         let second = Task { await reminders.sync(session) }
         await settle()
 
@@ -101,7 +108,7 @@ final class Gate: @unchecked Sendable {
     @Test func aFreshSyncWhileOneRunsFetchesAgainAfterIt() async {
         let reminders = coordinator()
         let first = Task { await reminders.sync(session) }
-        await settle()
+        await gate.untilWaiting()
         let fresh = Task { await reminders.sync(session, fresh: true) }
         let another = Task { await reminders.sync(session, fresh: true) }
         await settle()
