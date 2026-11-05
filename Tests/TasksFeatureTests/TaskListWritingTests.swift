@@ -298,6 +298,45 @@ import YuvomiCore
         #expect(writer.calls.withLock { $0 } == ["status 24 done"])
     }
 
+    /// Scheitert das Abhaken aus der Liste, springt auch ein offenes Detail zurück, das den
+    /// Haken aus der Überlagerung übernommen hat, ohne erneut zu laden (Codex-Review E3).
+    @Test func aFailedListWriteSpringsBackInTheOpenDetail() async {
+        let list = await loadedList([task(24), task(2)])
+        writer.status.withLock { $0 = .failure(.unreachable) }
+        writer.hold()
+        let checking = Task { await list.toggle(24) }
+        await writer.untilWaiting()
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        reading.detail = nil
+
+        writer.release()
+        await checking.value
+
+        #expect(detail.state == .loaded(packing))
+    }
+
+    /// Ebenso umgekehrt: Scheitert das Abhaken im Detail, springt die Zeile der Liste zurück,
+    /// die ein Laden dazwischen abgehakt zeigte (Codex-Review E3).
+    @Test func aFailedDetailWriteSpringsBackInTheList() async {
+        let list = await loadedList([task(24), task(2)])
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        writer.status.withLock { $0 = .failure(.unreachable) }
+        writer.hold()
+        let checking = Task { await detail.toggleStatus() }
+        await writer.untilWaiting()
+        await list.load()
+        reading.result = .failure(.unreachable)
+
+        writer.release()
+        await checking.value
+
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(24), task(2)])]))
+    }
+
     @Test func aForbiddenDetailMakesTheListReadOnly() async {
         let list = await loadedList([task(24)])
         list.path = [24]

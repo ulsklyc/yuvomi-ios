@@ -145,6 +145,8 @@ public final class TaskListModel {
             notice = .gone
         } catch {
             update(id) { $0.status = before.status }
+            // Ein Detail, das dazwischen lud, zeigt den Haken aus der Überlagerung (Codex-Review E3).
+            for detail in details.values { detail.restore(id, to: before.status) }
             if error == .forbidden { canWrite = false }
             notice = TaskNotice(error)
         }
@@ -199,6 +201,8 @@ public final class TaskListModel {
                 guard let reopened = self?.newer(than: made, id) else { return }
                 Task { await reopened.load() }
             },
+            // Gescheitert: Ein Laden dazwischen zeigte den Wechsel auch hier (Codex-Review E3).
+            onRolledBack: { [weak self] task, status in self?.update(task) { $0.status = status } },
             onForbidden: { [weak self] in self?.canWrite = false },
             onGone: { [weak self] in self?.close(id) }
         )

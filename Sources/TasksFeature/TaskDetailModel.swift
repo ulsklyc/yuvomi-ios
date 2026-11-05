@@ -57,6 +57,7 @@ public final class TaskDetailModel {
     private let onUnauthorized: @MainActor () -> Void
     private let onStatusChanged: @MainActor () -> Void
     private let onTicked: @MainActor () -> Void
+    private let onRolledBack: @MainActor (Int, TaskStatus) -> Void
     private let onForbidden: @MainActor () -> Void
     private let onGone: @MainActor () -> Void
 
@@ -77,7 +78,7 @@ public final class TaskDetailModel {
         self.init(
             taskID: taskID, tasks: tasks, writer: writer, overlay: StatusOverlay(), mayWrite: mayWrite,
             onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged, onTicked: onTicked,
-            onForbidden: onForbidden, onGone: onGone
+            onRolledBack: { _, _ in }, onForbidden: onForbidden, onGone: onGone
         )
     }
 
@@ -88,6 +89,7 @@ public final class TaskDetailModel {
         onUnauthorized: @escaping @MainActor () -> Void,
         onStatusChanged: @escaping @MainActor () -> Void,
         onTicked: @escaping @MainActor () -> Void,
+        onRolledBack: @escaping @MainActor (Int, TaskStatus) -> Void,
         onForbidden: @escaping @MainActor () -> Void,
         onGone: @escaping @MainActor () -> Void
     ) {
@@ -99,6 +101,7 @@ public final class TaskDetailModel {
         self.onUnauthorized = onUnauthorized
         self.onStatusChanged = onStatusChanged
         self.onTicked = onTicked
+        self.onRolledBack = onRolledBack
         self.onForbidden = onForbidden
         self.onGone = onGone
     }
@@ -216,8 +219,15 @@ public final class TaskDetailModel {
             notice = .gone
         } catch {
             update { Self.set(id, to: before, in: &$0) }
+            onRolledBack(id, before)
             fail(error)
         }
+    }
+
+    /// Ein Wechsel der Liste ist gescheitert. Hat das Detail ihn aus der Überlagerung
+    /// übernommen, springt er hier ebenso zurück, ohne erneut zu laden.
+    func restore(_ id: Int, to status: TaskStatus) {
+        update { Self.set(id, to: status, in: &$0) }
     }
 
     /// Gemeinsame Folgen nach Q13 für 403, 404 und den Rest.
