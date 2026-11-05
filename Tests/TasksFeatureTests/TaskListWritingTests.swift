@@ -337,6 +337,28 @@ import YuvomiCore
         #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(24), task(2)])]))
     }
 
+    /// Scheitert das Abhaken in einem früheren Detail, springt auch das inzwischen neu geöffnete
+    /// zurück (Codex-Review E3).
+    @Test func aFailedEarlierDetailWriteSpringsBackInTheReopenedDetail() async {
+        let list = await loadedList([task(24), task(2)])
+        list.path = [24]
+        let first = list.detail(for: 24)
+        await first.load()
+        writer.status.withLock { $0 = .failure(.unreachable) }
+        writer.hold()
+        let checking = Task { await first.toggleStatus() }
+        await writer.untilWaiting()
+        list.path = []
+        list.path = [24]
+        let second = list.detail(for: 24)
+        await second.load()
+
+        writer.release()
+        await checking.value
+
+        #expect(second.state == .loaded(packing))
+    }
+
     @Test func aForbiddenDetailMakesTheListReadOnly() async {
         let list = await loadedList([task(24)])
         list.path = [24]

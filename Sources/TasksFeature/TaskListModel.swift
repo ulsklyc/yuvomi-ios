@@ -144,9 +144,7 @@ public final class TaskListModel {
             remove(id)
             notice = .gone
         } catch {
-            update(id) { $0.status = before.status }
-            // Ein Detail, das dazwischen lud, zeigt den Haken aus der Überlagerung (Codex-Review E3).
-            for detail in details.values { detail.restore(id, to: before.status) }
+            rollBack(id, to: before.status)
             if error == .forbidden { canWrite = false }
             notice = TaskNotice(error)
         }
@@ -201,14 +199,21 @@ public final class TaskListModel {
                 guard let reopened = self?.newer(than: made, id) else { return }
                 Task { await reopened.load() }
             },
-            // Gescheitert: Ein Laden dazwischen zeigte den Wechsel auch hier (Codex-Review E3).
-            onRolledBack: { [weak self] task, status in self?.update(task) { $0.status = status } },
+            onRolledBack: { [weak self] task, status in self?.rollBack(task, to: status) },
             onForbidden: { [weak self] in self?.canWrite = false },
             onGone: { [weak self] in self?.close(id) }
         )
         made.model = model
         details[id] = model
         return model
+    }
+
+    /// Ein Wechsel ist gescheitert, aus der Liste oder einem Detail. Jedes Modell, das dazwischen
+    /// lud, zeigt ihn aus der geteilten Überlagerung: Alle springen zurück, ohne Netzanfrage
+    /// (Codex-Review E3).
+    private func rollBack(_ id: Int, to status: TaskStatus) {
+        update(id) { $0.status = status }
+        for detail in details.values { detail.restore(id, to: status) }
     }
 
     /// Ein Detail derselben Aufgabe, das nach `made` entstand: zu und wieder offen, während
