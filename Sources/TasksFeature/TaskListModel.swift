@@ -102,7 +102,7 @@ public final class TaskListModel {
             state = .loaded(Self.sections(all, today: today(), keeping: Set(overlaid.keys)))
             canWrite = may ?? canWrite
             refreshProblem = nil
-            if gone.isEmpty { notice = nil }
+            notice = gone.isEmpty ? nil : .gone
         } catch .unauthorized {
             onUnauthorized()
         } catch {

@@ -217,6 +217,22 @@ import YuvomiCore
         #expect(calls.gone == 0)
     }
 
+    /// Ein Neuladen, das vor dem 404 einer Unteraufgabe begann und erst danach ankommt, holt sie
+    /// nicht zurück (Issue #24).
+    @Test func aLoadOlderThanADeletedSubtaskKeepsItAway() async {
+        writer.status.withLock { $0 = .failure(.notFound) }
+        let detail = await loadedDetail()
+        reading.gate.close()
+        let loading = Task { await detail.load() }
+        await reading.gate.untilWaiting()
+
+        await detail.toggleSubtask(25)
+        reading.gate.open()
+        await loading.value
+
+        #expect(task(of: detail)?.subtasks.isEmpty == true)
+    }
+
     /// Scheitert das Neuladen nach einem 409, steht der Fehler da, nicht „Hier ist sie neu“.
     @Test func aConflictWhoseReloadFailsSaysSo() async {
         writer.tick.withLock { $0 = .failure(.conflict) }

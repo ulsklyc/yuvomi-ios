@@ -230,6 +230,8 @@ public final class TaskDetailModel {
         } catch .notFound where id != taskID {
             // Nur die Unteraufgabe ist weg, die Aufgabe selbst steht noch. Auch in einem neu
             // geöffneten Detail derselben Aufgabe und einem Laden, das davor begann (Issue #24).
+            // Lokal und über die Liste: Ein Detail ohne Liste (eigener Init) hat nur das Lokale,
+            // ein zweiter Aufruf für dasselbe Modell ändert nichts.
             overlay.markGone(id)
             removeSubtask(id)
             onSubtaskGone(id)

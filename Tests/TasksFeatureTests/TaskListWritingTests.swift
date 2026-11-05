@@ -432,6 +432,24 @@ import YuvomiCore
         #expect(list.notice == .gone)
     }
 
+    /// Kam seit dem Start eines Ladens eine Löschung, steht danach „gibt es nicht mehr“ da, kein
+    /// älterer Hinweis eines anderen Fehlers (Review #24).
+    @Test func aLoadOlderThanADeletionShowsOnlyTheGoneNotice() async {
+        let list = await loadedList()
+        reading.gate.close()
+        let loading = Task { await list.load() }
+        await reading.gate.untilWaiting()
+        writer.status.withLock { $0 = .failure(.notFound) }
+        await list.toggle(1)
+        writer.status.withLock { $0 = .failure(.unreachable) }
+        await list.toggle(2)
+
+        reading.gate.open()
+        await loading.value
+
+        #expect(list.notice == .gone)
+    }
+
     /// Ist eine Unteraufgabe beim Abhaken aus einem früheren Detail weg (404), verschwindet sie
     /// auch im inzwischen neu geöffneten und als Zeile der Liste (Codex-Review E3, Issue #24).
     @Test func aSubtaskGoneInAnEarlierDetailLeavesTheReopenedDetail() async {
