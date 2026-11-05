@@ -108,7 +108,7 @@ let packing = TaskDetail(
 /// Der Weg aus der Liste: `path` ist die Bindung der Navigation, auch für die Mitteilung (E4).
 @MainActor @Suite struct TaskListOpeningTests {
     @Test func openingATaskMakesOneDetailForIt() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), editor: FakeEditor(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
 
         list.path = [24]
         let first = list.detail(for: 24)
@@ -121,7 +121,7 @@ let packing = TaskDetail(
 
     /// Zwei Ziele im Stapel, etwa eine Mitteilung über einem offenen Detail: Jedes behält sein Modell.
     @Test func twoOpenTasksKeepTheirDetails() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), editor: FakeEditor(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
 
         list.path = [24, 31]
         let first = list.detail(for: 24)
@@ -133,7 +133,7 @@ let packing = TaskDetail(
 
     /// Zurück auf der Liste: Die Modelle der geschlossenen Aufgaben fallen weg.
     @Test func closingATaskDropsItsDetail() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), editor: FakeEditor(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
         list.path = [24]
         let first = list.detail(for: 24)
 
@@ -145,7 +145,7 @@ let packing = TaskDetail(
 
     /// Eine Mitteilung legt ihre Aufgabe allein über die Liste, was vorher offen war, schließt (Q8).
     @Test func aNotificationOpensItsTaskOverTheList() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), editor: FakeEditor(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
         list.path = [24, 31]
 
         await list.open(12)
@@ -157,7 +157,7 @@ let packing = TaskDetail(
     /// sein als die Mitteilung (Review E4).
     @Test func aNotificationForTheOpenTaskReloadsIt() async {
         let reading = FakeDetail(.success(packing))
-        let list = TaskListModel(tasks: reading, writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: reading, writer: FakeWriter(), editor: FakeEditor(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
         list.path = [24]
         let detail = list.detail(for: 24)
         await detail.load()

@@ -49,6 +49,9 @@ public final class TaskListModel {
     public var writing: Set<Int> { overlay.writing }
     /// Hinweis nach einem gescheiterten Schreiben, bis zum nächsten Versuch oder Laden.
     public private(set) var notice: TaskNotice?
+    /// Das offene Formular, sonst `nil`. Das Sheet hängt daran: Setzt die View es auf `nil`,
+    /// ist das Abbrechen.
+    public var form: TaskFormModel?
 
     /// Zählt die Ladevorgänge. Nur die Antwort des jüngsten zählt: Eine ältere, die später
     /// ankommt, zeigte sonst etwa eine gerade abgehakte Aufgabe wieder offen.
@@ -56,6 +59,7 @@ public final class TaskListModel {
 
     private let tasks: any TaskReading
     private let writer: any TaskWriting
+    private let editor: any TaskEditing
     private let permissions: any MemberPermissions
     private let today: () -> CalendarDay
     private let onUnauthorized: @MainActor () -> Void
@@ -65,14 +69,15 @@ public final class TaskListModel {
     ///   - today: Der Kalendertag des Geräts; in Tests fest.
     ///   - onUnauthorized: Das Credential ist widerrufen, etwa `SessionState.handle(.unauthorized, from:)`.
     ///   - onStatusChanged: Ein Abhaken oder Wieder öffnen ist beim Server, in der Liste oder im
-    ///     Detail. Die App gleicht danach die Erinnerungen ab (Q10).
+    ///     Detail, oder eine Aufgabe ist neu. Die App gleicht danach die Erinnerungen ab (Q10, Q11).
     public init(
-        tasks: any TaskReading, writer: any TaskWriting, permissions: any MemberPermissions,
+        tasks: any TaskReading, writer: any TaskWriting, editor: any TaskEditing, permissions: any MemberPermissions,
         today: @escaping () -> CalendarDay, onUnauthorized: @escaping @MainActor () -> Void,
         onStatusChanged: @escaping @MainActor () -> Void = {}
     ) {
         self.tasks = tasks
         self.writer = writer
+        self.editor = editor
         self.permissions = permissions
         self.today = today
         self.onUnauthorized = onUnauthorized
@@ -178,6 +183,28 @@ public final class TaskListModel {
             section.tasks.removeAll { $0.id == id }
             return section.tasks.isEmpty ? nil : section
         })
+    }
+
+    /// „+“: ein leeres Formular. Bei Nur-lesen gibt es keins (Q7).
+    public func startCreating() {
+        guard canWrite else { return }
+        form = TaskFormModel(
+            editor: editor, onUnauthorized: onUnauthorized,
+            onFinished: { [weak self] outcome in await self?.finish(outcome) }
+        )
+    }
+
+    /// Sheet zu. Nach dem Anlegen lädt die Liste neu, die Erinnerungen gleichen ab (Q11).
+    private func finish(_ outcome: TaskFormModel.Outcome) async {
+        form = nil
+        switch outcome {
+        case .saved:
+            onStatusChanged()
+            await load()
+        case .readOnly:
+            canWrite = false
+            notice = .readOnly
+        }
     }
 
     /// Das Detail zu einer Aufgabe. Solange sie im Pfad steht, behält sie ihr Modell: SwiftUI

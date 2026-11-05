@@ -29,12 +29,23 @@ public struct TaskListView<Banner: View>: View {
                     TaskDetailView(model: model.detail(for: id))
                 }
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .topBarLeading) {
                         Button(action: onOpenSettings) {
                             Label { Text("tasks.settings", bundle: .module) } icon: { Image(systemName: "gearshape") }
                         }
                     }
+                    // Bei Nur-lesen kein „+“ (Q7).
+                    if model.canWrite {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button { model.startCreating() } label: {
+                                Label { Text("tasks.form.new", bundle: .module) } icon: { Image(systemName: "plus") }
+                            }
+                        }
+                    }
                 }
+        }
+        .sheet(item: $model.form) { form in
+            TaskFormView(model: form) { model.form = nil }
         }
         .task { await model.load() }
     }
@@ -176,6 +187,7 @@ extension TaskListModel.Problem {
         model: TaskListModel(
             tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            editor: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             permissions: YuvomiMemberPermissions(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: {}

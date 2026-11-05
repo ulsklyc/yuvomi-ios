@@ -91,3 +91,41 @@ struct FakePermissions: MemberPermissions {
         Member(id: 1, mayWriteTasks: try result.get(), householdSize: 4)
     }
 }
+
+/// Port-Fake fürs Anlegen, Ändern und Löschen. Merkt sich jeden Aufruf. Mit `gate.close()`
+/// wartet `create`, bis der Test das Tor öffnet.
+final class FakeEditor: TaskEditing, Sendable {
+    static let household = TaskOptions(
+        people: [TaskOptions.Person(id: 1, name: "Alex"), TaskOptions.Person(id: 3, name: "Emma")],
+        categories: [
+            TaskCategory(key: "household", name: nil, labelKey: "tasks.categoryHousehold"),
+            TaskCategory(key: "misc", name: nil, labelKey: "tasks.categoryMisc"),
+        ]
+    )
+
+    let options = Mutex<Result<TaskOptions, APIError>>(.success(household))
+    let created = Mutex<Result<TaskSummary, APIError>>(
+        .success(TaskSummary(id: 27, title: "Water the plants", status: .open, priority: .none, due: nil, dueTime: nil, assignees: []))
+    )
+    /// Je `create` der Entwurf, der Elternteil und der Schlüssel.
+    let creates = Mutex<[(draft: TaskDraft, parent: Int?, key: String)]>([])
+    let gate = Gate()
+
+    func options() async throws(APIError) -> TaskOptions {
+        try options.withLock { $0 }.get()
+    }
+
+    func create(_ draft: TaskDraft, parent: Int?, idempotencyKey: String) async throws(APIError) -> TaskSummary {
+        creates.withLock { $0.append((draft, parent, idempotencyKey)) }
+        await gate.pass()
+        return try created.withLock { $0 }.get()
+    }
+
+    func update(task id: Int, _ changes: TaskChanges) async throws(APIError) -> TaskDetail {
+        throw .unexpectedResponse
+    }
+
+    func delete(task id: Int) async throws(APIError) {
+        throw .unexpectedResponse
+    }
+}

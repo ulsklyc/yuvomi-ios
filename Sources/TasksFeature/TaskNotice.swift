@@ -13,6 +13,8 @@ public enum TaskNotice: Hashable, Sendable {
     case gone
     /// 409 beim Ankreuzen: Die Beschreibung hat sich geändert, das Detail lädt neu.
     case changed
+    /// 409 beim Anlegen: Derselbe Versuch läuft noch, gleich nochmal (Q14).
+    case stillRunning
 
     /// Für die Fehler ohne eigene Folge. 401 behandelt der Aufrufer vorher.
     init(_ error: APIError) {
@@ -32,6 +34,7 @@ public enum TaskNotice: Hashable, Sendable {
         case .readOnly: "tasks.notice.readOnly"
         case .gone: "tasks.notice.gone"
         case .changed: "tasks.notice.changed"
+        case .stillRunning: "tasks.notice.stillRunning"
         }
     }
 }

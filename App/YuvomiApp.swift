@@ -316,6 +316,7 @@ final class AppModel {
         let model = TaskListModel(
             tasks: tasks,
             writer: tasks,
+            editor: tasks,
             permissions: YuvomiMemberPermissions(server: session.server, credential: session.credential),
             today: { CalendarDay(Date.now) },
             onUnauthorized: { [weak self] in self?.session.handle(.unauthorized, from: session) },

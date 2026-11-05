@@ -1,0 +1,328 @@
+import Foundation
+import Testing
+import YuvomiCore
+@testable import TasksFeature
+
+/// Seam 4: das Formular fürs Anlegen (F2). Sichern, Schlüssel, Fehler nach Q13 und Q14.
+@MainActor @Suite struct TaskFormModelTests {
+    let editor = FakeEditor()
+    let today = CalendarDay(year: 2026, month: 11, day: 5)
+    /// 2026-11-05 14:20 in Berlin (13:20 UTC).
+    let now = Date(timeIntervalSince1970: 1_793_836_800 + 13 * 3600 + 20 * 60)
+    let berlin = TimeZone(identifier: "Europe/Berlin")!
+
+    final class Log {
+        var outcomes: [TaskFormModel.Outcome] = []
+        var unauthorized = 0
+        var keys = 0
+    }
+
+    func form(_ log: Log = Log()) -> TaskFormModel {
+        TaskFormModel(
+            editor: editor, now: { now }, timeZone: berlin,
+            makeKey: { log.keys += 1; return "key-\(log.keys)" },
+            onUnauthorized: { log.unauthorized += 1 },
+            onFinished: { log.outcomes.append($0) }
+        )
+    }
+
+    @Test func saveNeedsATitle() {
+        let form = form()
+        #expect(!form.canSave)
+
+        form.draft.title = "  "
+        #expect(!form.canSave)
+
+        form.draft.title = "Water the plants"
+        #expect(form.canSave)
+        #expect(form.hasChanges)
+    }
+
+    @Test func titleTooLongBlocksSaving() {
+        let form = form()
+        form.draft.title = String(repeating: "a", count: 201)
+        #expect(!form.canSave)
+        #expect(form.draft.problems == [.titleTooLong])
+    }
+
+    @Test func savingCreatesAndFinishes() async {
+        let log = Log()
+        let form = form(log)
+        form.draft.title = "Water the plants"
+
+        await form.save()
+
+        let sent = editor.creates.withLock { $0 }
+        #expect(sent.count == 1)
+        #expect(sent.first?.draft.title == "Water the plants")
+        #expect(sent.first?.parent == nil)
+        #expect(sent.first?.key == "key-1")
+        #expect(log.outcomes == [.saved])
+        #expect(form.notice == nil)
+    }
+
+    /// Q4, Q14: Ohne Antwort bleibt das Formular mit den Eingaben offen. Der zweite Versuch
+    /// schickt denselben Schlüssel, so legt der Server nicht doppelt an.
+    @Test func aFailureKeepsInputsAndKey() async {
+        let log = Log()
+        let form = form(log)
+        form.draft.title = "Water the plants"
+        editor.created.withLock { $0 = .failure(.unreachable) }
+
+        await form.save()
+
+        #expect(form.notice == .unreachable)
+        #expect(form.draft.title == "Water the plants")
+        #expect(log.outcomes.isEmpty)
+
+        editor.created.withLock { $0 = .success(TaskSummary(id: 27, title: "Water the plants", status: .open, priority: .none, due: nil, dueTime: nil, assignees: [])) }
+        await form.save()
+
+        #expect(editor.creates.withLock { $0.map(\.key) } == ["key-1", "key-1"])
+        #expect(log.outcomes == [.saved])
+    }
+
+    /// Ändert die Person nach einem Fehler etwas, ist es eine andere Anfrage: Mit dem alten
+    /// Schlüssel antwortete der Server 24 Stunden lang mit 409.
+    @Test func aChangedDraftAfterAFailureGetsANewKey() async {
+        let form = form()
+        form.draft.title = "Water the plants"
+        editor.created.withLock { $0 = .failure(.unreachable) }
+        await form.save()
+
+        form.draft.title = "Water all the plants"
+        await form.save()
+
+        #expect(editor.creates.withLock { $0.map(\.key) } == ["key-1", "key-2"])
+    }
+
+    /// Nur Leerzeichen am Rand ändern den Body nicht: derselbe Schlüssel.
+    @Test func whitespaceOnlyEditsKeepTheKey() async {
+        let form = form()
+        form.draft.title = "Water the plants"
+        editor.created.withLock { $0 = .failure(.unreachable) }
+        await form.save()
+
+        form.draft.title = "Water the plants "
+        await form.save()
+
+        #expect(editor.creates.withLock { $0.map(\.key) } == ["key-1", "key-1"])
+    }
+
+    @Test(arguments: [
+        (APIError.conflict, TaskNotice.stillRunning),
+        (.unexpectedResponse, .unexpectedResponse),
+        (.unreachable, .unreachable),
+    ])
+    func failuresStayInTheForm(error: APIError, notice: TaskNotice) async {
+        let log = Log()
+        let form = form(log)
+        form.draft.title = "Call"
+        editor.created.withLock { $0 = .failure(error) }
+
+        await form.save()
+
+        #expect(form.notice == notice)
+        #expect(log.outcomes.isEmpty)
+        #expect(form.canSave)
+    }
+
+    /// Q13: 403 ohne Sperre heißt Nur-lesen. Das Formular geht zu, die Liste schaltet um.
+    @Test func forbiddenFinishesReadOnly() async {
+        let log = Log()
+        let form = form(log)
+        form.draft.title = "Call"
+        editor.created.withLock { $0 = .failure(.forbidden) }
+
+        await form.save()
+
+        #expect(log.outcomes == [.readOnly])
+    }
+
+    @Test func unauthorizedSignsOut() async {
+        let log = Log()
+        let form = form(log)
+        form.draft.title = "Call"
+        editor.created.withLock { $0 = .failure(.unauthorized) }
+
+        await form.save()
+
+        #expect(log.unauthorized == 1)
+        #expect(log.outcomes.isEmpty)
+    }
+
+    /// Während die Anfrage läuft, ist „Sichern“ aus. Ein zweiter Tipp legt nicht doppelt an.
+    @Test func savingTwiceSendsOnce() async {
+        let form = form()
+        form.draft.title = "Call"
+        editor.gate.close()
+
+        let first = Task { await form.save() }
+        await editor.gate.untilWaiting()
+        #expect(form.isSaving)
+        #expect(!form.canSave)
+        await form.save()
+        editor.gate.open()
+        await first.value
+
+        #expect(editor.creates.withLock { $0.count } == 1)
+        #expect(!form.isSaving)
+    }
+
+    @Test func optionsOfferPeopleAndCategories() async {
+        let form = form()
+        await form.loadOptions()
+
+        #expect(form.options == FakeEditor.household)
+        #expect(form.showsAssignees)
+    }
+
+    /// Q10: Bei einer Person allein gibt es nichts zuzuweisen.
+    @Test func aSinglePersonHouseholdHidesAssignees() async {
+        editor.options.withLock { $0 = .success(TaskOptions(people: [TaskOptions.Person(id: 1, name: "Alex")], categories: [])) }
+        let form = form()
+        await form.loadOptions()
+
+        #expect(!form.showsAssignees)
+    }
+
+    /// Ohne Optionen bleibt das Formular nutzbar: Titel und der Rest gehen auch so.
+    @Test func optionsFailingLeavesTheFormUsable() async {
+        editor.options.withLock { $0 = .failure(.unreachable) }
+        let form = form()
+        await form.loadOptions()
+
+        #expect(form.options == nil)
+        #expect(!form.showsAssignees)
+    }
+
+    @Test func optionsForbiddenFinishesReadOnly() async {
+        let log = Log()
+        editor.options.withLock { $0 = .failure(.forbidden) }
+        let form = form(log)
+        await form.loadOptions()
+
+        #expect(log.outcomes == [.readOnly])
+    }
+
+    /// Q17: Das Datum beginnt heute, die Uhrzeit zur nächsten vollen Stunde.
+    @Test func dateAndTimeSwitches() {
+        let form = form()
+
+        form.hasDue = true
+        #expect(form.draft.due == today)
+        #expect(!form.hasTime)
+
+        form.hasTime = true
+        #expect(form.draft.dueTime == "15:00")
+
+        form.hasDue = false
+        #expect(form.draft.due == nil)
+        #expect(form.draft.dueTime == nil)
+        #expect(!form.hasTime)
+    }
+
+    /// Nach 23 Uhr gibt es keine nächste Stunde mehr am selben Tag.
+    @Test func lateTimeStaysOnTheDay() {
+        // 23:10 in Berlin.
+        let late = now.addingTimeInterval(8 * 3600 + 50 * 60)
+        let form = TaskFormModel(editor: editor, now: { late }, timeZone: berlin, onUnauthorized: {}, onFinished: { _ in })
+
+        form.hasDue = true
+        form.hasTime = true
+
+        #expect(form.draft.dueTime == "23:59")
+    }
+
+    /// Q10: Die zuerst gewählte Person ist hauptverantwortlich.
+    @Test func assigneesKeepTheOrderOfChoosing() {
+        let form = form()
+
+        form.toggleAssignee(3)
+        form.toggleAssignee(1)
+        #expect(form.draft.assigneeIDs == [3, 1])
+
+        form.toggleAssignee(3)
+        #expect(form.draft.assigneeIDs == [1])
+    }
+
+    /// Q18: Ab 4500 Zeichen ein Zähler.
+    @Test func descriptionCounterFrom4500() {
+        let form = form()
+        form.draft.description = String(repeating: "a", count: 4499)
+        #expect(form.descriptionCount == nil)
+
+        form.draft.description = String(repeating: "a", count: 4500)
+        #expect(form.descriptionCount == 4500)
+    }
+}
+
+/// Seam 4: „+“ in der Liste (F2).
+@MainActor @Suite struct TaskListCreatingTests {
+    let editor = FakeEditor()
+    let reading = FakeTasks(.success([task(1)]))
+
+    func list(permissions: FakePermissions = FakePermissions(), onStatusChanged: @escaping @MainActor () -> Void = {}) async -> TaskListModel {
+        let list = TaskListModel(
+            tasks: reading, writer: FakeWriter(), editor: editor, permissions: permissions,
+            today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {}, onStatusChanged: onStatusChanged
+        )
+        await list.load()
+        return list
+    }
+
+    @Test func plusOpensAnEmptyForm() async {
+        let list = await list()
+
+        list.startCreating()
+
+        #expect(list.form?.draft == TaskDraft())
+    }
+
+    /// Q7: Bei Nur-lesen gibt es kein „+“.
+    @Test func readOnlyHasNoForm() async {
+        let list = await list(permissions: FakePermissions(result: .success(false)))
+
+        list.startCreating()
+
+        #expect(list.form == nil)
+    }
+
+    /// Q11: Sheet zu, Liste lädt neu, die Erinnerungen gleichen ab.
+    @Test func savingClosesAndReloads() async {
+        var changed = 0
+        let list = await list(onStatusChanged: { changed += 1 })
+        list.startCreating()
+        list.form?.draft.title = "Water the plants"
+        reading.result = .success([task(1), task(27)])
+
+        await list.form?.save()
+
+        #expect(list.form == nil)
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1), task(27)])]))
+        #expect(changed == 1)
+    }
+
+    @Test func forbiddenSwitchesToReadOnly() async {
+        let list = await list()
+        list.startCreating()
+        list.form?.draft.title = "Call"
+        editor.created.withLock { $0 = .failure(.forbidden) }
+
+        await list.form?.save()
+
+        #expect(list.form == nil)
+        #expect(!list.canWrite)
+        #expect(list.notice == .readOnly)
+    }
+
+    @Test func cancelClosesWithoutSending() async {
+        let list = await list()
+        list.startCreating()
+        list.form?.draft.title = "Call"
+
+        list.form = nil
+
+        #expect(editor.creates.withLock { $0.isEmpty })
+    }
+}
