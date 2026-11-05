@@ -116,6 +116,15 @@ final class FirstTime: @unchecked Sendable {
         for _ in 0..<10 { await Task.yield() }
     }
 
+    /// Bis `condition` gilt, höchstens aber für `limit` Runden: Danach prüft der Test und scheitert.
+    func until(limit: Int = 10_000, _ condition: () -> Bool) async {
+        var round = 0
+        while !condition(), round < limit {
+            await Task.yield()
+            round += 1
+        }
+    }
+
     // MARK: Abhaken und Verwerfen
 
     @Test func checkingOffSetsTheTaskDoneThenDismissesAndClearsTheWholeTask() async {
@@ -341,10 +350,10 @@ final class FirstTime: @unchecked Sendable {
         await scheduler.plan([planned(3, .task, 101)])
         let reminders = coordinator()
         let sync = Task { await reminders.sync(session) }
-        await settle()
+        await gate.untilWaiting()
 
         let answer = Task { await reminders.reply(reply(.checkOff), session: session) }
-        await settle()
+        await until { scheduler.planned.isEmpty }
         #expect(scheduler.planned.isEmpty)
 
         gate.open()
@@ -359,10 +368,11 @@ final class FirstTime: @unchecked Sendable {
         var announced: [ReminderReply] = []
         let reminders = coordinator(onNotCheckedOff: { announced.append($0) })
         let sending = Task { await reminders.reply(reply(.checkOff), session: session) }
-        await settle()
+        await gate.untilWaiting()
 
         let signOut = Task { await reminders.clear() }
-        await settle()
+        // clear() leert die Warteschlange, bevor es wartet: Daran ist zu sehen, dass es lief.
+        await until { queue.replies.isEmpty }
         gate.open()
         _ = await (sending.value, signOut.value)
 
@@ -377,10 +387,11 @@ final class FirstTime: @unchecked Sendable {
         writer.whileSending = { await gate.wait() }
         let reminders = coordinator()
         let sending = Task { await reminders.reply(reply(.checkOff), session: session) }
-        await settle()
+        await gate.untilWaiting()
 
         let signOut = Task { await reminders.clear() }
-        await settle()
+        // clear() leert die Warteschlange, bevor es wartet: Daran ist zu sehen, dass es lief.
+        await until { queue.replies.isEmpty }
         gate.open()
         _ = await (sending.value, signOut.value)
         await reminders.sync(session)
@@ -402,9 +413,10 @@ final class FirstTime: @unchecked Sendable {
         let reminders = coordinator(makeWriter: { $0 == accountA ? writerA : writerB })
 
         let first = Task { await reminders.reply(reply(.dismiss, reminder: 1), session: accountA) }
-        await settle()
+        await gate.untilWaiting()
         let signOut = Task { await reminders.clear() }
-        await settle()
+        // clear() leert die Warteschlange, bevor es wartet: Daran ist zu sehen, dass es lief.
+        await until { queue.replies.isEmpty }
         let second = Task { await reminders.reply(reply(.dismiss, reminder: 2), session: accountB) }
         await settle()
         gate.open()
@@ -429,9 +441,9 @@ final class FirstTime: @unchecked Sendable {
         await scheduler.plan([planned(1, .task, 101)])
         let reminders = coordinator()
         let syncA = Task { await reminders.sync(session) }
-        await settle()
+        await fetch.untilWaiting()
         let replyA = Task { await reminders.reply(reply(.checkOff), session: session) }
-        await settle()
+        await removal.untilWaiting()
 
         let signOut = Task { await reminders.clear() }
         fetch.open()
@@ -466,7 +478,7 @@ final class FirstTime: @unchecked Sendable {
         writer.whileSending = { await gate.wait() }
         let reminders = coordinator()
         let sending = Task { await reminders.reply(reply(.checkOff), session: session) }
-        await settle()
+        await gate.untilWaiting()
 
         reminders.cancelRunning()
         gate.open()
@@ -485,7 +497,7 @@ final class FirstTime: @unchecked Sendable {
         source.result = .success([UpcomingReminder(id: 3, origin: .task, entityID: 101, title: "Strom zahlen", firesAt: now.addingTimeInterval(3600))])
         let reminders = coordinator()
         let sync = Task { await reminders.sync(session) }
-        await settle()
+        await gate.untilWaiting()
 
         let answer = Task { await reminders.reply(reply(.checkOff), session: session) }
         await settle()

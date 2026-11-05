@@ -18,11 +18,26 @@ final class FakeUpcomingReminders: UpcomingReminders, @unchecked Sendable {
 
 /// Port-Fake: die geplanten Mitteilungen auf dem Gerät, samt fremder.
 final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
-    var planned: [String: PlannedNotification] = [:]
+    /// Hinter einem Lock: Der Test liest, während der Abgleich auf einem anderen Thread schreibt (#30).
+    private let lock = NSLock()
+    private var _planned: [String: PlannedNotification] = [:]
+    private var _foreign: Set<String> = []
+    private var _delivered: Set<String> = []
+
+    var planned: [String: PlannedNotification] {
+        get { lock.withLock { _planned } }
+        set { lock.withLock { _planned = newValue } }
+    }
     /// Kennungen anderer Herkunft, die der Abgleich nicht anfassen darf.
-    var foreign: Set<String> = []
+    var foreign: Set<String> {
+        get { lock.withLock { _foreign } }
+        set { lock.withLock { _foreign = newValue } }
+    }
     /// Schon zugestellt, in der Mitteilungszentrale.
-    var delivered: Set<String> = []
+    var delivered: Set<String> {
+        get { lock.withLock { _delivered } }
+        set { lock.withLock { _delivered = newValue } }
+    }
     /// Läuft, während der Abgleich die geplanten Mitteilungen liest.
     var whilePending: () -> Void = {}
     /// Läuft, während iOS Mitteilungen entfernt.
@@ -36,12 +51,12 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
     func delivered() async -> Set<String> { delivered }
 
     func plan(_ notifications: [PlannedNotification]) async {
-        for notification in notifications { planned[notification.id] = notification }
+        lock.withLock { for notification in notifications { _planned[notification.id] = notification } }
     }
 
     func remove(_ ids: Set<String>) async {
         await whileRemoving?()
-        for id in ids { planned[id] = nil; foreign.remove(id); delivered.remove(id) }
+        lock.withLock { for id in ids { _planned[id] = nil; _foreign.remove(id); _delivered.remove(id) } }
     }
 }
 
