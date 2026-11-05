@@ -14,6 +14,9 @@ import YuvomiCore
 @MainActor @Observable
 final class StatusOverlay {
     private var pending: [Int: TaskStatus] = [:]
+    /// Aufgaben, deren Ankreuzen gerade läuft, aus welchem Detail auch immer. Jede Antwort ist die
+    /// ganze Beschreibung: Zwei auf einmal überschrieben sich (Issue #23).
+    private var ticking: Set<Int> = []
     @ObservationIgnored private var confirmed: [(seq: Int, id: Int, status: TaskStatus)] = []
     @ObservationIgnored private var seq = 0
 
@@ -28,6 +31,17 @@ final class StatusOverlay {
     var mark: Int { seq }
 
     func isWriting(_ id: Int) -> Bool { pending[id] != nil }
+
+    func isTicking(_ id: Int) -> Bool { ticking.contains(id) }
+
+    /// Beginnt ein Ankreuzen der Aufgabe. `false`, wenn schon eines läuft.
+    func beginTick(_ id: Int) -> Bool {
+        ticking.insert(id).inserted
+    }
+
+    func finishTick(_ id: Int) {
+        ticking.remove(id)
+    }
 
     func begin(_ id: Int, to target: TaskStatus) {
         pending[id] = target

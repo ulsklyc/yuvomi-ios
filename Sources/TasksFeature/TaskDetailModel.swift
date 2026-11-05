@@ -43,6 +43,9 @@ public final class TaskDetailModel {
     /// Punkte der Checkliste, deren Ankreuzen gerade läuft: Zeile → Zustand, den die Person
     /// gewählt hat. Die Ansicht zeigt ihn statt des gespeicherten, bis die Antwort da ist.
     public private(set) var ticking: [Int: Bool] = [:]
+    /// Die Checkliste ist gesperrt: Ein Ankreuzen der Aufgabe läuft, hier oder in einem früher
+    /// geöffneten Detail derselben Aufgabe (Issue #23).
+    public var isTickLocked: Bool { overlay.isTicking(taskID) }
     /// Die Beschreibung in Blöcken, einmal je neuem Text berechnet statt bei jedem Zeichnen.
     private(set) var blocks: [DescriptionBlock] = []
 
@@ -163,15 +166,21 @@ public final class TaskDetailModel {
     /// Einen Punkt der Checkliste umschalten. `expect` ist die Zeile aus dem zuletzt gesehenen
     /// Text, die Antwort ist die neue Beschreibung (Q12).
     ///
-    /// Immer nur ein Punkt auf einmal: Jede Antwort ist die ganze Beschreibung, eine ältere
-    /// Antwort überschriebe sonst einen später gesetzten Haken (Codex-Review E3).
+    /// Immer nur ein Punkt je Aufgabe auf einmal, auch über ein wieder geöffnetes Detail hinweg:
+    /// Jede Antwort ist die ganze Beschreibung, eine ältere Antwort überschriebe sonst einen später
+    /// gesetzten Haken (Codex-Review E3, Issue #23).
     public func tick(line: Int) async {
-        guard mayWrite(), ticking.isEmpty, let task = loaded,
+        guard mayWrite(), let task = loaded,
               let point = Checklist(description: task.description).items.first(where: { $0.index == line })
         else { return }
+        // Zuletzt: Ab hier gibt das defer die Sperre wieder frei.
+        guard overlay.beginTick(taskID) else { return }
         notice = nil
         ticking[line] = !point.isChecked
-        defer { ticking[line] = nil }
+        defer {
+            ticking[line] = nil
+            overlay.finishTick(taskID)
+        }
         do throws(APIError) {
             let description = try await writer.tick(task: taskID, line: line, checked: !point.isChecked, expect: point.raw)
             tickCount += 1
