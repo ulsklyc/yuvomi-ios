@@ -79,6 +79,15 @@ let packing = TaskDetail(
         #expect(detail.refreshProblem == .unreachable)
     }
 
+    /// Zurück zur Liste, bevor die Antwort da ist: Der Abbruch ist kein Verbindungsfehler.
+    @Test func aCancelledLoadIsNoProblem() async {
+        let detail = model(FakeDetail(.failure(.unreachable)))
+        let loading = Task { await detail.load() }
+        loading.cancel()
+        await loading.value
+        #expect(detail.state == .loading)
+    }
+
     /// Weg ist weg, auch wenn vorher etwas zu sehen war: Die Aufgabe gibt es nicht mehr.
     @Test func aTaskDeletedWhileOpenIsGone() async {
         let reading = FakeDetail(.success(packing))
@@ -104,6 +113,30 @@ let packing = TaskDetail(
         #expect(first === again)
         #expect(first.taskID == 24)
         #expect(list.detail(for: 25) !== first)
+    }
+
+    /// Zwei Ziele im Stapel, etwa eine Mitteilung über einem offenen Detail: Jedes behält sein Modell.
+    @Test func twoOpenTasksKeepTheirDetails() async {
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+
+        list.path = [24, 31]
+        let first = list.detail(for: 24)
+        let second = list.detail(for: 31)
+
+        #expect(list.detail(for: 24) === first)
+        #expect(list.detail(for: 31) === second)
+    }
+
+    /// Zurück auf der Liste: Die Modelle der geschlossenen Aufgaben fallen weg.
+    @Test func closingATaskDropsItsDetail() async {
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        list.path = [24]
+        let first = list.detail(for: 24)
+
+        list.path = []
+        list.path = [24]
+
+        #expect(list.detail(for: 24) !== first)
     }
 }
 

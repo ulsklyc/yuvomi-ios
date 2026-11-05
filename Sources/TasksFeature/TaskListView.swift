@@ -123,11 +123,18 @@ struct TaskRow: View {
     private var detail: String? {
         var parts: [String] = []
         if showsDate, let date = task.due?.start() {
-            parts.append(date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+            parts.append(date.taskDayText)
         }
         if let time = task.dueTime { parts.append(time) }
         if !task.assignees.isEmpty { parts.append(task.assignees.formatted(.list(type: .and))) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+}
+
+extension Date {
+    /// Der Tag einer Aufgabe, etwa „Fr., 6. Nov.“: gleich in Zeile und Detail.
+    var taskDayText: String {
+        formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
     }
 }
 

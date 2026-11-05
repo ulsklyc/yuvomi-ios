@@ -36,6 +36,8 @@ public final class TaskDetailModel {
     public func load() async {
         generation += 1
         let mine = generation
+        // Nach einem Fehler zeigt „Erneut versuchen“ wieder den Ladekreis.
+        if case .failed = state { state = .loading }
         do throws(APIError) {
             let task = try await tasks.task(id: taskID)
             guard mine == generation else { return }
@@ -47,7 +49,8 @@ public final class TaskDetailModel {
             guard mine == generation else { return }
             state = .gone
         } catch {
-            guard mine == generation else { return }
+            // Abgebrochen, etwa weil das Detail zu ist: kein Fehler, der nächste Aufruf lädt neu.
+            guard mine == generation, !Task.isCancelled else { return }
             let problem: Problem = error == .unreachable ? .unreachable : .unexpectedResponse
             if case .loaded = state {
                 refreshProblem = problem

@@ -163,7 +163,7 @@ struct TaskFacts: View {
 
     var body: some View {
         let priority = task.priority.label
-        let start = task.start?.start().map { $0.formatted(date: .abbreviated, time: .omitted) }
+        let start = task.start?.start().map(\.taskDayText)
         if priority != nil || start != nil || task.isRecurring || !task.tags.isEmpty || task.points > 0 || task.isLocked {
             Section {
                 if let priority {
@@ -195,7 +195,7 @@ extension TaskDetail {
     /// Datum und Uhrzeit der Fälligkeit, wie die Zeile der Liste sie schreibt.
     var dueText: String? {
         guard let date = due?.start() else { return nil }
-        let day = date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+        let day = date.taskDayText
         return dueTime.map { "\(day), \($0)" } ?? day
     }
 }

@@ -32,9 +32,12 @@ public final class TaskListModel {
 
     /// Der Pfad der Navigation: die geöffnete Aufgabe, leer auf der Liste. Auch eine Mitteilung
     /// setzt ihn (Q8). Wie ein Router-Stack in einer Web-App, nur als Array von Ids.
-    public var path: [Int] = []
-    /// Das Detail der zuletzt geöffneten Aufgabe. Ein Wechsel der Aufgabe baut ein neues.
-    private var openedDetail: TaskDetailModel?
+    public var path: [Int] = [] {
+        didSet { details = details.filter { path.contains($0.key) } }
+    }
+    /// Je Aufgabe im Pfad ihr Detail. Wie ein Cache neben dem Router: nicht beobachtet, denn
+    /// SwiftUI füllt ihn beim Zeichnen des Ziels.
+    @ObservationIgnored private var details: [Int: TaskDetailModel] = [:]
 
     /// Zählt die Ladevorgänge. Nur die Antwort des jüngsten zählt: Eine ältere, die später
     /// ankommt, zeigte sonst etwa eine gerade abgehakte Aufgabe wieder offen.
@@ -74,13 +77,12 @@ public final class TaskListModel {
         }
     }
 
-    /// Das Detail zu einer Aufgabe. Dieselbe Aufgabe behält ihr Modell, solange keine andere
-    /// geöffnet wird: SwiftUI fragt beim Neuzeichnen erneut, und das Detail soll nicht jedes Mal
-    /// neu laden.
+    /// Das Detail zu einer Aufgabe. Solange sie im Pfad steht, behält sie ihr Modell: SwiftUI
+    /// fragt beim Neuzeichnen erneut, und das Detail soll nicht jedes Mal neu laden.
     public func detail(for id: Int) -> TaskDetailModel {
-        if let openedDetail, openedDetail.taskID == id { return openedDetail }
+        if let model = details[id] { return model }
         let model = TaskDetailModel(taskID: id, tasks: tasks, onUnauthorized: onUnauthorized)
-        openedDetail = model
+        details[id] = model
         return model
     }
 
