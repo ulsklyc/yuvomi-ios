@@ -359,6 +359,23 @@ import YuvomiCore
         #expect(second.state == .loaded(packing))
     }
 
+    /// Ein 404 auf das Abhaken aus der Liste schließt auch ein offenes Detail (Codex-Review E3).
+    @Test func aListWriteThatIsGoneClosesTheOpenDetail() async {
+        let list = await loadedList([task(24), task(2)])
+        writer.status.withLock { $0 = .failure(.notFound) }
+        writer.hold()
+        let checking = Task { await list.toggle(24) }
+        await writer.untilWaiting()
+        list.path = [24]
+        await list.detail(for: 24).load()
+
+        writer.release()
+        await checking.value
+
+        #expect(list.path.isEmpty)
+        #expect(list.notice == .gone)
+    }
+
     @Test func aForbiddenDetailMakesTheListReadOnly() async {
         let list = await loadedList([task(24)])
         list.path = [24]

@@ -141,8 +141,8 @@ public final class TaskListModel {
         } catch .unauthorized {
             onUnauthorized()
         } catch .notFound {
-            remove(id)
-            notice = .gone
+            // Wie aus dem Detail: Ein offenes Detail der Aufgabe geht mit zu (Codex-Review E3).
+            close(id)
         } catch {
             rollBack(id, to: before.status)
             if error == .forbidden { canWrite = false }
