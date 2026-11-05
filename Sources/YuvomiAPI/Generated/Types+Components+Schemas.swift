@@ -3070,6 +3070,18 @@ extension Components {
             internal var assignedColor: Swift.String?
             /// - Remark: Generated from `#/components/schemas/DashboardTask/assigned_users`.
             internal var assignedUsers: [Components.Schemas.AssignedPerson]
+            /// Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DashboardTask/rotation_mode`.
+            internal var rotationMode: Swift.String?
+            /// Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DashboardTask/rotation_last_user`.
+            internal var rotationLastUser: Swift.Int?
+            /// The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DashboardTask/rotation_last_position`.
+            internal var rotationLastPosition: Swift.Int?
             /// Creates a new `DashboardTask`.
             ///
             /// - Parameters:
@@ -3110,6 +3122,9 @@ extension Components {
             ///   - assignedName: Name of `assigned_to`.
             ///   - assignedColor: Colour of `assigned_to`.
             ///   - assignedUsers:
+            ///   - rotationMode: Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///   - rotationLastUser: Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///   - rotationLastPosition: The pointer: the pool position that received the last occurrence, null before the first hand-over.
             internal init(
                 id: Swift.Int,
                 title: Swift.String,
@@ -3147,7 +3162,10 @@ extension Components {
                 seenOnServer: Swift.Int? = nil,
                 assignedName: Swift.String? = nil,
                 assignedColor: Swift.String? = nil,
-                assignedUsers: [Components.Schemas.AssignedPerson]
+                assignedUsers: [Components.Schemas.AssignedPerson],
+                rotationMode: Swift.String? = nil,
+                rotationLastUser: Swift.Int? = nil,
+                rotationLastPosition: Swift.Int? = nil
             ) {
                 self.id = id
                 self.title = title
@@ -3186,6 +3204,9 @@ extension Components {
                 self.assignedName = assignedName
                 self.assignedColor = assignedColor
                 self.assignedUsers = assignedUsers
+                self.rotationMode = rotationMode
+                self.rotationLastUser = rotationLastUser
+                self.rotationLastPosition = rotationLastPosition
             }
             internal enum CodingKeys: String, CodingKey {
                 case id
@@ -3225,6 +3246,9 @@ extension Components {
                 case assignedName = "assigned_name"
                 case assignedColor = "assigned_color"
                 case assignedUsers = "assigned_users"
+                case rotationMode = "rotation_mode"
+                case rotationLastUser = "rotation_last_user"
+                case rotationLastPosition = "rotation_last_position"
             }
         }
         /// - Remark: Generated from `#/components/schemas/DashboardUser`.
@@ -5125,6 +5149,26 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Task/tags`.
             internal var tags: [Swift.String]
+            /// Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Task/rotation_mode`.
+            internal var rotationMode: Swift.String?
+            /// Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Task/rotation_last_user`.
+            internal var rotationLastUser: Swift.Int?
+            /// The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Task/rotation_last_position`.
+            internal var rotationLastPosition: Swift.Int?
+            /// Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Task/rotation_pool`.
+            internal var rotationPool: [Swift.Int]?
+            /// The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Task/rotation_next_user`.
+            internal var rotationNextUser: Swift.Int?
             /// Creates a new `Task`.
             ///
             /// - Parameters:
@@ -5167,6 +5211,11 @@ extension Components {
             ///   - assignedAvatar: Picture of `assigned_to`. A cookie session gets a path (`/api/v1/people/{id}/avatar?v=...`), an API token or a device credential a data URL. Null without a picture.
             ///   - assignedUsers:
             ///   - tags: Free-form labels, distinct from the single `category`.
+            ///   - rotationMode: Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///   - rotationLastUser: Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///   - rotationLastPosition: The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///   - rotationPool: Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///   - rotationNextUser: The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
             internal init(
                 id: Swift.Int,
                 title: Swift.String,
@@ -5206,7 +5255,12 @@ extension Components {
                 assignedColor: Swift.String? = nil,
                 assignedAvatar: Swift.String? = nil,
                 assignedUsers: [Components.Schemas.AssignedPerson],
-                tags: [Swift.String]
+                tags: [Swift.String],
+                rotationMode: Swift.String? = nil,
+                rotationLastUser: Swift.Int? = nil,
+                rotationLastPosition: Swift.Int? = nil,
+                rotationPool: [Swift.Int]? = nil,
+                rotationNextUser: Swift.Int? = nil
             ) {
                 self.id = id
                 self.title = title
@@ -5247,6 +5301,11 @@ extension Components {
                 self.assignedAvatar = assignedAvatar
                 self.assignedUsers = assignedUsers
                 self.tags = tags
+                self.rotationMode = rotationMode
+                self.rotationLastUser = rotationLastUser
+                self.rotationLastPosition = rotationLastPosition
+                self.rotationPool = rotationPool
+                self.rotationNextUser = rotationNextUser
             }
             internal enum CodingKeys: String, CodingKey {
                 case id
@@ -5288,6 +5347,11 @@ extension Components {
                 case assignedAvatar = "assigned_avatar"
                 case assignedUsers = "assigned_users"
                 case tags
+                case rotationMode = "rotation_mode"
+                case rotationLastUser = "rotation_last_user"
+                case rotationLastPosition = "rotation_last_position"
+                case rotationPool = "rotation_pool"
+                case rotationNextUser = "rotation_next_user"
             }
         }
         /// A task category. A built-in one has `label_key` and no `name`; one the household created or renamed has `name` and no `label_key`.
@@ -5540,6 +5604,26 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/tags`.
             internal var tags: [Swift.String]
+            /// Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskDetail/rotation_mode`.
+            internal var rotationMode: Swift.String?
+            /// Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskDetail/rotation_last_user`.
+            internal var rotationLastUser: Swift.Int?
+            /// The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskDetail/rotation_last_position`.
+            internal var rotationLastPosition: Swift.Int?
+            /// Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskDetail/rotation_pool`.
+            internal var rotationPool: [Swift.Int]?
+            /// The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskDetail/rotation_next_user`.
+            internal var rotationNextUser: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/TaskDetail/subtasks`.
             internal var subtasks: [Components.Schemas.Task]
             /// Linked documents the caller may see. Null without access to the Documents module: not told, which is not the same as 0.
@@ -5592,6 +5676,11 @@ extension Components {
             ///   - assignedAvatar: Picture of `assigned_to`. A cookie session gets a path (`/api/v1/people/{id}/avatar?v=...`), an API token or a device credential a data URL. Null without a picture.
             ///   - assignedUsers:
             ///   - tags: Free-form labels, distinct from the single `category`.
+            ///   - rotationMode: Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///   - rotationLastUser: Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///   - rotationLastPosition: The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///   - rotationPool: Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///   - rotationNextUser: The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
             ///   - subtasks:
             ///   - documentCount: Linked documents the caller may see. Null without access to the Documents module: not told, which is not the same as 0.
             ///   - documents: Null without access to the Documents module: not told, which is not the same as an empty list.
@@ -5635,6 +5724,11 @@ extension Components {
                 assignedAvatar: Swift.String? = nil,
                 assignedUsers: [Components.Schemas.AssignedPerson],
                 tags: [Swift.String],
+                rotationMode: Swift.String? = nil,
+                rotationLastUser: Swift.Int? = nil,
+                rotationLastPosition: Swift.Int? = nil,
+                rotationPool: [Swift.Int]? = nil,
+                rotationNextUser: Swift.Int? = nil,
                 subtasks: [Components.Schemas.Task],
                 documentCount: Swift.Int? = nil,
                 documents: [Components.Schemas.TaskLinkedDocument]? = nil
@@ -5678,6 +5772,11 @@ extension Components {
                 self.assignedAvatar = assignedAvatar
                 self.assignedUsers = assignedUsers
                 self.tags = tags
+                self.rotationMode = rotationMode
+                self.rotationLastUser = rotationLastUser
+                self.rotationLastPosition = rotationLastPosition
+                self.rotationPool = rotationPool
+                self.rotationNextUser = rotationNextUser
                 self.subtasks = subtasks
                 self.documentCount = documentCount
                 self.documents = documents
@@ -5722,6 +5821,11 @@ extension Components {
                 case assignedAvatar = "assigned_avatar"
                 case assignedUsers = "assigned_users"
                 case tags
+                case rotationMode = "rotation_mode"
+                case rotationLastUser = "rotation_last_user"
+                case rotationLastPosition = "rotation_last_position"
+                case rotationPool = "rotation_pool"
+                case rotationNextUser = "rotation_next_user"
                 case subtasks
                 case documentCount = "document_count"
                 case documents
@@ -5941,6 +6045,26 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/tags`.
             internal var tags: [Swift.String]
+            /// Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskListItem/rotation_mode`.
+            internal var rotationMode: Swift.String?
+            /// Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskListItem/rotation_last_user`.
+            internal var rotationLastUser: Swift.Int?
+            /// The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskListItem/rotation_last_position`.
+            internal var rotationLastPosition: Swift.Int?
+            /// Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskListItem/rotation_pool`.
+            internal var rotationPool: [Swift.Int]?
+            /// The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskListItem/rotation_next_user`.
+            internal var rotationNextUser: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/TaskListItem/subtask_total`.
             internal var subtaskTotal: Swift.Int
             /// - Remark: Generated from `#/components/schemas/TaskListItem/subtask_done`.
@@ -5993,6 +6117,11 @@ extension Components {
             ///   - assignedAvatar: Picture of `assigned_to`. A cookie session gets a path (`/api/v1/people/{id}/avatar?v=...`), an API token or a device credential a data URL. Null without a picture.
             ///   - assignedUsers:
             ///   - tags: Free-form labels, distinct from the single `category`.
+            ///   - rotationMode: Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///   - rotationLastUser: Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///   - rotationLastPosition: The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///   - rotationPool: Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///   - rotationNextUser: The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
             ///   - subtaskTotal:
             ///   - subtaskDone:
             ///   - subtasks:
@@ -6037,6 +6166,11 @@ extension Components {
                 assignedAvatar: Swift.String? = nil,
                 assignedUsers: [Components.Schemas.AssignedPerson],
                 tags: [Swift.String],
+                rotationMode: Swift.String? = nil,
+                rotationLastUser: Swift.Int? = nil,
+                rotationLastPosition: Swift.Int? = nil,
+                rotationPool: [Swift.Int]? = nil,
+                rotationNextUser: Swift.Int? = nil,
                 subtaskTotal: Swift.Int,
                 subtaskDone: Swift.Int,
                 subtasks: [Components.Schemas.TaskSubtaskSummary],
@@ -6081,6 +6215,11 @@ extension Components {
                 self.assignedAvatar = assignedAvatar
                 self.assignedUsers = assignedUsers
                 self.tags = tags
+                self.rotationMode = rotationMode
+                self.rotationLastUser = rotationLastUser
+                self.rotationLastPosition = rotationLastPosition
+                self.rotationPool = rotationPool
+                self.rotationNextUser = rotationNextUser
                 self.subtaskTotal = subtaskTotal
                 self.subtaskDone = subtaskDone
                 self.subtasks = subtasks
@@ -6126,6 +6265,11 @@ extension Components {
                 case assignedAvatar = "assigned_avatar"
                 case assignedUsers = "assigned_users"
                 case tags
+                case rotationMode = "rotation_mode"
+                case rotationLastUser = "rotation_last_user"
+                case rotationLastPosition = "rotation_last_position"
+                case rotationPool = "rotation_pool"
+                case rotationNextUser = "rotation_next_user"
                 case subtaskTotal = "subtask_total"
                 case subtaskDone = "subtask_done"
                 case subtasks
@@ -6548,6 +6692,26 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/tags`.
             internal var tags: [Swift.String]
+            /// Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskUpdated/rotation_mode`.
+            internal var rotationMode: Swift.String?
+            /// Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskUpdated/rotation_last_user`.
+            internal var rotationLastUser: Swift.Int?
+            /// The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskUpdated/rotation_last_position`.
+            internal var rotationLastPosition: Swift.Int?
+            /// Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskUpdated/rotation_pool`.
+            internal var rotationPool: [Swift.Int]?
+            /// The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskUpdated/rotation_next_user`.
+            internal var rotationNextUser: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/subtasks`.
             internal var subtasks: [Components.Schemas.Task]
             /// `YYYY-MM-DD` of the next occurrence the caller can see when this call moved a recurring task into `done`, null in every other case.
@@ -6596,6 +6760,11 @@ extension Components {
             ///   - assignedAvatar: Picture of `assigned_to`. A cookie session gets a path (`/api/v1/people/{id}/avatar?v=...`), an API token or a device credential a data URL. Null without a picture.
             ///   - assignedUsers:
             ///   - tags: Free-form labels, distinct from the single `category`.
+            ///   - rotationMode: Rotation of a recurring series (#1763): `round_robin` hands every follow-up instance to the next member of `rotation_pool` in a fixed order, null without rotation.
+            ///   - rotationLastUser: Informational: the member the pointer names. The order reads `rotation_last_position`, never this field.
+            ///   - rotationLastPosition: The pointer: the pool position that received the last occurrence, null before the first hand-over.
+            ///   - rotationPool: Member ids in delivery order, deactivated members included, null when the task does not rotate.
+            ///   - rotationNextUser: The member the next occurrence goes to, by the same rule that hands it out; null when rotation is off or no member can take it.
             ///   - subtasks:
             ///   - nextDueDate: `YYYY-MM-DD` of the next occurrence the caller can see when this call moved a recurring task into `done`, null in every other case.
             internal init(
@@ -6638,6 +6807,11 @@ extension Components {
                 assignedAvatar: Swift.String? = nil,
                 assignedUsers: [Components.Schemas.AssignedPerson],
                 tags: [Swift.String],
+                rotationMode: Swift.String? = nil,
+                rotationLastUser: Swift.Int? = nil,
+                rotationLastPosition: Swift.Int? = nil,
+                rotationPool: [Swift.Int]? = nil,
+                rotationNextUser: Swift.Int? = nil,
                 subtasks: [Components.Schemas.Task],
                 nextDueDate: Swift.String? = nil
             ) {
@@ -6680,6 +6854,11 @@ extension Components {
                 self.assignedAvatar = assignedAvatar
                 self.assignedUsers = assignedUsers
                 self.tags = tags
+                self.rotationMode = rotationMode
+                self.rotationLastUser = rotationLastUser
+                self.rotationLastPosition = rotationLastPosition
+                self.rotationPool = rotationPool
+                self.rotationNextUser = rotationNextUser
                 self.subtasks = subtasks
                 self.nextDueDate = nextDueDate
             }
@@ -6723,6 +6902,11 @@ extension Components {
                 case assignedAvatar = "assigned_avatar"
                 case assignedUsers = "assigned_users"
                 case tags
+                case rotationMode = "rotation_mode"
+                case rotationLastUser = "rotation_last_user"
+                case rotationLastPosition = "rotation_last_position"
+                case rotationPool = "rotation_pool"
+                case rotationNextUser = "rotation_next_user"
                 case subtasks
                 case nextDueDate = "next_due_date"
             }
