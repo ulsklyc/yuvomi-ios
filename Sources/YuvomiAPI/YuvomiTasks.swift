@@ -182,7 +182,8 @@ extension TaskSummary {
             priority: TaskPriority(server: item.priority),
             due: item.dueDate.flatMap(CalendarDay.init(iso:)),
             dueTime: item.dueTime,
-            assignees: (item.assignedUsers ?? []).map(\.displayName)
+            assignees: (item.assignedUsers ?? []).map(\.displayName),
+            subtasks: SubtaskProgress(done: item.subtaskDone, total: item.subtaskTotal)
         )
     }
 

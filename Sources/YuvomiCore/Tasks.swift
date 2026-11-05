@@ -71,10 +71,12 @@ public struct TaskSummary: Hashable, Sendable, Identifiable {
     public var dueTime: String?
     /// Anzeigenamen, die hauptverantwortliche Person zuerst.
     public var assignees: [String]
+    /// Wie viele Unteraufgaben erledigt sind, `nil` ohne Unteraufgaben.
+    public var subtasks: SubtaskProgress?
 
     public init(
         id: Int, title: String, status: TaskStatus, priority: TaskPriority,
-        due: CalendarDay?, dueTime: String?, assignees: [String]
+        due: CalendarDay?, dueTime: String?, assignees: [String], subtasks: SubtaskProgress? = nil
     ) {
         self.id = id
         self.title = title
@@ -83,6 +85,20 @@ public struct TaskSummary: Hashable, Sendable, Identifiable {
         self.due = due
         self.dueTime = dueTime
         self.assignees = assignees
+        self.subtasks = subtasks
+    }
+}
+
+/// „2 von 5 Unteraufgaben erledigt“, für die Zeile der Liste.
+public struct SubtaskProgress: Hashable, Sendable {
+    public var done: Int
+    public var total: Int
+
+    /// `nil` ohne Unteraufgaben, damit die Zeile kein „0/0“ zeigt.
+    public init?(done: Int, total: Int) {
+        guard total > 0 else { return nil }
+        self.done = min(max(done, 0), total)
+        self.total = total
     }
 }
 

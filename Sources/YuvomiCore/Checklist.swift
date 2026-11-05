@@ -25,6 +25,13 @@ public struct Checklist: Hashable, Sendable {
         public var isChecked: Bool
         public var text: String
         public var id: Int { index }
+
+        public init(index: Int, raw: String, isChecked: Bool, text: String) {
+            self.index = index
+            self.raw = raw
+            self.isChecked = isChecked
+            self.text = text
+        }
     }
 
     public struct Line: Hashable, Sendable {
