@@ -224,13 +224,10 @@ public struct Member: Hashable, Sendable {
     /// Darf die Person im Modul Aufgaben schreiben? Bei `read` zeigt die App keine Haken und
     /// kein Formular (Slice 5 Q4, Slice 6 Q7).
     public var mayWriteTasks: Bool
-    /// Bei einer Person allein blendet das Formular die Zuständigen aus (Q10).
-    public var householdSize: Int
 
-    public init(id: Int, mayWriteTasks: Bool, householdSize: Int) {
+    public init(id: Int, mayWriteTasks: Bool) {
         self.id = id
         self.mayWriteTasks = mayWriteTasks
-        self.householdSize = householdSize
     }
 }
 

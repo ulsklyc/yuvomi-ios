@@ -124,8 +124,7 @@ public struct YuvomiMemberPermissions: MemberPermissions {
             guard case .json(let me) = ok.body else { throw .unexpectedResponse }
             return Member(
                 id: me.user.id,
-                mayWriteTasks: me.permissions.modules.additionalProperties["tasks"] == "write",
-                householdSize: me.householdSize
+                mayWriteTasks: me.permissions.modules.additionalProperties["tasks"] == "write"
             )
         case .unauthorized: throw .unauthorized
         default: throw .unexpectedResponse

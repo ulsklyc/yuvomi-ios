@@ -88,7 +88,7 @@ struct FakePermissions: MemberPermissions {
     var result: Result<Bool, APIError> = .success(true)
 
     func member() async throws(APIError) -> Member {
-        Member(id: 1, mayWriteTasks: try result.get(), householdSize: 4)
+        Member(id: 1, mayWriteTasks: try result.get())
     }
 }
 

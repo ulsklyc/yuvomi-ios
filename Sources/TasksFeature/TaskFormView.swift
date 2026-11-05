@@ -40,7 +40,8 @@ struct TaskFormView: View {
 
     private var titleSection: some View {
         Section {
-            TextField(text: $model.draft.title, axis: .vertical) {
+            // Einzeilig: Mit `axis: .vertical` fügte die Return-Taste einen Umbruch in den Titel ein.
+            TextField(text: $model.draft.title) {
                 Text("tasks.form.title", bundle: .module)
             }
             .focused($titleFocused)

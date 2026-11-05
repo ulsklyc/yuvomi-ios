@@ -136,7 +136,7 @@ import YuvomiFixtures
     /// hat vier Mitglieder.
     @Test func membersWithWriteAccessMayWriteTasks() async throws {
         let permissions = YuvomiMemberPermissions(server: server, credential: "c", transport: FixtureTransport())
-        #expect(try await permissions.member() == Member(id: 1, mayWriteTasks: true, householdSize: 4))
+        #expect(try await permissions.member() == Member(id: 1, mayWriteTasks: true))
     }
 
     @Test(arguments: ["read", "none", "something-new"])
