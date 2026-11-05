@@ -142,6 +142,35 @@ let packing = TaskDetail(
 
         #expect(list.detail(for: 24) !== first)
     }
+
+    /// Eine Mitteilung legt ihre Aufgabe allein über die Liste, was vorher offen war, schließt (Q8).
+    @Test func aNotificationOpensItsTaskOverTheList() async {
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        list.path = [24, 31]
+
+        await list.open(12)
+
+        #expect(list.path == [12])
+    }
+
+    /// Ist die Aufgabe der Mitteilung schon offen, lädt ihr Detail neu: Sein Stand kann älter
+    /// sein als die Mitteilung (Review E4).
+    @Test func aNotificationForTheOpenTaskReloadsIt() async {
+        let reading = FakeDetail(.success(packing))
+        let list = TaskListModel(tasks: reading, writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        var done = packing
+        done.status = .done
+        reading.result.withLock { $0 = .success(done) }
+
+        await list.open(24)
+
+        #expect(list.path == [24])
+        #expect(list.detail(for: 24) === detail)
+        #expect(detail.state == .loaded(done))
+    }
 }
 
 /// Die Beschreibung in Blöcken: Text zusammen, jeder Punkt der Checkliste für sich.

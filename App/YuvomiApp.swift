@@ -102,7 +102,7 @@ final class AppModel {
             scheduler: SystemNotificationScheduler(),
             queue: replies,
             onUnauthorized: { session.handle(.unauthorized, from: $0) },
-            onNotCheckedOff: { await SystemNotificationScheduler().announceNotCheckedOff(title: $0.title) }
+            onNotCheckedOff: { await SystemNotificationScheduler().announceNotCheckedOff(title: $0.title, taskID: $0.entityID) }
         )
         self.reminders = reminders
         reminderSettings = RemindersSettingsModel(permission: SystemNotificationPermission()) { on in
@@ -124,7 +124,10 @@ final class AppModel {
         // Kategorien und Delegate vor dem Ende von `didFinishLaunching`: Das Modell entsteht mit
         // der App, und iOS meldet Antippen, Wegwischen und „Erledigt“ erst danach.
         SystemNotificationScheduler.registerCategories()
-        let notifications = ReminderNotificationDelegate { [weak self] in await self?.reply($0) }
+        let notifications = ReminderNotificationDelegate(
+            onReply: { [weak self] in await self?.reply($0) },
+            onOpen: { [weak self] in self?.open($0) }
+        )
         notifications.install()
         self.notifications = notifications
     }
@@ -290,6 +293,20 @@ final class AppModel {
         switch IncomingLink(url: url, current: session.current) {
         case .pairing(let url): await login().openPairingLink(url)
         case .refusedWhileSignedIn: showsAlreadySignedIn = true
+        }
+    }
+
+    /// Ein Tipp auf eine Mitteilung (Q8): Eine Aufgabe liegt als Detail über der Liste, „Zurück“
+    /// führt zur Liste. Gibt es sie nicht mehr, schließt das Detail mit Hinweis (404). Ein Termin
+    /// führt zur Liste. Ohne Anmeldung, etwa vor dem ersten Entsperren, bleibt es beim Verwerfen.
+    func open(_ destination: ReminderNotificationDelegate.Destination) {
+        restoreIfReadable()
+        guard let current = session.current else { return }
+        showsSettings = false
+        let list = taskList(for: current)
+        switch destination {
+        case .list: list.path = []
+        case .task(let id): Task { await list.open(id) }
         }
     }
 
