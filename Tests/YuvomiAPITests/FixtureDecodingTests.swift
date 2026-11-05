@@ -77,7 +77,7 @@ import YuvomiFixtures
             .map { String($0.dropLast(".json".count)) }
         let mapped = Set(FixtureTransport.defaults.values.map(\.file)).union(FixtureTransport.variants.keys)
         #expect(Set(files) == mapped)
-        #expect(files.count == 22)
+        #expect(files.count == 24)
         #expect(Set(FixtureTransport.variants.values).isSubset(of: FixtureTransport.defaults.keys))
     }
 }

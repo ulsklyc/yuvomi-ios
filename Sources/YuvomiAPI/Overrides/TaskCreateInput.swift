@@ -26,8 +26,11 @@ struct TaskCreateInput: Codable, Hashable, Sendable {
     var syncTarget: Patch<String> = .unset
     var status: Patch<String> = .unset
     var parentTaskId: Patch<Int> = .unset
+    var rotationMode: Patch<String> = .unset
+    /// Kein `Patch`: `null` ist 400.
+    var rotationPool: [Int]? = nil
 
-    enum CodingKeys: String, CodingKey {
+    enum CodingKeys: String, CodingKey, CaseIterable {
         case title
         case description
         case category
@@ -47,6 +50,8 @@ struct TaskCreateInput: Codable, Hashable, Sendable {
         case syncTarget = "sync_target"
         case status
         case parentTaskId = "parent_task_id"
+        case rotationMode = "rotation_mode"
+        case rotationPool = "rotation_pool"
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -70,6 +75,8 @@ struct TaskCreateInput: Codable, Hashable, Sendable {
         try container.encode(syncTarget, forKey: .syncTarget)
         try container.encode(status, forKey: .status)
         try container.encode(parentTaskId, forKey: .parentTaskId)
+        try container.encode(rotationMode, forKey: .rotationMode)
+        try container.encodeIfPresent(rotationPool, forKey: .rotationPool)
     }
 
     init(from decoder: any Decoder) throws {
@@ -93,6 +100,8 @@ struct TaskCreateInput: Codable, Hashable, Sendable {
         syncTarget = try container.decode(Patch<String>.self, forKey: .syncTarget)
         status = try container.decode(Patch<String>.self, forKey: .status)
         parentTaskId = try container.decode(Patch<Int>.self, forKey: .parentTaskId)
+        rotationMode = try container.decode(Patch<String>.self, forKey: .rotationMode)
+        rotationPool = try container.decodeIfPresent([Int].self, forKey: .rotationPool)
     }
 }
 
@@ -116,7 +125,9 @@ extension TaskCreateInput {
         locked: Bool? = nil,
         syncTarget: Patch<String> = .unset,
         status: Patch<String> = .unset,
-        parentTaskId: Patch<Int> = .unset
+        parentTaskId: Patch<Int> = .unset,
+        rotationMode: Patch<String> = .unset,
+        rotationPool: [Int]? = nil
     ) {
         self.title = title
         self.description = description
@@ -137,5 +148,7 @@ extension TaskCreateInput {
         self.syncTarget = syncTarget
         self.status = status
         self.parentTaskId = parentTaskId
+        self.rotationMode = rotationMode
+        self.rotationPool = rotationPool
     }
 }

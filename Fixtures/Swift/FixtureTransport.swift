@@ -56,6 +56,8 @@ public struct FixtureTransport: ClientTransport {
         "listTasks": ("tasks", .ok),
         "getTaskOptions": ("tasks-meta-options", .ok),
         "getTask": ("task", .ok),
+        "createTask": ("task-created", .created),
+        "updateTask": ("task-updated", .ok),
         "listShoppingLists": ("shopping-lists", .ok),
         "listShoppingListVersions": ("shopping-versions", .ok),
         "listShoppingSuggestions": ("shopping-suggestions", .ok),

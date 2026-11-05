@@ -25,6 +25,11 @@ public struct CalendarDay: Hashable, Sendable, Comparable {
         self.init(year: year, month: month, day: day)
     }
 
+    /// `YYYY-MM-DD`, das Gegenstück zu `init?(iso:)`.
+    public var iso: String {
+        String(format: "%04d-%02d-%02d", year, month, day)
+    }
+
     /// Der Tag, auf den `date` in dieser Zeitzone fällt. Immer im gregorianischen Kalender,
     /// wie `due_date`: Mit `Calendar.current` ergäbe ein buddhistischer Kalender das Jahr 2569.
     public init(_ date: Date, timeZone: TimeZone = .current) {
@@ -108,6 +113,9 @@ public enum APIError: Error, Hashable, Sendable {
     case unauthorized
     /// 403: Die Person darf das im Modul nicht, etwa weil sie Aufgaben nur lesen darf.
     case forbidden
+    /// 403 `task_locked`: Die Aufgabe ist gesperrt, ändern darf sie nur, wer sie angelegt hat.
+    /// Abhaken bleibt offen, der Fall kommt also nur beim Anlegen, Ändern und Löschen.
+    case locked
     /// 404: gelöscht oder für die Person nicht (mehr) sichtbar.
     case notFound
     /// 409: Was die Person gesehen hat, stimmt nicht mehr, etwa eine Zeile der Checkliste,
@@ -129,6 +137,8 @@ public struct TaskDetail: Hashable, Sendable, Identifiable {
     public var dueTime: String?
     /// Anzeigenamen, die hauptverantwortliche Person zuerst.
     public var assignees: [String]
+    /// Dieselben Personen als IDs, in derselben Reihenfolge.
+    public var assigneeIDs: [Int]
     /// Freitext, darin womöglich eine Checkliste (`Checklist`).
     public var description: String?
     /// Die Unteraufgaben, die die Person sehen darf, in der Reihenfolge des Servers.
@@ -139,12 +149,17 @@ public struct TaskDetail: Hashable, Sendable, Identifiable {
     /// Nur die Person, die sie angelegt hat, und Admins dürfen sie ändern. Abhaken und
     /// Ankreuzen bleiben für alle offen.
     public var isLocked: Bool
+    /// Key aus `TaskOptions.categories`.
+    public var category: String
+    /// Wer sie angelegt hat. Ist sie gesperrt, darf nur diese Person sie ändern.
+    public var createdBy: Int?
 
     public init(
         id: Int, title: String, status: TaskStatus, priority: TaskPriority,
         start: CalendarDay? = nil, due: CalendarDay? = nil, dueTime: String? = nil, assignees: [String] = [],
-        description: String? = nil, subtasks: [TaskSummary] = [], tags: [String] = [],
-        points: Int = 0, isRecurring: Bool = false, isLocked: Bool = false
+        assigneeIDs: [Int] = [], description: String? = nil, subtasks: [TaskSummary] = [], tags: [String] = [],
+        points: Int = 0, isRecurring: Bool = false, isLocked: Bool = false,
+        category: String = "misc", createdBy: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -154,12 +169,15 @@ public struct TaskDetail: Hashable, Sendable, Identifiable {
         self.due = due
         self.dueTime = dueTime
         self.assignees = assignees
+        self.assigneeIDs = assigneeIDs
         self.description = description
         self.subtasks = subtasks
         self.tags = tags
         self.points = points
         self.isRecurring = isRecurring
         self.isLocked = isLocked
+        self.category = category
+        self.createdBy = createdBy
     }
 }
 
@@ -196,8 +214,23 @@ public protocol TaskWriting: Sendable {
     func tick(task id: Int, line: Int, checked: Bool, expect: String) async throws(APIError) -> String
 }
 
+/// Die angemeldete Person, so weit die App sie für Rechte braucht (`GET /auth/me`).
+public struct Member: Hashable, Sendable {
+    public var id: Int
+    /// Darf die Person im Modul Aufgaben schreiben? Bei `read` zeigt die App keine Haken und
+    /// kein Formular (Slice 5 Q4, Slice 6 Q7).
+    public var mayWriteTasks: Bool
+    /// Bei einer Person allein blendet das Formular die Zuständigen aus (Q10).
+    public var householdSize: Int
+
+    public init(id: Int, mayWriteTasks: Bool, householdSize: Int) {
+        self.id = id
+        self.mayWriteTasks = mayWriteTasks
+        self.householdSize = householdSize
+    }
+}
+
 /// Port für die Rechte der angemeldeten Person (`GET /auth/me`). Umgesetzt in YuvomiAPI.
 public protocol MemberPermissions: Sendable {
-    /// Darf die Person im Modul Aufgaben schreiben? Bei `read` zeigt die App keine Haken (Q4).
-    func mayWriteTasks() async throws(APIError) -> Bool
+    func member() async throws(APIError) -> Member
 }

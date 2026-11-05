@@ -20,7 +20,8 @@ public enum TaskNotice: Hashable, Sendable {
         case .unreachable: self = .unreachable
         case .forbidden: self = .readOnly
         case .notFound: self = .gone
-        case .unauthorized, .conflict, .unexpectedResponse: self = .unexpectedResponse
+        // `.locked` bekommt in F3 einen eigenen Hinweis; Abhaken und Ankreuzen lösen ihn nicht aus.
+        case .unauthorized, .conflict, .locked, .unexpectedResponse: self = .unexpectedResponse
         }
     }
 

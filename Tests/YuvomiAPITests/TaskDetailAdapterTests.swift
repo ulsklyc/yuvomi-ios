@@ -43,7 +43,7 @@ import YuvomiFixtures
         let task = try await tasks().task(id: 7)
 
         #expect(task.title == "Sign school permission slip")
-        #expect(task.due == CalendarDay(year: 2026, month: 11, day: 3))
+        #expect(task.due == CalendarDay(year: 2026, month: 11, day: 6))
         #expect(task.assignees == ["Linda Johnson"])
         #expect(task.subtasks.isEmpty)
     }
@@ -132,10 +132,11 @@ import YuvomiFixtures
         await #expect(throws: APIError.unreachable) { try await offline.tick(task: 7, line: 0, checked: true, expect: "x") }
     }
 
-    /// Fixtures/demo/auth-me.json: alex darf in allen Modulen schreiben.
+    /// Fixtures/demo/auth-me.json: alex (ID 1) darf in allen Modulen schreiben, der Haushalt
+    /// hat vier Mitglieder.
     @Test func membersWithWriteAccessMayWriteTasks() async throws {
         let permissions = YuvomiMemberPermissions(server: server, credential: "c", transport: FixtureTransport())
-        #expect(try await permissions.mayWriteTasks())
+        #expect(try await permissions.member() == Member(id: 1, mayWriteTasks: true, householdSize: 4))
     }
 
     @Test(arguments: ["read", "none", "something-new"])
@@ -150,6 +151,6 @@ import YuvomiFixtures
         let response = FixtureTransport.Response(body: try JSONSerialization.data(withJSONObject: me))
         let adapter = YuvomiMemberPermissions(server: server, credential: "c", transport: FixtureTransport(overrides: ["getCurrentUser": response]))
 
-        #expect(try await adapter.mayWriteTasks() == false)
+        #expect(try await adapter.member().mayWriteTasks == false)
     }
 }

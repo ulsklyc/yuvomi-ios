@@ -1,8 +1,8 @@
 {
   "source": "http://127.0.0.1:3917",
   "user": "alex",
-  "captured_at": "2026-11-02T13:45:25Z",
-  "server_version": "2.84.0",
+  "captured_at": "2026-11-05T12:35:14Z",
+  "server_version": "2.85.0",
   "files": [
     "version",
     "auth-oidc-config",
@@ -14,6 +14,9 @@
     "tasks",
     "tasks-meta-options",
     "task",
+    "task-checklist",
+    "task-created",
+    "task-updated",
     "shopping-lists",
     "shopping-versions",
     "shopping-suggestions",

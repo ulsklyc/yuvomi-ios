@@ -38,7 +38,7 @@ let package = Package(
         ),
         .target(name: "DesignSystem"),
         // YuvomiAPI und YuvomiFixtures nur für die Vorschauen: Sie zeigen echte
-        // v2.84.0-Antworten durch den echten Decoder. Die Screens selbst kennen nur den Kern.
+        // v2.85.0-Antworten durch den echten Decoder. Die Screens selbst kennen nur den Kern.
         .target(
             name: "LoginFeature",
             dependencies: ["YuvomiCore", "DesignSystem", "YuvomiAPI", "YuvomiFixtures"],

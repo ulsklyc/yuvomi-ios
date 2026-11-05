@@ -64,6 +64,8 @@ const bearer = { Authorization: `Bearer ${created.credential}` };
 save('auth-devices-create', { ...created, credential: CREDENTIAL_PLACEHOLDER });
 
 // Ab hier wie die App: nur mit dem Geraete-Credential
+const now = new Date();
+const day = (d) => d.toISOString().slice(0, 10);
 const get = async (path) => (await request('GET', path, { headers: bearer })).data;
 const serverVersion = (await get('/version')).version ?? null;
 save('auth-me', await get('/auth/me'));
@@ -106,6 +108,36 @@ if (!checklist && (!wanted || wanted.has('task-checklist'))) {
 }
 if (checklist) save('task-checklist', await get(`/tasks/${checklist.id}`));
 
+// Anlegen und Aendern wie die App (Slice 6a): mit dem Credential, nur die Felder des
+// Formulars. Danach wieder loeschen, damit die Instanz keinen Rest behaelt.
+// Der Schluessel ist je Lauf neu: Der Server haelt ihn 24 Stunden fest und spielte
+// bei einem zweiten Lauf die Antwort mit der ID der schon geloeschten Aufgabe ab.
+if (!wanted || wanted.has('task-created') || wanted.has('task-updated')) {
+  const writeHeaders = { ...bearer, 'Idempotency-Key': `fixture-create-${crypto.randomUUID()}` };
+  const createdTask = (await request('POST', '/tasks', {
+    headers: writeHeaders,
+    body: {
+      title: 'Water the plants',
+      description: 'The big ones on the balcony.',
+      category: 'household',
+      priority: 'low',
+      due_date: day(new Date()),
+      due_time: '18:30',
+      assigned_to: [me.user.id],
+    },
+  })).data;
+  save('task-created', createdTask);
+  const id = createdTask.data.id;
+  try {
+    save('task-updated', (await request('PUT', `/tasks/${id}`, {
+      headers: bearer,
+      body: { title: 'Water all the plants', due_time: null },
+    })).data);
+  } finally {
+    await request('DELETE', `/tasks/${id}`, { headers: bearer });
+  }
+}
+
 const lists = await get('/shopping');
 save('shopping-lists', lists);
 save('shopping-versions', await get('/shopping/versions'));
@@ -114,8 +146,6 @@ save('shopping-categories', await get('/shopping/categories'));
 if (lists.data?.length) save('shopping-items', await get(`/shopping/${lists.data[0].id}/items`));
 
 // Fenster wie die App: from und to selbst, 14 Tage als 14 x 86400 Sekunden
-const now = new Date();
-const day = (d) => d.toISOString().slice(0, 10);
 const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
 const events = await get(`/calendar?from=${day(monthStart)}&to=${day(monthEnd)}`);

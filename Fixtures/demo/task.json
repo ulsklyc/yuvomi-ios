@@ -6,15 +6,15 @@
     "category": "school",
     "priority": "urgent",
     "status": "open",
-    "due_date": "2026-11-03",
+    "due_date": "2026-11-06",
     "due_time": null,
     "assigned_to": 2,
     "created_by": 2,
     "is_recurring": 0,
     "recurrence_rule": null,
     "parent_task_id": null,
-    "created_at": "2026-11-02T13:44:15Z",
-    "updated_at": "2026-11-02T13:44:15Z",
+    "created_at": "2026-11-05T12:34:32Z",
+    "updated_at": "2026-11-05T12:34:32Z",
     "start_date": null,
     "external_uid": null,
     "external_source": "local",
@@ -34,6 +34,9 @@
     "recurrence_series_id": null,
     "sort_order": null,
     "seen_on_server": 0,
+    "rotation_mode": null,
+    "rotation_last_user": null,
+    "rotation_last_position": null,
     "assigned_name": "Linda Johnson",
     "assigned_color": "#DB2777",
     "assigned_avatar": null,
@@ -56,12 +59,14 @@
         "mime_type": "application/pdf",
         "file_size": 48000,
         "storage_backend": "local",
-        "linked_at": "2026-11-02T13:44:15Z"
+        "linked_at": "2026-11-05T12:34:32Z"
       }
     ],
     "tags": [
       "school",
       "urgent"
-    ]
+    ],
+    "rotation_pool": null,
+    "rotation_next_user": null
   }
 }
