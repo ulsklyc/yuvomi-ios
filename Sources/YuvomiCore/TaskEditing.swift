@@ -164,7 +164,8 @@ public protocol TaskEditing: Sendable {
     func options() async throws(APIError) -> TaskOptions
     /// Legt eine Aufgabe an, mit `parent` als Unteraufgabe. Derselbe `idempotencyKey` bei
     /// einem zweiten Versuch legt sie nicht doppelt an (Q14). Läuft der erste noch, kommt
-    /// `.conflict`.
+    /// `.conflict`. Nur mit `draft.problems.isEmpty`: Sonst antwortet der Server 400, und das
+    /// kommt als `.unexpectedResponse` an.
     func create(_ draft: TaskDraft, parent: Int?, idempotencyKey: String) async throws(APIError) -> TaskSummary
     /// - Returns: Die Aufgabe, wie der Server sie danach gespeichert hat.
     func update(task id: Int, _ changes: TaskChanges) async throws(APIError) -> TaskDetail

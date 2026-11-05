@@ -110,8 +110,10 @@ if (checklist) save('task-checklist', await get(`/tasks/${checklist.id}`));
 
 // Anlegen und Aendern wie die App (Slice 6a): mit dem Credential, nur die Felder des
 // Formulars. Danach wieder loeschen, damit die Instanz keinen Rest behaelt.
+// Der Schluessel ist je Lauf neu: Der Server haelt ihn 24 Stunden fest und spielte
+// bei einem zweiten Lauf die Antwort mit der ID der schon geloeschten Aufgabe ab.
 if (!wanted || wanted.has('task-created') || wanted.has('task-updated')) {
-  const writeHeaders = { ...bearer, 'Idempotency-Key': 'fixture-create-0001' };
+  const writeHeaders = { ...bearer, 'Idempotency-Key': `fixture-create-${crypto.randomUUID()}` };
   const createdTask = (await request('POST', '/tasks', {
     headers: writeHeaders,
     body: {
@@ -126,11 +128,14 @@ if (!wanted || wanted.has('task-created') || wanted.has('task-updated')) {
   })).data;
   save('task-created', createdTask);
   const id = createdTask.data.id;
-  save('task-updated', (await request('PUT', `/tasks/${id}`, {
-    headers: bearer,
-    body: { title: 'Water all the plants', due_time: null },
-  })).data);
-  await request('DELETE', `/tasks/${id}`, { headers: bearer });
+  try {
+    save('task-updated', (await request('PUT', `/tasks/${id}`, {
+      headers: bearer,
+      body: { title: 'Water all the plants', due_time: null },
+    })).data);
+  } finally {
+    await request('DELETE', `/tasks/${id}`, { headers: bearer });
+  }
 }
 
 const lists = await get('/shopping');

@@ -167,14 +167,7 @@ extension TaskStatus {
 
 extension TaskPriority {
     init(server value: String) {
-        self = switch value {
-        case "none": .none
-        case "low": .low
-        case "medium": .medium
-        case "high": .high
-        case "urgent": .urgent
-        default: .unknown
-        }
+        self = [.none, .low, .medium, .high, .urgent].first { $0.server == value } ?? .unknown
     }
 
     /// Der Wert für den Server, `nil` bei `.unknown`: Den kann die App nicht setzen.

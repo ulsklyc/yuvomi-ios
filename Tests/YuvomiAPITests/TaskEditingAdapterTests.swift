@@ -91,6 +91,23 @@ import YuvomiFixtures
         ])
     }
 
+    /// Eine Priorität, die die App nicht kennt, kann sie nicht setzen: Fehler, bevor eine
+    /// Anfrage rausgeht.
+    @Test func unknownPriorityIsNotSent() async {
+        let recorder = FixtureTransport.Recorder()
+        var draft = TaskDraft()
+        draft.title = "Call"
+        draft.priority = .unknown
+
+        await #expect(throws: APIError.unexpectedResponse) {
+            try await tasks(recorder: recorder).create(draft, parent: nil, idempotencyKey: "k")
+        }
+        await #expect(throws: APIError.unexpectedResponse) {
+            try await tasks(recorder: recorder).update(task: 27, TaskChanges(priority: .unknown))
+        }
+        #expect(await recorder.requests.isEmpty)
+    }
+
     @Test func deleteSendsDelete() async throws {
         let recorder = FixtureTransport.Recorder()
 
