@@ -56,7 +56,7 @@ public final class TaskDetailModel {
     /// gesperrte nur, wenn sie sie selbst angelegt hat. Fehlt die Angabe, gilt sie als fremd.
     public var canEdit: Bool {
         guard canWrite, let task = loaded else { return false }
-        return !task.isLocked || (task.createdBy != nil && task.createdBy == memberID())
+        return task.isEditable(by: memberID())
     }
     /// Das offene Formular fürs Ändern, sonst `nil`. Setzt die View es auf `nil`, ist das Abbrechen.
     public var form: TaskFormModel?
@@ -151,7 +151,6 @@ public final class TaskDetailModel {
         async let fetched = try? await editor?.options()
         do throws(APIError) {
             var task = try await tasks.task(id: taskID)
-            if let fetched = await fetched { options = fetched }
             guard mine == generation else { return }
             for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
             let gone = overlay.gone(since: mark)
@@ -163,6 +162,8 @@ public final class TaskDetailModel {
             }
             state = .loaded(task)
             refreshProblem = nil
+            // Erst nach der Aufgabe: Ohne Optionen fehlt nur der Name der Kategorie.
+            if let fetched = await fetched { options = fetched }
         } catch .unauthorized {
             onUnauthorized()
         } catch .notFound {
@@ -288,14 +289,14 @@ public final class TaskDetailModel {
 
     /// Die Kategorie zum Key, mit Namen aus `meta/options`. Ohne Optionen nur der Key (Q8).
     public func category(for key: String) -> TaskCategory {
-        options?.categories.first { $0.key == key } ?? TaskCategory(key: key, name: nil, labelKey: nil)
+        options?.category(for: key) ?? TaskCategory(key: key, name: nil, labelKey: nil)
     }
 
     /// „Bearbeiten“: das Formular mit dem gespeicherten Stand (Q2, Q9).
     public func startEditing() {
         guard canEdit, let task = loaded else { return }
         form = TaskFormModel(
-            editing: task, editor: editor, onUnauthorized: onUnauthorized,
+            editing: task, options: options, editor: editor, onUnauthorized: onUnauthorized,
             onFinished: { [weak self] outcome in await self?.finishEditing(outcome) }
         )
     }
@@ -304,21 +305,14 @@ public final class TaskDetailModel {
     private func finishEditing(_ outcome: TaskFormModel.Outcome) async {
         form = nil
         switch outcome {
-        case .updated(let task):
+        case .saved(let task):
             // Ein Laden, das vor dem Sichern begann, kennt die Änderung nicht mehr.
             generation += 1
-            state = .loaded(task)
+            if let task { state = .loaded(task) }
             refreshProblem = nil
             onStatusChanged()
-        case .locked:
-            notice = .locked
-            await load()
-        case .readOnly:
-            fail(.forbidden)
-        case .gone:
-            fail(.notFound)
-        case .created:
-            break // Nur beim Anlegen.
+        case .failed(let error):
+            await failEditing(error)
         }
     }
 
@@ -330,18 +324,23 @@ public final class TaskDetailModel {
         defer { isDeleting = false }
         do throws(APIError) {
             try await editor.delete(task: taskID)
-            onDeleted()
         } catch .notFound {
-            onDeleted()
+            // Schon weg: gilt als gelöscht.
         } catch .unauthorized {
             onUnauthorized()
-        } catch .locked {
-            // Inzwischen gesperrt: neu laden, dann blendet das Detail Bearbeiten und Löschen aus.
-            notice = .locked
-            await load()
+            return
         } catch {
-            fail(error)
+            await failEditing(error)
+            return
         }
+        onDeleted()
+    }
+
+    /// Wie `fail`. Ist die Aufgabe inzwischen gesperrt, lädt das Detail neu und blendet dann
+    /// Bearbeiten und Löschen aus (Q13).
+    private func failEditing(_ error: APIError) async {
+        fail(error)
+        if error == .locked { await load() }
     }
 
     /// Gemeinsame Folgen nach Q13 für 403, 404 und den Rest.

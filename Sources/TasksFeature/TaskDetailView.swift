@@ -294,7 +294,7 @@ struct TaskFacts: View {
         Section {
             LabeledContent { Text(verbatim: category) } label: { Text("tasks.form.category", bundle: .module) }
             if let priority {
-                    LabeledContent { Text(priority, bundle: .module) } label: { Text("tasks.detail.priority", bundle: .module) }
+                LabeledContent { Text(priority, bundle: .module) } label: { Text("tasks.detail.priority", bundle: .module) }
             }
             if let start {
                 LabeledContent { Text(verbatim: start) } label: { Text("tasks.detail.start", bundle: .module) }

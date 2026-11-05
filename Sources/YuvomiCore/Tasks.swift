@@ -158,6 +158,12 @@ public struct TaskDetail: Hashable, Sendable, Identifiable {
     /// Wer sie angelegt hat. Ist sie gesperrt, darf nur diese Person sie ändern.
     public var createdBy: Int?
 
+    /// Darf die Person mit `memberID` sie ändern und löschen (Q7)? Eine gesperrte nur, wenn sie
+    /// sie angelegt hat. Ohne Angabe gilt sie als fremd. Das Modul-Recht prüft der Aufrufer.
+    public func isEditable(by memberID: Int?) -> Bool {
+        !isLocked || (createdBy != nil && createdBy == memberID)
+    }
+
     public init(
         id: Int, title: String, status: TaskStatus, priority: TaskPriority,
         start: CalendarDay? = nil, due: CalendarDay? = nil, dueTime: String? = nil, assignees: [String] = [],

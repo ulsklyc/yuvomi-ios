@@ -44,7 +44,7 @@ import YuvomiCore
         #expect(editor.creates.withLock { $0.isEmpty })
         var saved = packing
         saved.title = "Pack for the trip"
-        #expect(log.outcomes == [.updated(saved)])
+        #expect(log.outcomes == [.saved(saved)])
     }
 
     @Test func clearingTheDateClearsTheTime() async {
@@ -56,28 +56,27 @@ import YuvomiCore
         #expect(editor.updates.withLock { $0 }.first?.changes == TaskChanges(due: .clear, dueTime: .clear))
     }
 
-    /// Q13: gesperrt heißt Sheet zu, das Detail lädt neu.
-    @Test func lockedFinishesAsLocked() async {
+    /// Q13: Gesperrt, weg oder Nur-lesen schließt das Sheet, die Folgen trägt das Detail.
+    @Test(arguments: [APIError.locked, .notFound, .forbidden])
+    func closingFailuresFinish(_ error: APIError) async {
         let log = Log()
         let form = form(log)
         form.draft.title = "Mine now"
-        editor.updated.withLock { $0 = .failure(.locked) }
+        editor.updated.withLock { $0 = .failure(error) }
 
         await form.save()
 
-        #expect(log.outcomes == [.locked])
+        #expect(log.outcomes == [.failed(error)])
     }
 
-    /// Q13: 404 heißt Sheet und Detail zu.
-    @Test func goneFinishesAsGone() async {
-        let log = Log()
-        let form = form(log)
-        form.draft.title = "Still here?"
-        editor.updated.withLock { $0 = .failure(.notFound) }
+    /// Optionen, die das Detail schon hat, lädt das Formular nicht neu.
+    @Test func givenOptionsAreNotLoadedAgain() async {
+        editor.options.withLock { $0 = .success(TaskOptions(people: [], categories: [])) }
+        let form = TaskFormModel(editing: stored, options: FakeEditor.household, editor: editor, onUnauthorized: {}, onFinished: { _ in })
 
-        await form.save()
+        await form.loadOptions()
 
-        #expect(log.outcomes == [.gone])
+        #expect(form.options == FakeEditor.household)
     }
 
     /// Q4: Ohne Antwort bleibt das Sheet offen und behält die Eingaben.

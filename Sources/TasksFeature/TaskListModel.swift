@@ -202,14 +202,12 @@ public final class TaskListModel {
     private func finish(_ outcome: TaskFormModel.Outcome) async {
         form = nil
         switch outcome {
-        case .created:
+        case .saved:
             onStatusChanged()
             await load()
-        case .readOnly:
-            canWrite = false
-            notice = .readOnly
-        case .updated, .locked, .gone:
-            break // Nur beim Ändern, das Formular hängt dann am Detail.
+        case .failed(let error):
+            if error == .forbidden { canWrite = false }
+            notice = TaskNotice(error)
         }
     }
 

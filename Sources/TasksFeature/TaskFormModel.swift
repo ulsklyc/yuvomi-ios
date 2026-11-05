@@ -9,16 +9,11 @@ import YuvomiCore
 public final class TaskFormModel: Identifiable {
     /// Wie das Sheet endet, wenn nicht die Person es schließt.
     public enum Outcome: Hashable, Sendable {
-        /// Der Server hat angelegt.
-        case created
-        /// Der Server hat geändert, mit dem Stand danach (Q11).
-        case updated(TaskDetail)
-        /// 403: Die Person darf Aufgaben nur ansehen (Q13).
-        case readOnly
-        /// 403 `task_locked`: Nur wer sie angelegt hat, darf sie ändern (Q13).
-        case locked
-        /// 404: Die Aufgabe gibt es nicht mehr (Q13).
-        case gone
+        /// Der Server hat gesichert. Beim Ändern mit dem Stand danach (Q11), beim Anlegen `nil`.
+        case saved(TaskDetail?)
+        /// Ein Fehler, der das Sheet schließt (Q13): `.forbidden`, `.locked` oder `.notFound`.
+        /// Die Folgen trägt der Besitzer.
+        case failed(APIError)
     }
 
     /// Die Aufgabe, die das Formular ändert. `nil` beim Anlegen.
@@ -48,9 +43,10 @@ public final class TaskFormModel: Identifiable {
     /// - Parameters:
     ///   - task: Der gespeicherte Stand fürs Ändern, `nil` fürs Anlegen.
     ///   - now: Für den Vorschlag bei Datum und Uhrzeit; in Tests fest.
-    ///   - onFinished: Gesichert, Nur-lesen, gesperrt oder weg. Der Aufrufer schließt das Sheet.
+    ///   - options: Schon geladene Optionen, etwa vom Detail. Dann lädt das Formular sie nicht neu.
+    ///   - onFinished: Gesichert oder ein Fehler nach Q13. Der Aufrufer schließt das Sheet.
     public init(
-        editing task: TaskDetail? = nil,
+        editing task: TaskDetail? = nil, options: TaskOptions? = nil,
         editor: any TaskEditing, now: @escaping () -> Date = Date.init, timeZone: TimeZone = .current,
         makeKey: @escaping () -> String = { UUID().uuidString },
         onUnauthorized: @escaping @MainActor () -> Void,
@@ -60,6 +56,7 @@ public final class TaskFormModel: Identifiable {
         let base = task.map(TaskDraft.init) ?? TaskDraft()
         self.base = base
         self.draft = base
+        self.options = options
         self.editor = editor
         self.now = now
         self.timeZone = timeZone
@@ -149,12 +146,13 @@ public final class TaskFormModel: Identifiable {
     }
 
     public func loadOptions() async {
+        guard options == nil else { return }
         do throws(APIError) {
             options = try await editor.options()
         } catch .unauthorized {
             onUnauthorized()
         } catch .forbidden {
-            await onFinished(.readOnly)
+            await onFinished(.failed(.forbidden))
         } catch {
             // Ohne Optionen fehlen nur Zuständige und Kategorien, der Rest geht.
         }
@@ -169,25 +167,22 @@ public final class TaskFormModel: Identifiable {
         do throws(APIError) {
             if let taskID {
                 // PUT ist idempotent und braucht keinen Schlüssel.
-                await onFinished(.updated(try await editor.update(task: taskID, changes)))
+                await onFinished(.saved(try await editor.update(task: taskID, changes)))
             } else {
                 let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
                 attempt = (changes, key)
                 _ = try await editor.create(draft, parent: nil, idempotencyKey: key)
-                await onFinished(.created)
+                await onFinished(.saved(nil))
             }
         } catch .unauthorized {
             onUnauthorized()
-        } catch .forbidden {
-            await onFinished(.readOnly)
-        } catch .locked {
-            await onFinished(.locked)
-        } catch .notFound {
-            await onFinished(.gone)
         } catch .conflict {
             notice = .stillRunning
         } catch {
-            notice = TaskNotice(error)
+            switch error {
+            case .forbidden, .locked, .notFound: await onFinished(.failed(error))
+            default: notice = TaskNotice(error)
+            }
         }
     }
 }

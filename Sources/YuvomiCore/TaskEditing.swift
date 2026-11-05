@@ -162,6 +162,11 @@ public struct TaskOptions: Hashable, Sendable {
         self.people = people
         self.categories = categories
     }
+
+    /// Die Kategorie zum Key, sonst eine ohne Namen: Sie zeigt dann den Key (Q8).
+    public func category(for key: String) -> TaskCategory {
+        categories.first { $0.key == key } ?? TaskCategory(key: key, name: nil, labelKey: nil)
+    }
 }
 
 /// Port fürs Anlegen, Ändern und Löschen von Aufgaben. Umgesetzt in YuvomiAPI.
