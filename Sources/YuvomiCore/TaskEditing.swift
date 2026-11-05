@@ -98,7 +98,9 @@ public struct TaskDraft: Hashable, Sendable {
         if assigneeIDs != base.assigneeIDs { changes.assigneeIDs = assigneeIDs.isEmpty ? .clear : .set(assigneeIDs) }
         if priority != base.priority { changes.priority = priority }
         if category != base.category { changes.category = category }
-        if description != base.trimmedDescription {
+        // Roh vergleichen: Ein Einzug am Rand macht aus Text einen Punkt der Checkliste.
+        // Nur leer bleibt leer, auch wenn Leerzeichen dazukommen.
+        if self.description != base.description, !(description.isEmpty && base.trimmedDescription.isEmpty) {
             changes.description = description.isEmpty ? .clear : .set(self.description)
         }
         return changes

@@ -77,6 +77,27 @@ import YuvomiCore
         #expect(draft.changes(from: base) == TaskChanges(assigneeIDs: .clear, description: .clear))
     }
 
+    /// Ein Einzug am Rand entscheidet, ob eine Zeile ein Punkt der Checkliste ist: Er zählt
+    /// als Änderung.
+    @Test func whitespaceAroundTheDescriptionIsAChange() {
+        var stored = stored
+        stored.description = "    - [ ] Sleeping bag"
+        let base = TaskDraft(stored)
+        var draft = base
+        draft.description = "- [ ] Sleeping bag"
+
+        #expect(draft.changes(from: base) == TaskChanges(description: .set("- [ ] Sleeping bag")))
+    }
+
+    /// Von leer zu nur Leerzeichen bleibt leer.
+    @Test func blankDescriptionStaysEmpty() {
+        var draft = TaskDraft()
+        draft.title = "Call"
+        draft.description = " \n"
+
+        #expect(draft.changes(from: TaskDraft()) == TaskChanges(title: "Call"))
+    }
+
     /// Q17: Uhrzeit nur mit Datum. Ohne Datum geht die Uhrzeit mit weg.
     @Test func noDateClearsTheTimeToo() {
         let base = TaskDraft(stored)
