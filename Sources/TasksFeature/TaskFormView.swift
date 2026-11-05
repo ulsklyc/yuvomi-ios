@@ -27,6 +27,9 @@ struct TaskFormView: View {
                 detailsSection
                 descriptionSection
             }
+            // Während des Sicherns ist der Entwurf schon unterwegs: Was die Person dann noch
+            // ändert, käme nie an und ginge mit dem Sheet verloren.
+            .disabled(model.isSaving)
             .navigationTitle(Text("tasks.form.new", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
