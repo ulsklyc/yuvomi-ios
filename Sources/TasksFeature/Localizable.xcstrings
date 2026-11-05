@@ -1,6 +1,42 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "tasks.action.checkOff": {
+      "comment": "Kreis, Knopf und VoiceOver-Aktion: Aufgabe oder Unteraufgabe als erledigt melden.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abhaken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Off"
+          }
+        }
+      }
+    },
+    "tasks.action.reopen": {
+      "comment": "Kreis, Knopf und VoiceOver-Aktion: das Abhaken zurücknehmen.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wieder öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reopen"
+          }
+        }
+      }
+    },
     "tasks.detail.assignees %@": {
       "extractionState": "manual",
       "localizations": {
@@ -116,6 +152,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nur wer sie angelegt hat und Admins dürfen diese Aufgabe ändern."
+          }
+        }
+      }
+    },
+    "tasks.detail.nextDue %@": {
+      "comment": "Nach dem Abhaken einer Serie: Tag des nächsten Vorkommens.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächstes Mal: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next time: %@"
           }
         }
       }
@@ -439,6 +493,60 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aufgaben nicht geladen"
+          }
+        }
+      }
+    },
+    "tasks.notice.changed": {
+      "comment": "Hinweis nach 409 beim Ankreuzen: Das Detail ist neu geladen.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Aufgabe hat sich inzwischen geändert. Hier ist sie neu."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The task has changed in the meantime. Here it is again."
+          }
+        }
+      }
+    },
+    "tasks.notice.gone": {
+      "comment": "Hinweis nach 404: gelöscht oder nicht mehr sichtbar.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Aufgabe gibt es nicht mehr."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This task no longer exists."
+          }
+        }
+      }
+    },
+    "tasks.notice.readOnly": {
+      "comment": "Hinweis nach 403: Die Person hat im Modul Aufgaben nur Leserechte.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du darfst Aufgaben nur ansehen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can only view tasks."
           }
         }
       }

@@ -4,8 +4,8 @@ import YuvomiAPI
 import YuvomiCore
 import YuvomiFixtures
 
-/// Das Detail einer Aufgabe (Q7): Kopf, Beschreibung mit Checkliste, Unteraufgaben, Angaben.
-/// In E2 nur lesend, Kästchen und Kreise sind Zeichen.
+/// Das Detail einer Aufgabe (Q7): Kopf mit Abhaken, Beschreibung mit Checkliste zum Ankreuzen,
+/// Unteraufgaben, Angaben. Bei Nur-lesen sind Kästchen und Kreise nur Zeichen (Q4).
 public struct TaskDetailView: View {
     let model: TaskDetailModel
 
@@ -39,7 +39,7 @@ public struct TaskDetailView: View {
                     .buttonStyle(.borderedProminent)
             }
         case .loaded(let task):
-            TaskDetailList(task: task, refreshProblem: model.refreshProblem)
+            TaskDetailList(task: task, model: model)
                 .refreshable { await model.load() }
         }
     }
@@ -47,21 +47,31 @@ public struct TaskDetailView: View {
 
 struct TaskDetailList: View {
     let task: TaskDetail
-    let refreshProblem: TaskDetailModel.Problem?
+    let model: TaskDetailModel
 
     var body: some View {
         List {
-            if let refreshProblem {
+            if let notice = model.notice {
+                ProblemLabel(Text(notice.message, bundle: .module))
+            } else if let refreshProblem = model.refreshProblem {
                 ProblemLabel(Text(refreshProblem.message, bundle: .module))
             }
             Section {
                 TaskDetailHeader(task: task)
+                if model.canWrite {
+                    StatusButton(isDone: task.status == .done, isBusy: model.writingStatus.contains(task.id)) {
+                        Task { await model.toggleStatus() }
+                    }
+                }
+                if let next = model.nextDue?.start() {
+                    Label { Text("tasks.detail.nextDue \(next.taskDayText)", bundle: .module) } icon: { Image(systemName: "repeat") }
+                        .foregroundStyle(.secondary)
+                }
             }
-            let blocks = DescriptionBlock.blocks(of: Checklist(description: task.description))
-            if !blocks.isEmpty {
+            if !model.blocks.isEmpty {
                 Section {
-                    ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                        DescriptionBlockRow(block: block)
+                    ForEach(Array(model.blocks.enumerated()), id: \.offset) { _, block in
+                        DescriptionBlockRow(block: block, model: model)
                     }
                 } header: {
                     Text("tasks.detail.section.description", bundle: .module)
@@ -69,7 +79,11 @@ struct TaskDetailList: View {
             }
             if !task.subtasks.isEmpty {
                 Section {
-                    ForEach(task.subtasks) { SubtaskRow(subtask: $0) }
+                    ForEach(task.subtasks) { subtask in
+                        SubtaskRow(subtask: subtask, canWrite: model.canWrite, isBusy: model.writingStatus.contains(subtask.id)) {
+                            Task { await model.toggleSubtask(subtask.id) }
+                        }
+                    }
                 } header: {
                     Text("tasks.detail.section.subtasks", bundle: .module)
                 }
@@ -110,26 +124,65 @@ struct TaskDetailHeader: View {
     }
 }
 
-/// Text mit Inline-Markdown oder ein Punkt der Checkliste.
+/// „Abhaken“ oder „Wieder öffnen“ im Kopf des Details (Q2, Q7).
+struct StatusButton: View {
+    let isDone: Bool
+    let isBusy: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label {
+                Text(isDone ? "tasks.action.reopen" : "tasks.action.checkOff", bundle: .module)
+            } icon: {
+                Image(systemName: isDone ? "arrow.uturn.backward.circle" : "checkmark.circle")
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(isDone ? .secondary : .accentColor)
+        .disabled(isBusy)
+        .sensoryFeedback(.success, trigger: isDone) { old, new in !old && new }
+    }
+}
+
+/// Text mit Inline-Markdown oder ein Punkt der Checkliste. Darf die Person schreiben, ist der
+/// Punkt ein Knopf zum Ankreuzen. Solange die Anfrage läuft, zeigt er den gewählten Zustand.
 struct DescriptionBlockRow: View {
     let block: DescriptionBlock
+    let model: TaskDetailModel
 
     var body: some View {
         switch block {
         case .text(let text):
             Text(Self.markdown(text))
         case .point(let point):
-            Label {
-                Text(Self.markdown(point.text))
-                    .strikethrough(point.isChecked)
-                    .foregroundStyle(point.isChecked ? .secondary : .primary)
-            } icon: {
-                Image(systemName: point.isChecked ? "checkmark.square.fill" : "square")
-                    .foregroundStyle(point.isChecked ? Color.accentColor : .secondary)
+            let checked = model.ticking[point.index] ?? point.isChecked
+            if model.canWrite {
+                Button { Task { await model.tick(line: point.index) } } label: { label(point, checked: checked) }
+                    .buttonStyle(.plain)
+                    .disabled(model.ticking[point.index] != nil)
+                    .accessibilityAddTraits(.isToggle)
+                    .sensoryFeedback(.selection, trigger: checked)
+            } else {
+                label(point, checked: checked)
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityValue(Text(point.isChecked ? "tasks.detail.checked" : "tasks.detail.unchecked", bundle: .module))
         }
+    }
+
+    private func label(_ point: Checklist.Point, checked: Bool) -> some View {
+        Label {
+            Text(Self.markdown(point.text))
+                .strikethrough(checked)
+                .foregroundStyle(checked ? .secondary : .primary)
+        } icon: {
+            Image(systemName: checked ? "checkmark.square.fill" : "square")
+                .foregroundStyle(checked ? Color.accentColor : .secondary)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(checked ? "tasks.detail.checked" : "tasks.detail.unchecked", bundle: .module))
     }
 
     /// Fett, kursiv, Code und Links wie in der Web-App, Umbrüche bleiben. Was sich nicht lesen
@@ -140,20 +193,35 @@ struct DescriptionBlockRow: View {
     }
 }
 
+/// Eine Unteraufgabe. Wechselt `open` ↔ `done` wie in der PWA (Q2).
 struct SubtaskRow: View {
     let subtask: TaskSummary
+    let canWrite: Bool
+    let isBusy: Bool
+    let toggle: () -> Void
 
     var body: some View {
-        Label {
+        let done = subtask.status == .done
+        HStack(spacing: 4) {
+            if canWrite {
+                CheckCircle(isDone: done, isBusy: isBusy, action: toggle)
+            } else {
+                Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(done ? Color.accentColor : .secondary)
+                    .accessibilityHidden(true)
+            }
             Text(verbatim: subtask.title)
-                .strikethrough(subtask.status == .done)
-                .foregroundStyle(subtask.status == .done ? .secondary : .primary)
-        } icon: {
-            Image(systemName: subtask.status == .done ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(subtask.status == .done ? Color.accentColor : .secondary)
+                .strikethrough(done)
+                .foregroundStyle(done ? .secondary : .primary)
+            Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityValue(Text(subtask.status == .done ? "tasks.detail.status.done" : "tasks.detail.status.open", bundle: .module))
+        .accessibilityValue(Text(done ? "tasks.detail.status.done" : "tasks.detail.status.open", bundle: .module))
+        .accessibilityActions {
+            if canWrite {
+                Button(action: toggle) { Text(done ? "tasks.action.reopen" : "tasks.action.checkOff", bundle: .module) }
+            }
+        }
     }
 }
 
@@ -239,6 +307,7 @@ extension TaskDetailModel.Problem {
         TaskDetailView(model: TaskDetailModel(
             taskID: 24,
             tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport(overrides: ["getTask": checklist])),
+            writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             onUnauthorized: {}
         ))
     }
@@ -249,6 +318,7 @@ extension TaskDetailModel.Problem {
         TaskDetailView(model: TaskDetailModel(
             taskID: 7,
             tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             onUnauthorized: {}
         ))
     }

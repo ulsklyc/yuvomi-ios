@@ -13,7 +13,7 @@ public struct TaskSection: Hashable, Sendable, Identifiable {
     public var id: Kind { kind }
 }
 
-/// Zustand der Aufgabenliste, nur lesend.
+/// Zustand der Aufgabenliste: lesen, abhaken und wieder öffnen.
 @MainActor @Observable
 public final class TaskListModel {
     public enum State: Hashable, Sendable {
@@ -39,31 +39,56 @@ public final class TaskListModel {
     /// SwiftUI füllt ihn beim Zeichnen des Ziels.
     @ObservationIgnored private var details: [Int: TaskDetailModel] = [:]
 
+    /// Darf die Person Aufgaben schreiben? Aus `/auth/me` beim Laden, ein 403 stellt es ab (Q4).
+    public private(set) var canWrite = true
+    /// Aufgaben, deren Statuswechsel gerade läuft. Ihr Kreis ist so lange gesperrt (Q13).
+    public private(set) var writing: Set<Int> = []
+    /// Hinweis nach einem gescheiterten Schreiben, bis zum nächsten Versuch oder Laden.
+    public private(set) var notice: TaskNotice?
+
     /// Zählt die Ladevorgänge. Nur die Antwort des jüngsten zählt: Eine ältere, die später
     /// ankommt, zeigte sonst etwa eine gerade abgehakte Aufgabe wieder offen.
     private var generation = 0
 
     private let tasks: any TaskReading
+    private let writer: any TaskWriting
+    private let permissions: any MemberPermissions
     private let today: () -> CalendarDay
     private let onUnauthorized: @MainActor () -> Void
+    private let onStatusChanged: @MainActor () -> Void
 
     /// - Parameters:
     ///   - today: Der Kalendertag des Geräts; in Tests fest.
     ///   - onUnauthorized: Das Credential ist widerrufen, etwa `SessionState.handle(.unauthorized, from:)`.
-    public init(tasks: any TaskReading, today: @escaping () -> CalendarDay, onUnauthorized: @escaping @MainActor () -> Void) {
+    ///   - onStatusChanged: Ein Abhaken oder Wieder öffnen ist beim Server, in der Liste oder im
+    ///     Detail. Die App gleicht danach die Erinnerungen ab (Q10).
+    public init(
+        tasks: any TaskReading, writer: any TaskWriting, permissions: any MemberPermissions,
+        today: @escaping () -> CalendarDay, onUnauthorized: @escaping @MainActor () -> Void,
+        onStatusChanged: @escaping @MainActor () -> Void = {}
+    ) {
         self.tasks = tasks
+        self.writer = writer
+        self.permissions = permissions
         self.today = today
         self.onUnauthorized = onUnauthorized
+        self.onStatusChanged = onStatusChanged
     }
 
     public func load() async {
         generation += 1
         let mine = generation
+        // Die Rechte laufen neben der Liste her. Ohne Antwort bleibt es beim bisherigen Stand,
+        // anfangs erlaubt: Der Server prüft ohnehin (Q4).
+        async let mayWrite = try? await permissions.mayWriteTasks()
         do throws(APIError) {
             let all = try await tasks.tasks()
+            let may = await mayWrite
             guard mine == generation else { return }
             state = .loaded(Self.sections(all, today: today()))
+            canWrite = may ?? canWrite
             refreshProblem = nil
+            notice = nil
         } catch .unauthorized {
             onUnauthorized()
         } catch {
@@ -77,13 +102,82 @@ public final class TaskListModel {
         }
     }
 
+    /// Abhaken oder wieder öffnen, je nach Stand der Zeile. Optimistisch: Der Kreis wechselt
+    /// sofort und springt bei einem Fehler zurück (Q3, Q13). Die abgehakte Zeile bleibt bis
+    /// zum nächsten Laden stehen (Q14).
+    public func toggle(_ id: Int) async {
+        guard canWrite, !writing.contains(id), let before = summary(id) else { return }
+        let target: TaskStatus = before.status == .done ? .open : .done
+        notice = nil
+        writing.insert(id)
+        defer { writing.remove(id) }
+        update(id) { $0.status = target }
+        do throws(APIError) {
+            _ = try await writer.setStatus(task: id, to: target)
+            onStatusChanged()
+        } catch .unauthorized {
+            onUnauthorized()
+        } catch .notFound {
+            remove(id)
+            notice = .gone
+        } catch {
+            update(id) { $0.status = before.status }
+            if error == .forbidden { canWrite = false }
+            notice = TaskNotice(error)
+        }
+    }
+
+    private func summary(_ id: Int) -> TaskSummary? {
+        guard case .loaded(let sections) = state else { return nil }
+        return sections.lazy.flatMap(\.tasks).first { $0.id == id }
+    }
+
+    /// Ändert eine Zeile an ihrem Platz. Ein Neuladen dazwischen kann sie entfernt haben.
+    private func update(_ id: Int, _ change: (inout TaskSummary) -> Void) {
+        guard case .loaded(var sections) = state else { return }
+        for s in sections.indices {
+            for t in sections[s].tasks.indices where sections[s].tasks[t].id == id {
+                change(&sections[s].tasks[t])
+            }
+        }
+        state = .loaded(sections)
+    }
+
+    private func remove(_ id: Int) {
+        guard case .loaded(let sections) = state else { return }
+        state = .loaded(sections.compactMap { section in
+            var section = section
+            section.tasks.removeAll { $0.id == id }
+            return section.tasks.isEmpty ? nil : section
+        })
+    }
+
     /// Das Detail zu einer Aufgabe. Solange sie im Pfad steht, behält sie ihr Modell: SwiftUI
     /// fragt beim Neuzeichnen erneut, und das Detail soll nicht jedes Mal neu laden.
     public func detail(for id: Int) -> TaskDetailModel {
         if let model = details[id] { return model }
-        let model = TaskDetailModel(taskID: id, tasks: tasks, onUnauthorized: onUnauthorized)
+        let model = TaskDetailModel(
+            taskID: id, tasks: tasks, writer: writer,
+            mayWrite: { [weak self] in self?.canWrite ?? false },
+            onUnauthorized: onUnauthorized,
+            // Das Detail bleibt offen, die Liste dahinter lädt neu (Q12).
+            onStatusChanged: { [weak self] in
+                guard let self else { return }
+                onStatusChanged()
+                Task { await self.load() }
+            },
+            onForbidden: { [weak self] in self?.canWrite = false },
+            onGone: { [weak self] in self?.close(id) }
+        )
         details[id] = model
         return model
+    }
+
+    /// Die Aufgabe gibt es nicht mehr: Detail zu, Zeile weg, Hinweis in der Liste (Q8, Q12).
+    public func close(_ id: Int) {
+        path.removeAll { $0 == id }
+        remove(id)
+        notice = .gone
     }
 
     static func sections(_ all: [TaskSummary], today: CalendarDay) -> [TaskSection] {

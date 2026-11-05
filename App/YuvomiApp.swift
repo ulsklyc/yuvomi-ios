@@ -292,10 +292,16 @@ final class AppModel {
 
     func taskList(for session: Session) -> TaskListModel {
         if let taskListModel, taskListModel.session == session { return taskListModel.model }
+        let tasks = YuvomiTasks(server: session.server, credential: session.credential)
         let model = TaskListModel(
-            tasks: YuvomiTasks(server: session.server, credential: session.credential),
+            tasks: tasks,
+            writer: tasks,
+            permissions: YuvomiMemberPermissions(server: session.server, credential: session.credential),
             today: { CalendarDay(Date.now) },
-            onUnauthorized: { [weak self] in self?.session.handle(.unauthorized, from: session) }
+            onUnauthorized: { [weak self] in self?.session.handle(.unauthorized, from: session) },
+            // Abgehakt oder wieder geöffnet: `/upcoming` sieht das sofort, der Abgleich nimmt
+            // die Mitteilungen der Aufgabe weg oder plant sie wieder (Q10).
+            onStatusChanged: { [weak self] in Task { await self?.refreshReminders() } }
         )
         taskListModel = (session, model)
         return model

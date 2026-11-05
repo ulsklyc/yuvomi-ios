@@ -4,7 +4,8 @@ import YuvomiAPI
 import YuvomiCore
 import YuvomiFixtures
 
-/// Offene Aufgaben, nach Fälligkeit gruppiert. Ein Tipp öffnet das Detail.
+/// Offene Aufgaben, nach Fälligkeit gruppiert. Der Kreis hakt ab, ein Tipp auf den Rest der
+/// Zeile öffnet das Detail (Q6).
 ///
 /// `banner` steht über den Abschnitten, etwa die Karte für Erinnerungen. Was darin steht,
 /// entscheidet die App, die Liste kennt Erinnerungen nicht.
@@ -53,7 +54,9 @@ public struct TaskListView<Banner: View>: View {
             }
         case .loaded(let sections):
             List {
-                if let problem = model.refreshProblem {
+                if let notice = model.notice {
+                    ProblemLabel(Text(notice.message, bundle: .module))
+                } else if let problem = model.refreshProblem {
                     ProblemLabel(Text(problem.message, bundle: .module))
                 }
                 banner
@@ -69,9 +72,16 @@ public struct TaskListView<Banner: View>: View {
                 ForEach(sections) { section in
                     Section {
                         ForEach(section.tasks) { task in
+                            let toggle = { Task { await model.toggle(task.id) } }
                             NavigationLink(value: task.id) {
-                                TaskRow(task: task, showsDate: section.kind != .today)
+                                HStack(spacing: 4) {
+                                    if model.canWrite {
+                                        CheckCircle(isDone: task.status == .done, isBusy: model.writing.contains(task.id)) { _ = toggle() }
+                                    }
+                                    TaskRow(task: task, showsDate: section.kind != .today)
+                                }
                             }
+                            .checkOffAccessibility(isDone: task.status == .done, canWrite: model.canWrite) { _ = toggle() }
                         }
                     } header: {
                         Text(section.kind.title, bundle: .module)
@@ -90,7 +100,10 @@ struct TaskRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
+                // Abgehakt bleibt die Zeile durchgestrichen stehen, bis die Liste neu lädt (Q2, Q14).
                 Text(verbatim: task.title)
+                    .strikethrough(task.status == .done)
+                    .foregroundStyle(task.status == .done ? .secondary : .primary)
                 Spacer(minLength: 8)
                 if task.priority == .urgent || task.priority == .high {
                     Image(systemName: "flag.fill")
@@ -162,6 +175,8 @@ extension TaskListModel.Problem {
     TaskListView(
         model: TaskListModel(
             tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            permissions: YuvomiMemberPermissions(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: {}
         ),
