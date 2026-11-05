@@ -43,8 +43,8 @@ public final class TaskListModel {
     public private(set) var canWrite = true
     /// Aufgaben, deren Statuswechsel gerade läuft, mit dem Ziel. Ihr Kreis ist so lange
     /// gesperrt (Q13), und ein Laden dazwischen behält den Haken.
-    private var pending: [Int: TaskStatus] = [:]
-    public var writing: Set<Int> { Set(pending.keys) }
+    @ObservationIgnored private var overlay = StatusOverlay()
+    public private(set) var writing: Set<Int> = []
     /// Hinweis nach einem gescheiterten Schreiben, bis zum nächsten Versuch oder Laden.
     public private(set) var notice: TaskNotice?
 
@@ -80,6 +80,7 @@ public final class TaskListModel {
     public func load() async {
         generation += 1
         let mine = generation
+        let mark = overlay.mark
         // Die Rechte laufen neben der Liste her. Ohne Antwort bleibt es beim bisherigen Stand,
         // anfangs erlaubt: Der Server prüft ohnehin (Q4).
         async let mayWrite = try? await permissions.mayWriteTasks()
@@ -88,8 +89,9 @@ public final class TaskListModel {
             let may = await mayWrite
             guard mine == generation else { return }
             state = .loaded(Self.sections(all, today: today()))
-            // `/tasks` kann älter sein als ein laufendes Abhaken: dessen Ziel gilt weiter.
-            for (id, target) in pending { update(id) { $0.status = target } }
+            // `/tasks` kann älter sein als ein Abhaken, das noch läuft oder seit dem Start fertig
+            // wurde: dessen Ziel gilt weiter.
+            for (id, status) in overlay.statuses(since: mark) { update(id) { $0.status = status } }
             canWrite = may ?? canWrite
             refreshProblem = nil
             notice = nil
@@ -110,14 +112,22 @@ public final class TaskListModel {
     /// sofort und springt bei einem Fehler zurück (Q3, Q13). Die abgehakte Zeile bleibt bis
     /// zum nächsten Laden stehen (Q14).
     public func toggle(_ id: Int) async {
-        guard canWrite, pending[id] == nil, let before = summary(id) else { return }
+        guard canWrite, !overlay.isWriting(id), let before = summary(id) else { return }
         let target: TaskStatus = before.status == .done ? .open : .done
         notice = nil
-        pending[id] = target
-        defer { pending[id] = nil }
+        overlay.begin(id, to: target)
+        writing = overlay.writing
+        var confirmed: TaskStatus?
+        defer {
+            overlay.finish(id, confirmed: confirmed)
+            writing = overlay.writing
+        }
         update(id) { $0.status = target }
         do throws(APIError) {
             _ = try await writer.setStatus(task: id, to: target)
+            confirmed = target
+            // Ein Laden, das inzwischen ankam, kann den Haken überschrieben haben.
+            update(id) { $0.status = target }
             onStatusChanged()
         } catch .unauthorized {
             onUnauthorized()

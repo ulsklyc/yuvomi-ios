@@ -85,6 +85,43 @@ import YuvomiCore
         #expect(calls.statusChanged == 0)
     }
 
+    /// Ein Neuladen während des Abhakens überschreibt den Wechsel nicht, weder solange er läuft
+    /// noch wenn die Antwort des Ladens erst danach kommt (Codex-Review E3).
+    @Test func aRefreshDuringCheckingOffKeepsIt() async {
+        let detail = await loadedDetail()
+        writer.hold()
+        let writing = Task { await detail.toggleStatus() }
+        await writer.untilWaiting()
+        await detail.load()
+        #expect(task(of: detail)?.status == .done)
+
+        reading.gate.close()
+        let loading = Task { await detail.load() }
+        await reading.gate.untilWaiting()
+        writer.release()
+        await writing.value
+        reading.gate.open()
+        await loading.value
+
+        #expect(task(of: detail)?.status == .done)
+    }
+
+    /// Immer nur ein Punkt auf einmal: Jede Antwort ist die ganze Beschreibung.
+    @Test func onlyOnePointIsTickedAtATime() async {
+        reading.result.withLock { $0 = .success(TaskDetail(id: 24, title: "x", status: .open, priority: .none, description: "- [ ] A\n- [ ] B")) }
+        writer.tick.withLock { $0 = .success("- [x] A\n- [ ] B") }
+        let detail = await loadedDetail()
+        writer.hold()
+
+        let first = Task { await detail.tick(line: 0) }
+        await writer.untilWaiting()
+        await detail.tick(line: 1)
+        writer.release()
+        await first.value
+
+        #expect(writer.calls.withLock { $0 } == ["tick 24 0 true - [ ] A"])
+    }
+
     /// Ankreuzen schickt die Zeile, wie die Person sie sah, und übernimmt die Antwort.
     @Test func tickingTakesTheServersDescription() async {
         writer.tick.withLock { $0 = .success("- [x] Pack sleeping bags") }

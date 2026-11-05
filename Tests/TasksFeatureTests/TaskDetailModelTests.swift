@@ -15,9 +15,13 @@ final class FakeDetail: TaskReading, Sendable {
 
     func tasks() async throws(APIError) -> [TaskSummary] { [] }
 
+    let gate = Gate()
+
     func task(id: Int) async throws(APIError) -> TaskDetail {
         requested.withLock { $0.append(id) }
-        return try result.withLock { $0 }.get()
+        let result = result.withLock { $0 }
+        await gate.pass()
+        return try result.get()
     }
 }
 

@@ -7,6 +7,8 @@ import YuvomiCore
 @MainActor @Suite struct TaskListWritingTests {
     let writer = FakeWriter()
 
+    let reading = FakeTasks(.success([task(1), task(2)]), detail: packing)
+
     func loadedList(
         _ tasks: [TaskSummary] = [task(1), task(2)],
         permissions: FakePermissions = FakePermissions(),
@@ -14,12 +16,28 @@ import YuvomiCore
         onStatusChanged: @escaping @MainActor () -> Void = {}
     ) async -> TaskListModel {
         let list = TaskListModel(
-            tasks: FakeTasks(.success(tasks), detail: packing), writer: writer, permissions: permissions,
+            tasks: reading, writer: writer, permissions: permissions,
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged
         )
+        reading.result = .success(tasks)
         await list.load()
         return list
+    }
+
+    /// Ein Laden, das vor dem Abhaken begann und erst danach ankommt, kennt den Haken nicht.
+    /// Er bleibt trotzdem stehen (Codex-Review E3).
+    @Test func aLoadOlderThanAFinishedWriteKeepsTheCheckMark() async {
+        let list = await loadedList()
+        reading.gate.close()
+        let loading = Task { await list.load() }
+        await reading.gate.untilWaiting()
+
+        await list.toggle(1)
+        reading.gate.open()
+        await loading.value
+
+        #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1, status: .done), task(2)])]))
     }
 
     /// Abgehakt bleibt die Zeile stehen, bis die Liste das nächste Mal lädt (Q2, Q14).

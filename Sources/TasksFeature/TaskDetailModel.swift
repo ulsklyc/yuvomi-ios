@@ -33,6 +33,8 @@ public final class TaskDetailModel {
     public private(set) var nextDue: CalendarDay?
     /// Aufgabe und Unteraufgaben, deren Statuswechsel gerade läuft.
     public private(set) var writingStatus: Set<Int> = []
+    /// Laufende und seit dem Start eines Ladens bestätigte Statuswechsel (Codex-Review E3).
+    @ObservationIgnored private var overlay = StatusOverlay()
     /// Punkte der Checkliste, deren Ankreuzen gerade läuft: Zeile → Zustand, den die Person
     /// gewählt hat. Die Ansicht zeigt ihn statt des gespeicherten, bis die Antwort da ist.
     public private(set) var ticking: [Int: Bool] = [:]
@@ -77,11 +79,13 @@ public final class TaskDetailModel {
     public func load() async {
         generation += 1
         let mine = generation
+        let mark = overlay.mark
         // Nach einem Fehler zeigt „Erneut versuchen“ wieder den Ladekreis.
         if case .failed = state { state = .loading }
         do throws(APIError) {
-            let task = try await tasks.task(id: taskID)
+            var task = try await tasks.task(id: taskID)
             guard mine == generation else { return }
+            for (id, status) in overlay.statuses(since: mark) { Self.set(id, to: status, in: &task) }
             state = .loaded(task)
             refreshProblem = nil
         } catch .unauthorized {
@@ -105,23 +109,28 @@ public final class TaskDetailModel {
     /// Abhaken oder wieder öffnen, je nach Status der Aufgabe (Knopf im Kopf).
     public func toggleStatus() async {
         guard let task = loaded else { return }
-        let target: TaskStatus = task.status == .done ? .open : .done
-        await write(taskID, from: task.status, to: target) { $0.status = $1 }
+        await write(taskID, from: task.status)
     }
 
     /// Eine Unteraufgabe abhaken oder wieder öffnen, mit ihrer eigenen Id (wie die PWA).
     public func toggleSubtask(_ id: Int) async {
         guard let subtask = loaded?.subtasks.first(where: { $0.id == id }) else { return }
-        let target: TaskStatus = subtask.status == .done ? .open : .done
-        await write(id, from: subtask.status, to: target) { task, status in
-            for i in task.subtasks.indices where task.subtasks[i].id == id { task.subtasks[i].status = status }
-        }
+        await write(id, from: subtask.status)
+    }
+
+    /// Setzt den Status der Aufgabe (`id == task.id`) oder einer ihrer Unteraufgaben.
+    private static func set(_ id: Int, to status: TaskStatus, in task: inout TaskDetail) {
+        if id == task.id { task.status = status }
+        for i in task.subtasks.indices where task.subtasks[i].id == id { task.subtasks[i].status = status }
     }
 
     /// Einen Punkt der Checkliste umschalten. `expect` ist die Zeile aus dem zuletzt gesehenen
     /// Text, die Antwort ist die neue Beschreibung (Q12).
+    ///
+    /// Immer nur ein Punkt auf einmal: Jede Antwort ist die ganze Beschreibung, eine ältere
+    /// Antwort überschriebe sonst einen später gesetzten Haken (Codex-Review E3).
     public func tick(line: Int) async {
-        guard mayWrite(), ticking[line] == nil, let task = loaded,
+        guard mayWrite(), ticking.isEmpty, let task = loaded,
               let point = Checklist(description: task.description).items.first(where: { $0.index == line })
         else { return }
         notice = nil
@@ -148,14 +157,23 @@ public final class TaskDetailModel {
     }
 
     /// Ein Statuswechsel für die Aufgabe (`id == taskID`) oder eine ihrer Unteraufgaben.
-    private func write(_ id: Int, from before: TaskStatus, to target: TaskStatus, apply: (inout TaskDetail, TaskStatus) -> Void) async {
-        guard mayWrite(), !writingStatus.contains(id) else { return }
+    private func write(_ id: Int, from before: TaskStatus) async {
+        guard mayWrite(), !overlay.isWriting(id) else { return }
+        let target: TaskStatus = before == .done ? .open : .done
         notice = nil
-        writingStatus.insert(id)
-        defer { writingStatus.remove(id) }
-        update { apply(&$0, target) }
+        overlay.begin(id, to: target)
+        writingStatus = overlay.writing
+        var confirmed: TaskStatus?
+        defer {
+            overlay.finish(id, confirmed: confirmed)
+            writingStatus = overlay.writing
+        }
+        update { Self.set(id, to: target, in: &$0) }
         do throws(APIError) {
             let change = try await writer.setStatus(task: id, to: target)
+            confirmed = target
+            // Ein Neuladen, das inzwischen ankam, kann den Wechsel überschrieben haben.
+            update { Self.set(id, to: target, in: &$0) }
             if id == taskID { nextDue = target == .done ? change.nextDue : nil }
             onStatusChanged()
         } catch .unauthorized {
@@ -165,7 +183,7 @@ public final class TaskDetailModel {
             update { $0.subtasks.removeAll { $0.id == id } }
             notice = .gone
         } catch {
-            update { apply(&$0, before) }
+            update { Self.set(id, to: before, in: &$0) }
             fail(error)
         }
     }

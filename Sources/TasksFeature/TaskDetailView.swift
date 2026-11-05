@@ -161,7 +161,7 @@ struct DescriptionBlockRow: View {
             if model.canWrite {
                 Button { Task { await model.tick(line: point.index) } } label: { label(point, checked: checked) }
                     .buttonStyle(.plain)
-                    .disabled(model.ticking[point.index] != nil)
+                    .disabled(!model.ticking.isEmpty)
                     .accessibilityAddTraits(.isToggle)
                     .sensoryFeedback(.selection, trigger: checked)
             } else {

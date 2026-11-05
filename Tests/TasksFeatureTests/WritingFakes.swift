@@ -52,6 +52,37 @@ final class FakeWriter: TaskWriting, Sendable {
     }
 }
 
+/// Ein Tor für Fakes: Ist es zu, wartet jede Anfrage, bis der Test es öffnet. So lässt sich die
+/// Reihenfolge zweier Antworten im Test festlegen.
+final class Gate: Sendable {
+    private let state = Mutex<(closed: Bool, waiting: [CheckedContinuation<Void, Never>])>((false, []))
+
+    func close() { state.withLock { $0.closed = true } }
+
+    func open() {
+        let waiting = state.withLock { state in
+            state.closed = false
+            defer { state.waiting = [] }
+            return state.waiting
+        }
+        waiting.forEach { $0.resume() }
+    }
+
+    func untilWaiting() async {
+        while state.withLock({ $0.waiting.isEmpty }) { await Task.yield() }
+    }
+
+    func pass() async {
+        await withCheckedContinuation { continuation in
+            let closed = state.withLock { state in
+                if state.closed { state.waiting.append(continuation) }
+                return state.closed
+            }
+            if !closed { continuation.resume() }
+        }
+    }
+}
+
 /// Port-Fake für `/auth/me`.
 struct FakePermissions: MemberPermissions {
     var result: Result<Bool, APIError> = .success(true)

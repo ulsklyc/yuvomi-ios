@@ -14,7 +14,13 @@ final class FakeTasks: TaskReading, @unchecked Sendable {
         self.detail = detail
     }
 
-    func tasks() async throws(APIError) -> [TaskSummary] { try result.get() }
+    let gate = Gate()
+
+    func tasks() async throws(APIError) -> [TaskSummary] {
+        let result = result
+        await gate.pass()
+        return try result.get()
+    }
     func task(id: Int) async throws(APIError) -> TaskDetail {
         guard let detail else { throw .notFound }
         return detail
