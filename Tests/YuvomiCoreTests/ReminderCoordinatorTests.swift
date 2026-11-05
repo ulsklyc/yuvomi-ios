@@ -95,6 +95,23 @@ final class Gate: @unchecked Sendable {
         #expect(Set(scheduler.planned.keys) == ["reminder.1.task.101"])
     }
 
+    /// Nach einem Statuswechsel hängt sich ein Abgleich nicht an einen laufenden: Dessen Abruf
+    /// ist älter als der Wechsel. Er holt danach neu, ein weiterer wartender hängt sich an ihn
+    /// (Codex-Review E3).
+    @Test func aFreshSyncWhileOneRunsFetchesAgainAfterIt() async {
+        let reminders = coordinator()
+        let first = Task { await reminders.sync(session) }
+        await settle()
+        let fresh = Task { await reminders.sync(session, fresh: true) }
+        let another = Task { await reminders.sync(session, fresh: true) }
+        await settle()
+
+        gate.open()
+        _ = await (first.value, fresh.value, another.value)
+
+        #expect(source.windows.count == 2)
+    }
+
     /// Anhängen nur an einen laufenden Abgleich. Sonst gliche nach dem ersten Abgleich nichts
     /// mehr ab, auch nach einem Netzfehler nicht.
     @Test func aSyncAfterAFinishedOneFetchesAgain() async {

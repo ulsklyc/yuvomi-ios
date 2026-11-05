@@ -15,9 +15,13 @@ final class FakeDetail: TaskReading, Sendable {
 
     func tasks() async throws(APIError) -> [TaskSummary] { [] }
 
+    let gate = Gate()
+
     func task(id: Int) async throws(APIError) -> TaskDetail {
         requested.withLock { $0.append(id) }
-        return try result.withLock { $0 }.get()
+        let result = result.withLock { $0 }
+        await gate.pass()
+        return try result.get()
     }
 }
 
@@ -31,7 +35,7 @@ let packing = TaskDetail(
 /// Seam 4, Laden: Was das Detail nach `load()` zeigt.
 @MainActor @Suite struct TaskDetailModelTests {
     func model(_ reading: FakeDetail, onUnauthorized: @escaping @MainActor () -> Void = {}) -> TaskDetailModel {
-        TaskDetailModel(taskID: 24, tasks: reading, onUnauthorized: onUnauthorized)
+        TaskDetailModel(taskID: 24, tasks: reading, writer: FakeWriter(), onUnauthorized: onUnauthorized)
     }
 
     @Test func loadsTheTask() async {
@@ -104,7 +108,7 @@ let packing = TaskDetail(
 /// Der Weg aus der Liste: `path` ist die Bindung der Navigation, auch für die Mitteilung (E4).
 @MainActor @Suite struct TaskListOpeningTests {
     @Test func openingATaskMakesOneDetailForIt() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
 
         list.path = [24]
         let first = list.detail(for: 24)
@@ -117,7 +121,7 @@ let packing = TaskDetail(
 
     /// Zwei Ziele im Stapel, etwa eine Mitteilung über einem offenen Detail: Jedes behält sein Modell.
     @Test func twoOpenTasksKeepTheirDetails() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
 
         list.path = [24, 31]
         let first = list.detail(for: 24)
@@ -129,7 +133,7 @@ let packing = TaskDetail(
 
     /// Zurück auf der Liste: Die Modelle der geschlossenen Aufgaben fallen weg.
     @Test func closingATaskDropsItsDetail() async {
-        let list = TaskListModel(tasks: FakeDetail(.success(packing)), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: FakeDetail(.success(packing)), writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
         list.path = [24]
         let first = list.detail(for: 24)
 

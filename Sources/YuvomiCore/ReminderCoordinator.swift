@@ -6,6 +6,8 @@ import Foundation
 /// - Abräumen bricht jeden laufenden oder wartenden Abgleich ab und läuft danach.
 /// - Ein Abgleich nach dem Abräumen läuft nach dem Abräumen, er wird nicht verschluckt.
 /// - Ein zweiter Abgleich für dieselbe Sitzung, während einer läuft, hängt sich an ihn an.
+///   Mit `fresh` nur an einen, der noch wartet: Nach einem Statuswechsel ist der Abruf eines
+///   laufenden älter als der Wechsel.
 /// - Eine Rückmeldung läuft nach einem laufenden Abgleich und räumt danach ab: Dessen Abruf
 ///   kennt sie noch nicht und plant eine gerade abgehakte Aufgabe womöglich wieder ein.
 /// - Jeder Abgleich sendet zuerst die gemerkten Rückmeldungen und holt danach ab.
@@ -37,6 +39,8 @@ public final class ReminderCoordinator {
     /// Abgleiche, die noch laufen oder warten. Jeder trägt sich am Ende selbst aus, damit sich
     /// niemand an einen fertigen hängt. Abräumen bricht sie ab.
     private var syncs: [UUID: Task<Void, Never>] = [:]
+    /// Aufträge, die noch auf ihren Vorgänger warten und nichts abgerufen haben.
+    private var waiting: Set<UUID> = []
     /// Rückmeldungen, die gerade gesendet werden. Abmelden bricht sie ab.
     private var replies: [UUID: Task<Void, Never>] = [:]
     /// Das sofortige Abräumen der Rückmeldungen, das neben der Reihe läuft. Abräumen wartet
@@ -68,8 +72,10 @@ public final class ReminderCoordinator {
         self.onNotCheckedOff = onNotCheckedOff
     }
 
-    public func sync(_ session: Session) async {
-        if let last, last.job == .sync(session), syncs[last.id] != nil, !last.task.isCancelled {
+    /// - Parameter fresh: Der Abruf muss nach dem Aufruf beginnen, etwa nach einem Statuswechsel.
+    public func sync(_ session: Session, fresh: Bool = false) async {
+        if let last, last.job == .sync(session), syncs[last.id] != nil, !last.task.isCancelled,
+           !fresh || waiting.contains(last.id) {
             return await last.task.value
         }
         let sync = ReminderSync(source: makeSource(session), scheduler: scheduler)
@@ -182,10 +188,12 @@ public final class ReminderCoordinator {
         let task = Task { [weak self] in
             defer { self?[keyPath: running][id] = nil }
             await previous?.value
+            self?.waiting.remove(id)
             guard let self, !Task.isCancelled else { return }
             await body(self)
         }
         last = (job, id, task)
+        waiting.insert(id)
         self[keyPath: running][id] = task
         await task.value
     }

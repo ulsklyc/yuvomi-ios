@@ -147,7 +147,10 @@ final class AppModel {
 
     /// Erlaubnis neu lesen, dann abgleichen oder abräumen. Ohne Erlaubnis oder mit
     /// ausgeschaltetem Schalter bleibt nichts geplant.
-    func refreshReminders() async {
+    ///
+    /// - Parameter fresh: Nach einem Statuswechsel. Ein laufender Abgleich hat womöglich vorher
+    ///   abgerufen, also holt dieser danach neu, statt sich anzuhängen.
+    func refreshReminders(fresh: Bool = false) async {
         guard let current = session.current else { return }
         await reminderSettings.load()
         // Abgemeldet, während die Erlaubnis gelesen wurde: Das Abmelden hat schon abgeräumt.
@@ -156,7 +159,7 @@ final class AppModel {
         // Abbrechen. Ein später gemeldeter bricht `cancelRunning()` ab.
         guard !Task.isCancelled else { return }
         if reminderSettings.isOn {
-            await reminders.sync(current)
+            await reminders.sync(current, fresh: fresh)
         } else {
             // Ohne Mitteilungen, aber was jemand schon getan hat, geht trotzdem raus.
             await Self.clear(reminders, keepingReplies: true)
@@ -292,10 +295,16 @@ final class AppModel {
 
     func taskList(for session: Session) -> TaskListModel {
         if let taskListModel, taskListModel.session == session { return taskListModel.model }
+        let tasks = YuvomiTasks(server: session.server, credential: session.credential)
         let model = TaskListModel(
-            tasks: YuvomiTasks(server: session.server, credential: session.credential),
+            tasks: tasks,
+            writer: tasks,
+            permissions: YuvomiMemberPermissions(server: session.server, credential: session.credential),
             today: { CalendarDay(Date.now) },
-            onUnauthorized: { [weak self] in self?.session.handle(.unauthorized, from: session) }
+            onUnauthorized: { [weak self] in self?.session.handle(.unauthorized, from: session) },
+            // Abgehakt oder wieder geöffnet: `/upcoming` sieht das sofort, der Abgleich nimmt
+            // die Mitteilungen der Aufgabe weg oder plant sie wieder (Q10).
+            onStatusChanged: { [weak self] in Task { await self?.refreshReminders(fresh: true) } }
         )
         taskListModel = (session, model)
         return model

@@ -6,13 +6,25 @@ import YuvomiCore
 /// Port-Fake: was `GET /tasks` liefert.
 final class FakeTasks: TaskReading, @unchecked Sendable {
     var result: Result<[TaskSummary], APIError>
+    /// Was `GET /tasks/{id}` liefert, ohne Wert 404.
+    var detail: TaskDetail?
 
-    init(_ result: Result<[TaskSummary], APIError>) {
+    init(_ result: Result<[TaskSummary], APIError>, detail: TaskDetail? = nil) {
         self.result = result
+        self.detail = detail
     }
 
-    func tasks() async throws(APIError) -> [TaskSummary] { try result.get() }
-    func task(id: Int) async throws(APIError) -> TaskDetail { throw .notFound }
+    let gate = Gate()
+
+    func tasks() async throws(APIError) -> [TaskSummary] {
+        let result = result
+        await gate.pass()
+        return try result.get()
+    }
+    func task(id: Int) async throws(APIError) -> TaskDetail {
+        guard let detail else { throw .notFound }
+        return detail
+    }
 }
 
 func task(_ id: Int, due: CalendarDay? = nil, time: String? = nil, status: TaskStatus = .open) -> TaskSummary {
@@ -23,7 +35,7 @@ func task(_ id: Int, due: CalendarDay? = nil, time: String? = nil, status: TaskS
     let today = CalendarDay(year: 2026, month: 11, day: 3)
 
     func model(_ tasks: FakeTasks, onUnauthorized: @escaping @MainActor () -> Void = {}) -> TaskListModel {
-        TaskListModel(tasks: tasks, today: { today }, onUnauthorized: onUnauthorized)
+        TaskListModel(tasks: tasks, writer: FakeWriter(), permissions: FakePermissions(), today: { today }, onUnauthorized: onUnauthorized)
     }
 
     @Test func openTasksAreGroupedByDueDate() async {
@@ -146,7 +158,7 @@ final class SlowFirstTasks: TaskReading, @unchecked Sendable {
     /// Sonst zeigte die Liste nach dem Abhaken eine erledigte Aufgabe wieder offen.
     @Test func aSlowOlderAnswerDoesNotOverwriteANewerOne() async {
         let tasks = SlowFirstTasks(first: [task(1), task(2)], later: [task(2)])
-        let list = TaskListModel(tasks: tasks, today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
+        let list = TaskListModel(tasks: tasks, writer: FakeWriter(), permissions: FakePermissions(), today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {})
 
         let older = Task { await list.load() }
         for _ in 0..<10 { await Task.yield() }

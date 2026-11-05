@@ -13,7 +13,7 @@ public struct TaskSection: Hashable, Sendable, Identifiable {
     public var id: Kind { kind }
 }
 
-/// Zustand der Aufgabenliste, nur lesend.
+/// Zustand der Aufgabenliste: lesen, abhaken und wieder öffnen.
 @MainActor @Observable
 public final class TaskListModel {
     public enum State: Hashable, Sendable {
@@ -39,31 +39,66 @@ public final class TaskListModel {
     /// SwiftUI füllt ihn beim Zeichnen des Ziels.
     @ObservationIgnored private var details: [Int: TaskDetailModel] = [:]
 
+    /// Darf die Person Aufgaben schreiben? Aus `/auth/me` beim Laden, ein 403 stellt es ab (Q4).
+    public private(set) var canWrite = true
+    /// Statuswechsel, die gerade laufen oder ein Laden noch nicht kennt. Jedes Detail teilt sie,
+    /// so schreibt keines dieselbe Aufgabe ein zweites Mal dazwischen (Codex-Review E3).
+    private let overlay = StatusOverlay()
+    /// Aufgaben, deren Statuswechsel gerade läuft, auch aus einem Detail. Ihr Kreis ist so
+    /// lange gesperrt (Q13).
+    public var writing: Set<Int> { overlay.writing }
+    /// Hinweis nach einem gescheiterten Schreiben, bis zum nächsten Versuch oder Laden.
+    public private(set) var notice: TaskNotice?
+
     /// Zählt die Ladevorgänge. Nur die Antwort des jüngsten zählt: Eine ältere, die später
     /// ankommt, zeigte sonst etwa eine gerade abgehakte Aufgabe wieder offen.
     private var generation = 0
 
     private let tasks: any TaskReading
+    private let writer: any TaskWriting
+    private let permissions: any MemberPermissions
     private let today: () -> CalendarDay
     private let onUnauthorized: @MainActor () -> Void
+    private let onStatusChanged: @MainActor () -> Void
 
     /// - Parameters:
     ///   - today: Der Kalendertag des Geräts; in Tests fest.
     ///   - onUnauthorized: Das Credential ist widerrufen, etwa `SessionState.handle(.unauthorized, from:)`.
-    public init(tasks: any TaskReading, today: @escaping () -> CalendarDay, onUnauthorized: @escaping @MainActor () -> Void) {
+    ///   - onStatusChanged: Ein Abhaken oder Wieder öffnen ist beim Server, in der Liste oder im
+    ///     Detail. Die App gleicht danach die Erinnerungen ab (Q10).
+    public init(
+        tasks: any TaskReading, writer: any TaskWriting, permissions: any MemberPermissions,
+        today: @escaping () -> CalendarDay, onUnauthorized: @escaping @MainActor () -> Void,
+        onStatusChanged: @escaping @MainActor () -> Void = {}
+    ) {
         self.tasks = tasks
+        self.writer = writer
+        self.permissions = permissions
         self.today = today
         self.onUnauthorized = onUnauthorized
+        self.onStatusChanged = onStatusChanged
     }
 
     public func load() async {
         generation += 1
         let mine = generation
+        let mark = overlay.mark
+        // Die Rechte laufen neben der Liste her. Ohne Antwort bleibt es beim bisherigen Stand,
+        // anfangs erlaubt: Der Server prüft ohnehin (Q4).
+        async let mayWrite = try? await permissions.mayWriteTasks()
         do throws(APIError) {
-            let all = try await tasks.tasks()
+            var all = try await tasks.tasks()
+            let may = await mayWrite
             guard mine == generation else { return }
-            state = .loaded(Self.sections(all, today: today()))
+            // `/tasks` kann älter sein als ein Abhaken, das noch läuft oder seit dem Start fertig
+            // wurde: dessen Ziel gilt weiter, und zwar vor dem Filtern der erledigten. Sonst
+            // fehlte eine gerade wieder geöffnete Zeile, die die Antwort noch als erledigt kennt.
+            let overlaid = overlay.statuses(since: mark)
+            for i in all.indices { if let status = overlaid[all[i].id] { all[i].status = status } }
+            state = .loaded(Self.sections(all, today: today(), keeping: Set(overlaid.keys)))
+            canWrite = may ?? canWrite
             refreshProblem = nil
+            notice = nil
         } catch .unauthorized {
             onUnauthorized()
         } catch {
@@ -77,18 +112,127 @@ public final class TaskListModel {
         }
     }
 
+    /// Abhaken oder wieder öffnen, je nach Stand der Zeile. Optimistisch: Der Kreis wechselt
+    /// sofort und springt bei einem Fehler zurück (Q3, Q13). Die abgehakte Zeile bleibt bis
+    /// zum nächsten Laden stehen (Q14).
+    public func toggle(_ id: Int) async {
+        guard await write(id) else { return }
+        // Ein offenes Detail derselben Aufgabe hat womöglich vor dem Wechsel geladen und
+        // böte sonst weiter das Falsche an (Codex-Review E3).
+        await details[id]?.load()
+    }
+
+    /// Der Statuswechsel selbst. `true`, wenn der Server ihn bestätigt hat.
+    private func write(_ id: Int) async -> Bool {
+        guard canWrite, !overlay.isWriting(id), let before = summary(id) else { return false }
+        let target: TaskStatus = before.status == .done ? .open : .done
+        notice = nil
+        overlay.begin(id, to: target)
+        var confirmed: TaskStatus?
+        defer { overlay.finish(id, confirmed: confirmed) }
+        update(id) { $0.status = target }
+        do throws(APIError) {
+            _ = try await writer.setStatus(task: id, to: target)
+            confirmed = target
+            // Ein Laden, das inzwischen ankam, kann den Haken überschrieben haben.
+            update(id) { $0.status = target }
+            onStatusChanged()
+            return true
+        } catch .unauthorized {
+            onUnauthorized()
+        } catch .notFound {
+            // Wie aus dem Detail: Ein offenes Detail der Aufgabe geht mit zu (Codex-Review E3).
+            close(id)
+        } catch {
+            rollBack(id, to: before.status)
+            if error == .forbidden { canWrite = false }
+            notice = TaskNotice(error)
+        }
+        return false
+    }
+
+    private func summary(_ id: Int) -> TaskSummary? {
+        guard case .loaded(let sections) = state else { return nil }
+        return sections.lazy.flatMap(\.tasks).first { $0.id == id }
+    }
+
+    /// Ändert eine Zeile an ihrem Platz. Ein Neuladen dazwischen kann sie entfernt haben.
+    private func update(_ id: Int, _ change: (inout TaskSummary) -> Void) {
+        guard case .loaded(var sections) = state else { return }
+        for s in sections.indices {
+            for t in sections[s].tasks.indices where sections[s].tasks[t].id == id {
+                change(&sections[s].tasks[t])
+            }
+        }
+        state = .loaded(sections)
+    }
+
+    private func remove(_ id: Int) {
+        guard case .loaded(let sections) = state else { return }
+        state = .loaded(sections.compactMap { section in
+            var section = section
+            section.tasks.removeAll { $0.id == id }
+            return section.tasks.isEmpty ? nil : section
+        })
+    }
+
     /// Das Detail zu einer Aufgabe. Solange sie im Pfad steht, behält sie ihr Modell: SwiftUI
     /// fragt beim Neuzeichnen erneut, und das Detail soll nicht jedes Mal neu laden.
     public func detail(for id: Int) -> TaskDetailModel {
         if let model = details[id] { return model }
-        let model = TaskDetailModel(taskID: id, tasks: tasks, onUnauthorized: onUnauthorized)
+        let made = WeakDetail()
+        let model = TaskDetailModel(
+            taskID: id, tasks: tasks, writer: writer, overlay: overlay,
+            mayWrite: { [weak self] in self?.canWrite ?? false },
+            onUnauthorized: onUnauthorized,
+            // Das Detail bleibt offen, die Liste dahinter lädt neu (Q12).
+            onStatusChanged: { [weak self] in
+                guard let self else { return }
+                onStatusChanged()
+                let reopened = newer(than: made, id)
+                Task {
+                    await self.load()
+                    await reopened?.load()
+                }
+            },
+            onTicked: { [weak self] in
+                guard let reopened = self?.newer(than: made, id) else { return }
+                Task { await reopened.load() }
+            },
+            onRolledBack: { [weak self] task, status in self?.rollBack(task, to: status) },
+            onForbidden: { [weak self] in self?.canWrite = false },
+            onGone: { [weak self] in self?.close(id) }
+        )
+        made.model = model
         details[id] = model
         return model
     }
 
-    static func sections(_ all: [TaskSummary], today: CalendarDay) -> [TaskSection] {
+    /// Ein Wechsel ist gescheitert, aus der Liste oder einem Detail. Jedes Modell, das dazwischen
+    /// lud, zeigt ihn aus der geteilten Überlagerung: Alle springen zurück, ohne Netzanfrage
+    /// (Codex-Review E3).
+    private func rollBack(_ id: Int, to status: TaskStatus) {
+        update(id) { $0.status = status }
+        for detail in details.values { detail.restore(id, to: status) }
+    }
+
+    /// Ein Detail derselben Aufgabe, das nach `made` entstand: zu und wieder offen, während
+    /// `made` noch schrieb. Es lud womöglich vor dem Schreiben (Codex-Review E3).
+    private func newer(than made: WeakDetail, _ id: Int) -> TaskDetailModel? {
+        details[id].flatMap { $0 === made.model ? nil : $0 }
+    }
+
+    /// Die Aufgabe gibt es nicht mehr: Detail zu, Zeile weg, Hinweis in der Liste (Q8, Q12).
+    public func close(_ id: Int) {
+        path.removeAll { $0 == id }
+        remove(id)
+        notice = .gone
+    }
+
+    /// - Parameter keeping: Ids, die auch erledigt stehen bleiben: gerade in der App abgehakt (Q14).
+    static func sections(_ all: [TaskSummary], today: CalendarDay, keeping: Set<Int> = []) -> [TaskSection] {
         let open = all
-            .filter { $0.status != .done }
+            .filter { $0.status != .done || keeping.contains($0.id) }
             .sorted(by: dueFirst)
         func kind(of task: TaskSummary) -> TaskSection.Kind {
             guard let due = task.due else { return .noDate }
@@ -110,4 +254,10 @@ private func dueFirst(_ lhs: TaskSummary, _ rhs: TaskSummary) -> Bool {
     case (nil, _), (_, nil): false
     default: (lhs.dueTime ?? "") < (rhs.dueTime ?? "")
     }
+}
+
+/// Ein schwacher Verweis, mit dem der Rückruf eines Details sich von einem neueren derselben
+/// Aufgabe unterscheidet. Schwach, sonst hielte das Detail sich über den Rückruf selbst fest.
+@MainActor private final class WeakDetail {
+    weak var model: TaskDetailModel?
 }
