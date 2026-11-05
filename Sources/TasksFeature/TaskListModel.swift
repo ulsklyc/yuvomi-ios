@@ -114,7 +114,15 @@ public final class TaskListModel {
     /// sofort und springt bei einem Fehler zurück (Q3, Q13). Die abgehakte Zeile bleibt bis
     /// zum nächsten Laden stehen (Q14).
     public func toggle(_ id: Int) async {
-        guard canWrite, !overlay.isWriting(id), let before = summary(id) else { return }
+        guard await write(id) else { return }
+        // Ein offenes Detail derselben Aufgabe hat womöglich vor dem Wechsel geladen und
+        // böte sonst weiter das Falsche an (Codex-Review E3).
+        await details[id]?.load()
+    }
+
+    /// Der Statuswechsel selbst. `true`, wenn der Server ihn bestätigt hat.
+    private func write(_ id: Int) async -> Bool {
+        guard canWrite, !overlay.isWriting(id), let before = summary(id) else { return false }
         let target: TaskStatus = before.status == .done ? .open : .done
         notice = nil
         overlay.begin(id, to: target)
@@ -131,6 +139,7 @@ public final class TaskListModel {
             // Ein Laden, das inzwischen ankam, kann den Haken überschrieben haben.
             update(id) { $0.status = target }
             onStatusChanged()
+            return true
         } catch .unauthorized {
             onUnauthorized()
         } catch .notFound {
@@ -141,6 +150,7 @@ public final class TaskListModel {
             if error == .forbidden { canWrite = false }
             notice = TaskNotice(error)
         }
+        return false
     }
 
     private func summary(_ id: Int) -> TaskSummary? {

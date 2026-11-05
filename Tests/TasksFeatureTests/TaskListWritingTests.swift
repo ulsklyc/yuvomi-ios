@@ -58,6 +58,21 @@ import YuvomiCore
         #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(1), task(2)])]))
     }
 
+    /// Abhaken in der Liste, während das Detail derselben Aufgabe offen ist: Das Detail lädt
+    /// danach neu und bietet „Wieder öffnen“ an (Codex-Review E3).
+    @Test func checkingOffInTheListRefreshesItsOpenDetail() async {
+        let list = await loadedList([task(24), task(2)])
+        let detail = list.detail(for: 24)
+        await detail.load()
+        var done = packing
+        done.status = .done
+        reading.detail = done
+
+        await list.toggle(24)
+
+        #expect(detail.state == .loaded(done))
+    }
+
     /// Abgehakt bleibt die Zeile stehen, bis die Liste das nächste Mal lädt (Q2, Q14).
     @Test func checkingOffKeepsTheRowCrossedOut() async {
         var changed = 0
