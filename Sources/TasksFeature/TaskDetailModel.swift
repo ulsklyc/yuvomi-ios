@@ -171,9 +171,10 @@ public final class TaskDetailModel {
     /// gesetzten Haken (Codex-Review E3, Issue #23).
     public func tick(line: Int) async {
         guard mayWrite(), let task = loaded,
-              let point = Checklist(description: task.description).items.first(where: { $0.index == line }),
-              overlay.beginTick(taskID)
+              let point = Checklist(description: task.description).items.first(where: { $0.index == line })
         else { return }
+        // Zuletzt: Ab hier gibt das defer die Sperre wieder frei.
+        guard overlay.beginTick(taskID) else { return }
         notice = nil
         ticking[line] = !point.isChecked
         defer {
