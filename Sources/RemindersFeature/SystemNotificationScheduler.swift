@@ -37,18 +37,21 @@ public struct SystemNotificationScheduler: NotificationScheduling {
     }
 
     /// Sagt sofort Bescheid, dass der Server das Abhaken abgelehnt hat (Q6). Unter
-    /// `reminder.notice.`: Kein Abgleich räumt den Hinweis ab, Abmelden schon.
-    public func announceNotCheckedOff(title: String) async {
-        try? await UNUserNotificationCenter.current().add(Self.notCheckedOffRequest(title: title))
+    /// `reminder.notice.`: Kein Abgleich räumt den Hinweis ab, Abmelden schon. Die Kennung trägt
+    /// die Aufgabe, ein Tipp öffnet sie (Slice 5, Q8).
+    public func announceNotCheckedOff(title: String, taskID: Int) async {
+        try? await UNUserNotificationCenter.current().add(Self.notCheckedOffRequest(title: title, taskID: taskID))
     }
 
-    static func notCheckedOffRequest(title: String, locale: Locale = .current) -> UNNotificationRequest {
+    static let notCheckedOffPrefix = ReminderSync.noticePrefix + "notCheckedOff."
+
+    static func notCheckedOffRequest(title: String, taskID: Int, locale: Locale = .current) -> UNNotificationRequest {
         let bundle = localizedBundle(for: locale)
         let content = UNMutableNotificationContent()
         content.title = String(localized: "reminders.notCheckedOff.title", bundle: bundle, locale: locale)
         content.body = String(localized: "reminders.notCheckedOff.body \(title)", bundle: bundle, locale: locale)
         content.sound = .default
-        return UNNotificationRequest(identifier: ReminderSync.noticePrefix + "notCheckedOff.\(UUID().uuidString)", content: content, trigger: nil)
+        return UNNotificationRequest(identifier: notCheckedOffPrefix + "\(taskID).\(UUID().uuidString)", content: content, trigger: nil)
     }
 
     public func pending() async -> Set<String> {
