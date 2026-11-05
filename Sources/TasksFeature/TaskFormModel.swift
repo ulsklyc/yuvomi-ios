@@ -31,14 +31,11 @@ public final class TaskFormModel: Identifiable {
     private let editor: any TaskEditing
     private let now: () -> Date
     private let timeZone: TimeZone
-    private let makeKey: () -> String
     private let onUnauthorized: @MainActor () -> Void
     private let onFinished: @MainActor (Outcome) async -> Void
 
-    /// Der letzte Versuch und sein Schlüssel (Q14). Dieselbe Anfrage schickt denselben Schlüssel
-    /// wieder, so legt der Server nicht doppelt an. Eine andere braucht einen neuen: Mit dem
-    /// alten antwortete der Server 24 Stunden lang 409.
-    private var attempt: (changes: TaskChanges, key: String)?
+    /// Der Schlüssel fürs Anlegen (Q14), je Anfrage.
+    private var key: RetryKey<TaskChanges>
 
     /// - Parameters:
     ///   - task: Der gespeicherte Stand fürs Ändern, `nil` fürs Anlegen.
@@ -60,7 +57,7 @@ public final class TaskFormModel: Identifiable {
         self.editor = editor
         self.now = now
         self.timeZone = timeZone
-        self.makeKey = makeKey
+        self.key = RetryKey(makeKey: makeKey)
         self.onUnauthorized = onUnauthorized
         self.onFinished = onFinished
     }
@@ -184,9 +181,7 @@ public final class TaskFormModel: Identifiable {
                 // PUT ist idempotent und braucht keinen Schlüssel.
                 await onFinished(.saved(try await editor.update(task: taskID, changes)))
             } else {
-                let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
-                attempt = (changes, key)
-                _ = try await editor.create(draft, parent: nil, idempotencyKey: key)
+                _ = try await editor.create(draft, parent: nil, idempotencyKey: key.key(for: changes))
                 await onFinished(.saved(nil))
             }
         } catch .unauthorized {

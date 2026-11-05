@@ -217,6 +217,34 @@ import YuvomiCore
         await checking.value
     }
 
+    /// Issue #35: Solange ein Ankreuzen läuft, öffnet „Bearbeiten“ nichts. Sonst überschriebe
+    /// seine Antwort eine gerade gesicherte Beschreibung.
+    @Test func editingWaitsForARunningTick() async {
+        let detail = await loadedDetail()
+        writer.tick.withLock { $0 = .success("- [x] Pack sleeping bags") }
+        writer.hold()
+        let ticking = Task { await detail.tick(line: 0) }
+        await writer.untilWaiting()
+
+        detail.startEditing()
+        #expect(detail.form == nil)
+
+        writer.release()
+        await ticking.value
+        detail.startEditing()
+        #expect(detail.form?.draft.description == "- [x] Pack sleeping bags")
+    }
+
+    /// Umgekehrt: Bei offenem Formular kreuzt das Detail nichts an.
+    @Test func noTickWhileEditing() async {
+        let detail = await loadedDetail()
+        detail.startEditing()
+
+        await detail.tick(line: 0)
+
+        #expect(writer.calls.withLock { $0.isEmpty })
+    }
+
     /// Ein Laden, das beim Löschen noch lief, meldet danach kein „gibt es nicht mehr“
     /// (Codex-Review F3).
     @Test func deletingCancelsAPendingLoad() async {

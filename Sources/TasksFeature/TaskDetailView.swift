@@ -104,9 +104,8 @@ struct TaskDetailList: View {
 /// Rückfrage (Q5). Beides nur, wenn die Person die Aufgabe ändern darf (Q7).
 struct SubtasksSection: View {
     let task: TaskDetail
-    @Bindable var model: TaskDetailModel
+    let model: TaskDetailModel
     @State private var confirming: TaskSummary?
-    @FocusState private var isTyping: Bool
 
     var body: some View {
         Section {
@@ -128,7 +127,7 @@ struct SubtasksSection: View {
                 }
             }
             if model.canEdit {
-                addRow
+                SubtaskAddRow(model: model)
             }
         } header: {
             Text("tasks.detail.section.subtasks", bundle: .module)
@@ -149,16 +148,23 @@ struct SubtasksSection: View {
     private var isConfirming: Binding<Bool> {
         Binding { confirming != nil } set: { if !$0 { confirming = nil } }
     }
+}
 
-    private var addRow: some View {
+/// „Unteraufgabe hinzufügen“: Return oder „+“ legt an (Q5). Eigene View, damit ein Tastendruck
+/// nur diese Zeile neu zeichnet, nicht alle Unteraufgaben.
+struct SubtaskAddRow: View {
+    @Bindable var model: TaskDetailModel
+    @FocusState private var isTyping: Bool
+
+    var body: some View {
         HStack {
             TextField(text: $model.newSubtaskTitle, prompt: Text("tasks.subtask.add", bundle: .module)) {
                 Text("tasks.subtask.add", bundle: .module)
             }
-                .focused($isTyping)
-                .submitLabel(.done)
-                .onSubmit(add)
-                .disabled(model.isAddingSubtask)
+            .focused($isTyping)
+            .submitLabel(.done)
+            .onSubmit(add)
+            .disabled(model.isAddingSubtask)
             if model.isAddingSubtask {
                 ProgressView()
                     .accessibilityLabel(Text("tasks.subtask.adding", bundle: .module))

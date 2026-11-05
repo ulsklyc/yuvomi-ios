@@ -69,9 +69,8 @@ public final class TaskDetailModel {
     public private(set) var isAddingSubtask = false
     /// Unteraufgaben, deren Löschen gerade läuft.
     public private(set) var deletingSubtasks: Set<Int> = []
-    /// Der letzte Versuch und sein Schlüssel, wie im Formular (Q14): Derselbe Titel schickt
-    /// denselben Schlüssel wieder, ein anderer bekommt einen neuen.
-    @ObservationIgnored private var subtaskAttempt: (title: String, key: String)?
+    /// Wie im Formular (Q14): Derselbe Titel schickt denselben Schlüssel wieder.
+    @ObservationIgnored private var subtaskKey = RetryKey<String>()
 
     /// Unteraufgaben gibt es nur, wo die Aufgabe sich ändern lässt (Q7).
     public var canAddSubtask: Bool {
@@ -85,7 +84,7 @@ public final class TaskDetailModel {
         return draft
     }
 
-    /// Wie in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt. in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt.
+    /// Wie in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt.
     private var generation = 0
     private let tasks: any TaskReading
     private let writer: any TaskWriting
@@ -309,9 +308,14 @@ public final class TaskDetailModel {
 
     /// Die Unteraufgabe gibt es nicht mehr. Nur ein Detail, das sie zeigt, bekommt den Hinweis.
     func removeSubtask(_ id: Int) {
-        guard loaded?.subtasks.contains(where: { $0.id == id }) == true else { return }
+        if dropSubtask(id) { notice = .gone }
+    }
+
+    /// Nimmt die Unteraufgabe heraus. `false`, wenn das Detail sie nicht zeigt.
+    @discardableResult private func dropSubtask(_ id: Int) -> Bool {
+        guard loaded?.subtasks.contains(where: { $0.id == id }) == true else { return false }
         update { $0.subtasks.removeAll { $0.id == id } }
-        notice = .gone
+        return true
     }
 
     /// Die Kategorie zum Key, mit Namen aus `meta/options`. Ohne Optionen nur der Key (Q8).
@@ -357,17 +361,7 @@ public final class TaskDetailModel {
         isDeleting = true
         notice = nil
         defer { isDeleting = false }
-        do throws(APIError) {
-            try await editor.delete(task: taskID)
-        } catch .notFound {
-            // Schon weg: gilt als gelöscht.
-        } catch .unauthorized {
-            onUnauthorized()
-            return
-        } catch {
-            await failEditing(error)
-            return
-        }
+        guard await deleteOnServer(taskID) else { return }
         // Ein Laden, das noch läuft, meldete sonst die eigene Löschung als 404 (Codex-Review F3).
         generation += 1
         onDeleted()
@@ -378,14 +372,13 @@ public final class TaskDetailModel {
     public func addSubtask() async {
         guard canAddSubtask else { return }
         let title = newSubtaskTitle
-        let key = subtaskAttempt.flatMap { $0.title == title ? $0.key : nil } ?? UUID().uuidString
-        subtaskAttempt = (title, key)
+        let key = subtaskKey.key(for: title)
         isAddingSubtask = true
         notice = nil
         defer { isAddingSubtask = false }
         do throws(APIError) {
             let subtask = try await editor.create(subtaskDraft, parent: taskID, idempotencyKey: key)
-            subtaskAttempt = nil
+            subtaskKey.reset()
             // Nur leeren, wenn die Person währenddessen nichts Neues getippt hat.
             if newSubtaskTitle == title { newSubtaskTitle = "" }
             // Ein Laden, das davor begann, kennt die neue Unteraufgabe nicht.
@@ -411,21 +404,28 @@ public final class TaskDetailModel {
         deletingSubtasks.insert(id)
         notice = nil
         defer { deletingSubtasks.remove(id) }
+        guard await deleteOnServer(id) else { return }
+        // Auch ein Laden, das davor begann, bringt sie nicht zurück (wie Issue #24).
+        overlay.markGone(id)
+        dropSubtask(id)
+        onStatusChanged()
+    }
+
+    /// DELETE für die Aufgabe oder eine Unteraufgabe. `true`, wenn sie weg ist; 404 gilt als
+    /// gelöscht (Q3). Sonst sind die Folgen schon getragen.
+    private func deleteOnServer(_ id: Int) async -> Bool {
         do throws(APIError) {
             try await editor.delete(task: id)
         } catch .notFound {
             // Schon weg: gilt als gelöscht.
         } catch .unauthorized {
             onUnauthorized()
-            return
+            return false
         } catch {
             await failEditing(error)
-            return
+            return false
         }
-        // Auch ein Laden, das davor begann, bringt sie nicht zurück (wie Issue #24).
-        overlay.markGone(id)
-        update { $0.subtasks.removeAll { $0.id == id } }
-        onStatusChanged()
+        return true
     }
 
     /// Wie `fail`. Ist die Aufgabe inzwischen gesperrt, lädt das Detail neu und blendet dann
