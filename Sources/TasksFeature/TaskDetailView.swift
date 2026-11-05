@@ -6,8 +6,9 @@ import YuvomiFixtures
 
 /// Das Detail einer Aufgabe (Q7): Kopf mit Abhaken, Beschreibung mit Checkliste zum Ankreuzen,
 /// Unteraufgaben, Angaben. Bei Nur-lesen sind Kästchen und Kreise nur Zeichen (Q4).
+/// „Bearbeiten“ und „Löschen“ nur, wenn die Person die Aufgabe ändern darf (Q7).
 public struct TaskDetailView: View {
-    let model: TaskDetailModel
+    @Bindable var model: TaskDetailModel
 
     public init(model: TaskDetailModel) {
         self.model = model
@@ -16,6 +17,17 @@ public struct TaskDetailView: View {
     public var body: some View {
         content
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if model.canEdit {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { model.startEditing() } label: { Text("tasks.detail.edit", bundle: .module) }
+                            .disabled(model.isDeleting)
+                    }
+                }
+            }
+            .sheet(item: $model.form) { form in
+                TaskFormView(model: form)
+            }
             .task { await model.load() }
     }
 
@@ -88,8 +100,52 @@ struct TaskDetailList: View {
                     Text("tasks.detail.section.subtasks", bundle: .module)
                 }
             }
-            TaskFacts(task: task)
+            TaskFacts(task: task, category: model.category(for: task.category).localizedTitle)
+            if model.canEdit {
+                DeleteSection(task: task, model: model)
+            }
         }
+    }
+}
+
+/// „Aufgabe löschen“ mit Rückfrage (Q3). Sie nennt die Unteraufgaben und das Ende einer Serie.
+struct DeleteSection: View {
+    let task: TaskDetail
+    let model: TaskDetailModel
+    @State private var confirms = false
+
+    var body: some View {
+        Section {
+            Button(role: .destructive) { confirms = true } label: {
+                HStack {
+                    Text("tasks.detail.delete", bundle: .module)
+                    if model.isDeleting {
+                        Spacer()
+                        ProgressView()
+                            .accessibilityLabel(Text("tasks.detail.deleting", bundle: .module))
+                    }
+                }
+            }
+            .disabled(model.isDeleting)
+            .confirmationDialog(Text("tasks.delete.title", bundle: .module), isPresented: $confirms, titleVisibility: .visible) {
+                Button(role: .destructive) { Task { await model.delete() } } label: { Text("tasks.delete.confirm", bundle: .module) }
+                Button(role: .cancel) {} label: { Text("tasks.form.cancel", bundle: .module) }
+            } message: {
+                Text(verbatim: message)
+            }
+        }
+    }
+
+    private var message: String {
+        var parts: [String] = []
+        if !task.subtasks.isEmpty {
+            parts.append(String(localized: "tasks.delete.subtasks \(task.subtasks.count)", bundle: .module))
+        }
+        if task.isRecurring {
+            parts.append(String(localized: "tasks.delete.series", bundle: .module))
+        }
+        parts.append(String(localized: "tasks.delete.message", bundle: .module))
+        return parts.joined(separator: " ")
     }
 }
 
@@ -227,36 +283,36 @@ struct SubtaskRow: View {
     }
 }
 
-/// Die übrigen Angaben, nur was gesetzt ist (Q7).
+/// Die übrigen Angaben, nur was gesetzt ist (Q7). Die Kategorie hat jede Aufgabe (Q8).
 struct TaskFacts: View {
     let task: TaskDetail
+    let category: String
 
     var body: some View {
         let priority = task.priority.label
         let start = task.start?.start().map(\.taskDayText)
-        if priority != nil || start != nil || task.isRecurring || !task.tags.isEmpty || task.points > 0 || task.isLocked {
-            Section {
-                if let priority {
+        Section {
+            LabeledContent { Text(verbatim: category) } label: { Text("tasks.form.category", bundle: .module) }
+            if let priority {
                     LabeledContent { Text(priority, bundle: .module) } label: { Text("tasks.detail.priority", bundle: .module) }
-                }
-                if let start {
-                    LabeledContent { Text(verbatim: start) } label: { Text("tasks.detail.start", bundle: .module) }
-                }
-                if task.isRecurring {
-                    Label { Text("tasks.detail.recurring", bundle: .module) } icon: { Image(systemName: "repeat") }
-                }
-                if !task.tags.isEmpty {
-                    LabeledContent { Text(verbatim: task.tags.formatted(.list(type: .and))) } label: { Text("tasks.detail.tags", bundle: .module) }
-                }
-                if task.points > 0 {
-                    LabeledContent { Text(task.points, format: .number) } label: { Text("tasks.detail.points", bundle: .module) }
-                }
-                if task.isLocked {
-                    Label { Text("tasks.detail.locked", bundle: .module) } icon: { Image(systemName: "lock") }
-                }
-            } header: {
-                Text("tasks.detail.section.details", bundle: .module)
             }
+            if let start {
+                LabeledContent { Text(verbatim: start) } label: { Text("tasks.detail.start", bundle: .module) }
+            }
+            if task.isRecurring {
+                Label { Text("tasks.detail.recurring", bundle: .module) } icon: { Image(systemName: "repeat") }
+            }
+            if !task.tags.isEmpty {
+                LabeledContent { Text(verbatim: task.tags.formatted(.list(type: .and))) } label: { Text("tasks.detail.tags", bundle: .module) }
+            }
+            if task.points > 0 {
+                LabeledContent { Text(task.points, format: .number) } label: { Text("tasks.detail.points", bundle: .module) }
+            }
+            if task.isLocked {
+                Label { Text("tasks.detail.locked", bundle: .module) } icon: { Image(systemName: "lock") }
+            }
+        } header: {
+            Text("tasks.detail.section.details", bundle: .module)
         }
     }
 }
@@ -310,6 +366,7 @@ extension TaskDetailModel.Problem {
             taskID: 24,
             tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport(overrides: ["getTask": checklist])),
             writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            editor: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             onUnauthorized: {}
         ))
     }
@@ -321,6 +378,7 @@ extension TaskDetailModel.Problem {
             taskID: 7,
             tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            editor: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             onUnauthorized: {}
         ))
     }

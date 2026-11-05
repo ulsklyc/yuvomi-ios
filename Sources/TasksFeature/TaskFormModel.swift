@@ -2,17 +2,27 @@ import Foundation
 import Observation
 import YuvomiCore
 
-/// Zustand des Formulars im Sheet (Q2): Entwurf, Optionen, Senden und Fehler. Je geöffnetem
-/// Sheet ein Modell, wie ein Formular-Store, der mit dem Dialog entsteht und mit ihm geht.
+/// Zustand des Formulars im Sheet (Q2): Entwurf, Optionen, Senden und Fehler, fürs Anlegen und
+/// fürs Ändern. Je geöffnetem Sheet ein Modell, wie ein Formular-Store, der mit dem Dialog
+/// entsteht und mit ihm geht.
 @MainActor @Observable
 public final class TaskFormModel: Identifiable {
     /// Wie das Sheet endet, wenn nicht die Person es schließt.
     public enum Outcome: Hashable, Sendable {
         /// Der Server hat angelegt.
-        case saved
+        case created
+        /// Der Server hat geändert, mit dem Stand danach (Q11).
+        case updated(TaskDetail)
         /// 403: Die Person darf Aufgaben nur ansehen (Q13).
         case readOnly
+        /// 403 `task_locked`: Nur wer sie angelegt hat, darf sie ändern (Q13).
+        case locked
+        /// 404: Die Aufgabe gibt es nicht mehr (Q13).
+        case gone
     }
+
+    /// Die Aufgabe, die das Formular ändert. `nil` beim Anlegen.
+    public let taskID: Int?
 
     public var draft: TaskDraft
     /// Der Stand beim Öffnen. Ohne Abweichung davon ist „Sichern“ aus (Q9).
@@ -36,16 +46,20 @@ public final class TaskFormModel: Identifiable {
     private var attempt: (changes: TaskChanges, key: String)?
 
     /// - Parameters:
+    ///   - task: Der gespeicherte Stand fürs Ändern, `nil` fürs Anlegen.
     ///   - now: Für den Vorschlag bei Datum und Uhrzeit; in Tests fest.
-    ///   - onFinished: Gesichert oder Nur-lesen. Der Aufrufer schließt das Sheet.
+    ///   - onFinished: Gesichert, Nur-lesen, gesperrt oder weg. Der Aufrufer schließt das Sheet.
     public init(
+        editing task: TaskDetail? = nil,
         editor: any TaskEditing, now: @escaping () -> Date = Date.init, timeZone: TimeZone = .current,
         makeKey: @escaping () -> String = { UUID().uuidString },
         onUnauthorized: @escaping @MainActor () -> Void,
         onFinished: @escaping @MainActor (Outcome) async -> Void
     ) {
-        self.draft = TaskDraft()
-        self.base = TaskDraft()
+        self.taskID = task?.id
+        let base = task.map(TaskDraft.init) ?? TaskDraft()
+        self.base = base
+        self.draft = base
         self.editor = editor
         self.now = now
         self.timeZone = timeZone
@@ -54,6 +68,7 @@ public final class TaskFormModel: Identifiable {
         self.onFinished = onFinished
     }
 
+    public var isEditing: Bool { taskID != nil }
     public var hasChanges: Bool { !draft.changes(from: base).isEmpty }
     public var canSave: Bool { hasChanges && draft.problems.isEmpty && !isSaving }
     /// Wem sich die Aufgabe zuweisen lässt. `nil` bei einer Person allein (Q10) oder ohne Optionen.
@@ -148,22 +163,30 @@ public final class TaskFormModel: Identifiable {
     public func save() async {
         guard canSave else { return }
         let changes = draft.changes(from: base)
-        let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
-        attempt = (changes, key)
         isSaving = true
         notice = nil
         defer { isSaving = false }
         do throws(APIError) {
-            _ = try await editor.create(draft, parent: nil, idempotencyKey: key)
-            await onFinished(.saved)
+            if let taskID {
+                // PUT ist idempotent und braucht keinen Schlüssel.
+                await onFinished(.updated(try await editor.update(task: taskID, changes)))
+            } else {
+                let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
+                attempt = (changes, key)
+                _ = try await editor.create(draft, parent: nil, idempotencyKey: key)
+                await onFinished(.created)
+            }
         } catch .unauthorized {
             onUnauthorized()
         } catch .forbidden {
             await onFinished(.readOnly)
+        } catch .locked {
+            await onFinished(.locked)
+        } catch .notFound {
+            await onFinished(.gone)
         } catch .conflict {
             notice = .stillRunning
         } catch {
-            // `.locked` und `.notFound` kommen erst mit Unteraufgaben (F4) und Ändern (F3).
             notice = TaskNotice(error)
         }
     }

@@ -4,7 +4,7 @@ import YuvomiAPI
 import YuvomiCore
 import YuvomiFixtures
 
-/// Das Sheet fürs Anlegen (Q2): „Abbrechen“ links, „Sichern“ rechts. Mit Änderungen lässt es
+/// Das Sheet fürs Anlegen und Ändern (Q2): „Abbrechen“ links, „Sichern“ rechts. Mit Änderungen lässt es
 /// sich nicht wegwischen, und „Abbrechen“ fragt nach.
 struct TaskFormView: View {
     @Bindable var model: TaskFormModel
@@ -30,7 +30,7 @@ struct TaskFormView: View {
             // Während des Sicherns ist der Entwurf schon unterwegs: Was die Person dann noch
             // ändert, käme nie an und ginge mit dem Sheet verloren.
             .disabled(model.isSaving)
-            .navigationTitle(Text("tasks.form.new", bundle: .module))
+            .navigationTitle(Text(model.isEditing ? "tasks.form.edit" : "tasks.form.new", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
         }

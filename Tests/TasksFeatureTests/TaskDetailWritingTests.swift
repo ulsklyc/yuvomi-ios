@@ -19,7 +19,7 @@ import YuvomiCore
     func loadedDetail(mayWrite: Bool = true) async -> TaskDetailModel {
         let calls = calls
         let detail = TaskDetailModel(
-            taskID: 24, tasks: reading, writer: writer,
+            taskID: 24, tasks: reading, writer: writer, editor: FakeEditor(),
             mayWrite: { mayWrite },
             onUnauthorized: { calls.signedOut += 1 },
             onStatusChanged: { calls.statusChanged += 1 },

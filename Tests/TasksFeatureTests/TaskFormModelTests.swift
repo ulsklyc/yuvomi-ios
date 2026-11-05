@@ -57,7 +57,7 @@ import YuvomiCore
         #expect(sent.first?.draft.title == "Water the plants")
         #expect(sent.first?.parent == nil)
         #expect(sent.first?.key == "key-1")
-        #expect(log.outcomes == [.saved])
+        #expect(log.outcomes == [.created])
         #expect(form.notice == nil)
     }
 
@@ -79,7 +79,7 @@ import YuvomiCore
         await form.save()
 
         #expect(editor.creates.withLock { $0.map(\.key) } == ["key-1", "key-1"])
-        #expect(log.outcomes == [.saved])
+        #expect(log.outcomes == [.created])
     }
 
     /// Ändert die Person nach einem Fehler etwas, ist es eine andere Anfrage: Mit dem alten
