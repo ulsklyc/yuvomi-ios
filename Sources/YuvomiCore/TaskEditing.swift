@@ -46,6 +46,8 @@ public struct TaskDraft: Hashable, Sendable {
     /// Grenzen wie `server/middleware/validate.js`.
     public static let titleLimit = 200
     public static let descriptionLimit = 5000
+    /// Ab hier zeigt das Formular einen Zähler (Q18).
+    public static let descriptionCounterFrom = 4500
 
     public var title = ""
     public var due: CalendarDay?
@@ -83,7 +85,7 @@ public struct TaskDraft: Hashable, Sendable {
         let title = trimmedTitle
         if title.isEmpty { problems.insert(.titleMissing) }
         if title.utf16.count > Self.titleLimit { problems.insert(.titleTooLong) }
-        if trimmedDescription.utf16.count > Self.descriptionLimit { problems.insert(.descriptionTooLong) }
+        if descriptionLength > Self.descriptionLimit { problems.insert(.descriptionTooLong) }
         return problems
     }
 
@@ -107,6 +109,9 @@ public struct TaskDraft: Hashable, Sendable {
     }
 
     private var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
+    /// Die Länge der Beschreibung, wie der Server sie zählt.
+    public var descriptionLength: Int { trimmedDescription.utf16.count }
+
     private var trimmedDescription: String { description.trimmingCharacters(in: .whitespacesAndNewlines) }
     /// Ohne Datum gibt es keine Uhrzeit (Q17).
     private var effectiveTime: String? { due == nil ? nil : dueTime }

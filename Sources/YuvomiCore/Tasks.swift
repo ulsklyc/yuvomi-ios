@@ -42,7 +42,8 @@ public struct CalendarDay: Hashable, Sendable, Comparable {
         Self.gregorian(timeZone).date(from: DateComponents(year: year, month: month, day: day))
     }
 
-    private static func gregorian(_ timeZone: TimeZone) -> Calendar {
+    /// Der gregorianische Kalender in `timeZone`, nie `Calendar.current` (siehe oben).
+    public static func gregorian(_ timeZone: TimeZone) -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         return calendar
@@ -63,6 +64,9 @@ public enum TaskStatus: Hashable, Sendable {
 /// statt ihn als dringend oder unwichtig zu deuten.
 public enum TaskPriority: Hashable, Sendable {
     case none, low, medium, high, urgent, unknown
+
+    /// Was die App setzen kann. `.unknown` kommt nur vom Server.
+    public static let settable: [TaskPriority] = [.none, .low, .medium, .high, .urgent]
 }
 
 /// Eine Aufgabe, so weit die Liste sie zeigt.
@@ -220,13 +224,10 @@ public struct Member: Hashable, Sendable {
     /// Darf die Person im Modul Aufgaben schreiben? Bei `read` zeigt die App keine Haken und
     /// kein Formular (Slice 5 Q4, Slice 6 Q7).
     public var mayWriteTasks: Bool
-    /// Bei einer Person allein blendet das Formular die Zuständigen aus (Q10).
-    public var householdSize: Int
 
-    public init(id: Int, mayWriteTasks: Bool, householdSize: Int) {
+    public init(id: Int, mayWriteTasks: Bool) {
         self.id = id
         self.mayWriteTasks = mayWriteTasks
-        self.householdSize = householdSize
     }
 }
 

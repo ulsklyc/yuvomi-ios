@@ -6,6 +6,7 @@ import YuvomiCore
 /// Seam 3: Abhaken und Wieder öffnen in der Liste, Nur-lesen und Fehler nach Q13.
 @MainActor @Suite struct TaskListWritingTests {
     let writer = FakeWriter()
+    let editor = FakeEditor()
 
     let reading = FakeTasks(.success([task(1), task(2)]), detail: packing)
 
@@ -16,7 +17,7 @@ import YuvomiCore
         onStatusChanged: @escaping @MainActor () -> Void = {}
     ) async -> TaskListModel {
         let list = TaskListModel(
-            tasks: reading, writer: writer, permissions: permissions,
+            tasks: reading, writer: writer, editor: editor, permissions: permissions,
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: onUnauthorized, onStatusChanged: onStatusChanged
         )
