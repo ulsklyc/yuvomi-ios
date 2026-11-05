@@ -89,25 +89,26 @@ import YuvomiCore
     }
 
     /// E4: Ein Tipp auf eine Aufgaben-Mitteilung oder den Hinweis „Nicht abgehakt“ öffnet die
-    /// Aufgabe (Q8). Termine, Wegwischen und „Erledigt“ öffnen nichts.
+    /// Aufgabe, ein Termin und ein älterer Hinweis ohne Aufgabe die Liste (Q8). Wegwischen,
+    /// „Erledigt“ und fremde Mitteilungen öffnen nichts.
     @Test(arguments: [
-        ("reminder.7.task.12", UNNotificationDefaultActionIdentifier, 12 as Int?),
-        ("reminder.notice.notCheckedOff.12.6F1A", UNNotificationDefaultActionIdentifier, 12),
-        ("reminder.8.event.30", UNNotificationDefaultActionIdentifier, nil),
+        ("reminder.7.task.12", UNNotificationDefaultActionIdentifier, ReminderNotificationDelegate.Destination.task(12) as ReminderNotificationDelegate.Destination?),
+        ("reminder.notice.notCheckedOff.12.6F1A", UNNotificationDefaultActionIdentifier, .task(12)),
+        ("reminder.8.event.30", UNNotificationDefaultActionIdentifier, .list),
+        ("reminder.notice.notCheckedOff.6F1A", UNNotificationDefaultActionIdentifier, .list),
+        ("reminder.notice.notCheckedOff.1", UNNotificationDefaultActionIdentifier, .list),
         ("reminder.7.task.12", UNNotificationDismissActionIdentifier, nil),
         ("reminder.7.task.12", "reminder.checkOff", nil),
-        ("reminder.notice.notCheckedOff.6F1A", UNNotificationDefaultActionIdentifier, nil),
-        ("reminder.notice.notCheckedOff.1", UNNotificationDefaultActionIdentifier, nil),
         ("other.7.task.12", UNNotificationDefaultActionIdentifier, nil),
     ])
-    func aTapOpensItsTask(identifier: String, action: String, task: Int?) {
-        #expect(ReminderNotificationDelegate.taskToOpen(action: action, identifier: identifier) == task)
+    func aTapOpensItsDestination(identifier: String, action: String, destination: ReminderNotificationDelegate.Destination?) {
+        #expect(ReminderNotificationDelegate.destination(action: action, identifier: identifier) == destination)
     }
 
     /// Die Kennung des Hinweises führt zur Aufgabe zurück.
     @Test func theNoticeLeadsBackToItsTask() {
         let request = SystemNotificationScheduler.notCheckedOffRequest(title: "Strom zahlen", taskID: 12)
-        #expect(ReminderNotificationDelegate.taskToOpen(action: UNNotificationDefaultActionIdentifier, identifier: request.identifier) == 12)
+        #expect(ReminderNotificationDelegate.destination(action: UNNotificationDefaultActionIdentifier, identifier: request.identifier) == .task(12))
     }
 }
 
@@ -167,7 +168,7 @@ import YuvomiCore
         let steps = Steps()
         let delegate: UNUserNotificationCenterDelegate = ReminderNotificationDelegate(
             onReply: { reply in steps.all.append("reply \(reply.kind)") },
-            onOpenTask: { steps.all.append("open \($0)") }
+            onOpen: { steps.all.append("open \($0)") }
         )
         let response = try Self.response(identifier: "reminder.7.task.12", action: UNNotificationDefaultActionIdentifier)
 
@@ -175,7 +176,7 @@ import YuvomiCore
             delegate.userNotificationCenter?(Self.center, didReceive: response) { finished.resume() }
         }
 
-        #expect(steps.all == ["open 12", "reply dismiss"])
+        #expect(steps.all == ["open task(12)", "reply dismiss"])
     }
 
     /// Der Hinweis „Nicht abgehakt“ ist keine Rückmeldung, öffnet aber seine Aufgabe.
@@ -183,7 +184,7 @@ import YuvomiCore
         let steps = Steps()
         let delegate: UNUserNotificationCenterDelegate = ReminderNotificationDelegate(
             onReply: { _ in Issue.record("Der Hinweis ist keine Rückmeldung") },
-            onOpenTask: { steps.all.append("open \($0)") }
+            onOpen: { steps.all.append("open \($0)") }
         )
         let response = try Self.response(identifier: "reminder.notice.notCheckedOff.12.6F1A", action: UNNotificationDefaultActionIdentifier)
 
@@ -191,7 +192,7 @@ import YuvomiCore
             delegate.userNotificationCenter?(Self.center, didReceive: response) { finished.resume() }
         }
 
-        #expect(steps.all == ["open 12"])
+        #expect(steps.all == ["open task(12)"])
     }
 
     @Test func aForeignNotificationIsDoneAtOnce() throws {
@@ -199,7 +200,7 @@ import YuvomiCore
         let delegate: UNUserNotificationCenterDelegate = ReminderNotificationDelegate { _ in
             Issue.record("Eine fremde Mitteilung ist keine Rückmeldung")
         }
-        let response = try Self.response(identifier: "reminder.notice.notCheckedOff.1", action: UNNotificationDefaultActionIdentifier)
+        let response = try Self.response(identifier: "other.7.task.12", action: UNNotificationDefaultActionIdentifier)
 
         delegate.userNotificationCenter?(Self.center, didReceive: response) { done = true }
 

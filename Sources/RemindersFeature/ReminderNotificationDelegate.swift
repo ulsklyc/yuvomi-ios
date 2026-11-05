@@ -6,8 +6,8 @@ import YuvomiCore
 ///
 /// - Im Vordergrund zeigt er sie als Banner mit Ton. Ohne Delegate schluckt iOS sie still.
 /// - Antippen, Wegwischen und „Erledigt“ gibt er als `ReminderReply` an die App weiter.
-/// - Antippen einer Aufgabe oder des Hinweises „Nicht abgehakt“ meldet er zuerst als Ziel, die
-///   App öffnet dann das Detail (Slice 5, Q8). Ein Termin öffnet die Liste.
+/// - Antippen meldet er zuerst als Ziel (Slice 5, Q8): Eine Aufgabe oder der Hinweis „Nicht
+///   abgehakt“ öffnet das Detail, ein Termin die Liste.
 ///
 /// Ohne veränderlichen Zustand und deshalb `Sendable`. Die Methoden sind `nonisolated`, weil die
 /// UN-Typen nicht `Sendable` sind und iOS sie ohne Actor-Bezug aufruft. Aus `response` wird nur
@@ -19,32 +19,42 @@ import YuvomiCore
 /// made on main thread“ (gesehen im Simulator bei „Erledigt“ im Hintergrund).
 public final class ReminderNotificationDelegate: NSObject, UNUserNotificationCenterDelegate, Sendable {
     public typealias ReplyHandler = @MainActor @Sendable (ReminderReply) async -> Void
-    public typealias OpenHandler = @MainActor @Sendable (Int) -> Void
+    public typealias OpenHandler = @MainActor @Sendable (Destination) -> Void
+
+    /// Wohin ein Tipp führt. Wie eine Route in einer Web-App.
+    public enum Destination: Hashable, Sendable, CustomStringConvertible {
+        case list, task(Int)
+        public var description: String {
+            switch self {
+            case .list: "list"
+            case .task(let id): "task(\(id))"
+            }
+        }
+    }
 
     private let onReply: ReplyHandler
-    private let onOpenTask: OpenHandler
+    private let onOpen: OpenHandler
 
     /// - Parameters:
     ///   - onReply: Läuft, bis die Rückmeldung gesendet oder gemerkt ist. So lange wartet auch
     ///     iOS, bevor es die App wieder anhält.
-    ///   - onOpenTask: Die Aufgabe, die ein Tipp öffnen soll. Vor der Rückmeldung, damit das
-    ///     Detail nicht aufs Netz wartet.
-    public init(onReply: @escaping ReplyHandler, onOpenTask: @escaping OpenHandler = { _ in }) {
+    ///   - onOpen: Das Ziel eines Tipps. Vor der Rückmeldung, damit das Detail nicht aufs Netz wartet.
+    public init(onReply: @escaping ReplyHandler, onOpen: @escaping OpenHandler = { _ in }) {
         self.onReply = onReply
-        self.onOpenTask = onOpenTask
+        self.onOpen = onOpen
     }
 
-    /// Die Aufgabe, die ein Tipp auf diese Mitteilung öffnet, sonst `nil`.
-    static func taskToOpen(action: String, identifier: String) -> Int? {
+    /// Das Ziel eines Tipps auf diese Mitteilung, `nil` für andere Aktionen und fremde Mitteilungen.
+    static func destination(action: String, identifier: String) -> Destination? {
         guard action == UNNotificationDefaultActionIdentifier else { return nil }
         if let parsed = ReminderSync.parse(identifier) {
-            return parsed.origin == .task ? parsed.entityID : nil
+            return parsed.origin == .task ? .task(parsed.entityID) : .list
         }
-        // `reminder.notice.notCheckedOff.<Aufgabe>.<UUID>`. Ältere Hinweise ohne Aufgabe öffnen nichts.
+        // `reminder.notice.notCheckedOff.<Aufgabe>.<UUID>`. Ältere Hinweise ohne Aufgabe führen zur Liste.
         guard identifier.hasPrefix(SystemNotificationScheduler.notCheckedOffPrefix) else { return nil }
         let parts = identifier.dropFirst(SystemNotificationScheduler.notCheckedOffPrefix.count).split(separator: ".")
-        guard parts.count == 2 else { return nil }
-        return Int(parts[0])
+        guard parts.count == 2, let id = Int(parts[0]) else { return .list }
+        return .task(id)
     }
 
     /// Muss vor dem Ende von `didFinishLaunching` passieren. Das Center hält den Delegate nur
@@ -67,7 +77,7 @@ public final class ReminderNotificationDelegate: NSObject, UNUserNotificationCen
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let request = response.notification.request
-        let target = Self.taskToOpen(action: response.actionIdentifier, identifier: request.identifier)
+        let target = Self.destination(action: response.actionIdentifier, identifier: request.identifier)
         // Der Titel der Aufgabe steht im Text, die Überschrift nennt nur die Herkunft
         // (`SystemNotificationScheduler.request(for:)`, geprüft in `NotificationRequestTests`).
         let reply = ReminderReply(
@@ -82,9 +92,9 @@ public final class ReminderNotificationDelegate: NSObject, UNUserNotificationCen
         // damit auf dem MainActor, so wie UIKit es verlangt.
         nonisolated(unsafe) let completionHandler = completionHandler
         let onReply = onReply
-        let onOpenTask = onOpenTask
+        let onOpen = onOpen
         Task { @MainActor in
-            if let target { onOpenTask(target) }
+            if let target { onOpen(target) }
             if let reply { await onReply(reply) }
             completionHandler()
         }

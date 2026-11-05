@@ -126,7 +126,7 @@ final class AppModel {
         SystemNotificationScheduler.registerCategories()
         let notifications = ReminderNotificationDelegate(
             onReply: { [weak self] in await self?.reply($0) },
-            onOpenTask: { [weak self] in self?.openTask($0) }
+            onOpen: { [weak self] in self?.open($0) }
         )
         notifications.install()
         self.notifications = notifications
@@ -296,14 +296,18 @@ final class AppModel {
         }
     }
 
-    /// Ein Tipp auf eine Aufgaben-Mitteilung: das Detail über der Liste, „Zurück“ führt zur
-    /// Liste (Q8). Gibt es die Aufgabe nicht mehr, schließt das Detail mit Hinweis (404).
-    /// Ohne Anmeldung, etwa vor dem ersten Entsperren, bleibt es beim Verwerfen.
-    func openTask(_ id: Int) {
+    /// Ein Tipp auf eine Mitteilung (Q8): Eine Aufgabe liegt als Detail über der Liste, „Zurück“
+    /// führt zur Liste. Gibt es sie nicht mehr, schließt das Detail mit Hinweis (404). Ein Termin
+    /// führt zur Liste. Ohne Anmeldung, etwa vor dem ersten Entsperren, bleibt es beim Verwerfen.
+    func open(_ destination: ReminderNotificationDelegate.Destination) {
         restoreIfReadable()
         guard let current = session.current else { return }
         showsSettings = false
-        taskList(for: current).path = [id]
+        let list = taskList(for: current)
+        switch destination {
+        case .list: list.path = []
+        case .task(let id): Task { await list.open(id) }
+        }
     }
 
     func taskList(for session: Session) -> TaskListModel {

@@ -222,6 +222,16 @@ public final class TaskListModel {
         details[id].flatMap { $0 === made.model ? nil : $0 }
     }
 
+    /// Ein Tipp auf eine Mitteilung (Q8): die Aufgabe allein über der Liste. Ist sie schon
+    /// offen, lädt ihr Detail neu, denn sein Stand kann älter sein als die Mitteilung (Review E4).
+    public func open(_ id: Int) async {
+        guard path == [id], let detail = details[id] else {
+            path = [id]
+            return
+        }
+        await detail.load()
+    }
+
     /// Die Aufgabe gibt es nicht mehr: Detail zu, Zeile weg, Hinweis in der Liste (Q8, Q12).
     public func close(_ id: Int) {
         path.removeAll { $0 == id }
