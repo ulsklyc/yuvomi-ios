@@ -117,7 +117,7 @@ struct SubtasksSection: View {
                     Task { await model.toggleSubtask(subtask.id) }
                 }
                 .swipeActions {
-                    if model.canEdit {
+                    if model.canEdit, !model.writingStatus.contains(subtask.id) {
                         // Ohne `role: .destructive`: Die Zeile verschwindet erst nach der Rückfrage.
                         Button { confirming = subtask } label: {
                             Label { Text("tasks.subtask.delete", bundle: .module) } icon: { Image(systemName: "trash") }
@@ -163,8 +163,9 @@ struct SubtaskAddRow: View {
             }
             .focused($isTyping)
             .submitLabel(.done)
+            // Nicht gesperrt, während das Anlegen läuft: Sonst ginge die Tastatur jedes Mal zu.
+            // Ein zweites Return prüft `canAddSubtask`.
             .onSubmit(add)
-            .disabled(model.isAddingSubtask)
             if model.isAddingSubtask {
                 ProgressView()
                     .accessibilityLabel(Text("tasks.subtask.adding", bundle: .module))

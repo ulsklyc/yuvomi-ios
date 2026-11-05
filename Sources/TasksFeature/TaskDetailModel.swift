@@ -383,7 +383,8 @@ public final class TaskDetailModel {
             if newSubtaskTitle == title { newSubtaskTitle = "" }
             // Ein Laden, das davor begann, kennt die neue Unteraufgabe nicht.
             generation += 1
-            update { $0.subtasks.append(subtask) }
+            // Ein Laden, das nach dem Anlegen am Server fertig wurde, kennt sie schon (Review F4).
+            update { if !$0.subtasks.contains(where: { $0.id == subtask.id }) { $0.subtasks.append(subtask) } }
             onStatusChanged()
         } catch .unauthorized {
             onUnauthorized()
@@ -398,7 +399,8 @@ public final class TaskDetailModel {
     /// Eine Unteraufgabe löschen, nach der Rückfrage der View (Q5). Wie beim Löschen der Aufgabe
     /// gilt 404 als Erfolg.
     public func deleteSubtask(_ id: Int) async {
-        guard canEdit, !isDeleting, !deletingSubtasks.contains(id),
+        // Nicht, solange ihr Statuswechsel läuft: Dessen 404 meldete sonst „gibt es nicht mehr“.
+        guard canEdit, !isDeleting, !deletingSubtasks.contains(id), !overlay.isWriting(id),
               loaded?.subtasks.contains(where: { $0.id == id }) == true
         else { return }
         deletingSubtasks.insert(id)

@@ -7,6 +7,7 @@ import YuvomiCore
 @MainActor @Suite struct SubtaskEditingTests {
     let reading = FakeDetail(.success(packing))
     let editor = FakeEditor()
+    let writer = FakeWriter()
 
     final class Calls {
         var statusChanged = 0
@@ -18,7 +19,7 @@ import YuvomiCore
     func loadedDetail(mayWrite: Bool = true, memberID: Int? = 1) async -> TaskDetailModel {
         let calls = calls
         let detail = TaskDetailModel(
-            taskID: 24, tasks: reading, writer: FakeWriter(), editor: editor,
+            taskID: 24, tasks: reading, writer: writer, editor: editor,
             mayWrite: { mayWrite }, memberID: { memberID },
             onUnauthorized: {},
             onStatusChanged: { calls.statusChanged += 1 },
@@ -203,6 +204,25 @@ import YuvomiCore
         #expect(subtasks(detail) == [25, 27])
     }
 
+    /// Ein Laden, das die neue Unteraufgabe schon kennt, bevor POST antwortet: Sie steht nur
+    /// einmal da (Review F4).
+    @Test func aLoadThatKnowsTheSubtaskKeepsOneRow() async {
+        let detail = await loadedDetail()
+        editor.gate.close()
+        detail.newSubtaskTitle = "Buy snacks"
+        let adding = Task { await detail.addSubtask() }
+        await editor.gate.untilWaiting()
+        var known = packing
+        known.subtasks.append(task(27))
+        reading.result.withLock { $0 = .success(known) }
+        await detail.load()
+
+        editor.gate.open()
+        await adding.value
+
+        #expect(subtasks(detail) == [25, 27])
+    }
+
     // MARK: Löschen
 
     /// Q5: Löschen nach der Rückfrage der View. Ohne Hinweis „gibt es nicht mehr“, Liste und
@@ -266,6 +286,21 @@ import YuvomiCore
         #expect(subtasks(detail) == [])
     }
 
+    /// Solange ihr Statuswechsel läuft, lässt sie sich nicht löschen. Sonst meldete dessen 404
+    /// danach „gibt es nicht mehr“ (Review F4).
+    @Test func noDeleteWhileItsStatusIsWriting() async {
+        let detail = await loadedDetail()
+        writer.hold()
+        let toggling = Task { await detail.toggleSubtask(25) }
+        await writer.untilWaiting()
+
+        await detail.deleteSubtask(25)
+        writer.release()
+        await toggling.value
+
+        #expect(editor.deletes.withLock { $0.isEmpty })
+    }
+
     /// Während eine Unteraufgabe gelöscht wird, geht für sie kein zweites Löschen los.
     @Test func deletingASubtaskOnlyOnce() async {
         let detail = await loadedDetail()
@@ -280,5 +315,32 @@ import YuvomiCore
 
         #expect(editor.deletes.withLock { $0 } == [25])
         #expect(detail.deletingSubtasks.isEmpty)
+    }
+}
+
+/// Seam 4: Unteraufgaben im Detail und die Liste dahinter (F4).
+@MainActor @Suite struct SubtaskListTests {
+    let reading = FakeTasks(.success([task(24), task(1)]), detail: packing)
+
+    /// Ein Laden der Liste, das vor dem Löschen einer Unteraufgabe begann, meldet danach kein
+    /// „gibt es nicht mehr“: Das Neuladen nach dem Löschen löst es ab (Review F4).
+    @Test func deletingASubtaskDuringAListLoadShowsNoNotice() async {
+        let list = TaskListModel(
+            tasks: reading, writer: FakeWriter(), editor: FakeEditor(), permissions: FakePermissions(),
+            today: { CalendarDay(year: 2026, month: 11, day: 3) }, onUnauthorized: {}
+        )
+        await list.load()
+        list.path = [24]
+        let detail = list.detail(for: 24)
+        await detail.load()
+        reading.gate.close()
+        let loading = Task { await list.load() }
+        await reading.gate.untilWaiting()
+
+        await detail.deleteSubtask(25)
+        reading.gate.open()
+        await loading.value
+
+        #expect(list.notice == nil)
     }
 }
