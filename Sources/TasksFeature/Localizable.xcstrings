@@ -1464,6 +1464,96 @@
         }
       }
     },
+    "tasks.subtask.add": {
+      "comment": "Platzhalter und VoiceOver der Zeile unter den Unteraufgaben, legt eine an.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unteraufgabe hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Subtask"
+          }
+        }
+      }
+    },
+    "tasks.subtask.adding": {
+      "comment": "VoiceOver: Das Anlegen der Unteraufgabe läuft.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unteraufgabe wird angelegt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adding subtask"
+          }
+        }
+      }
+    },
+    "tasks.subtask.delete": {
+      "comment": "Wisch-Aktion an einer Unteraufgabe, öffnet die Rückfrage.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "tasks.subtask.delete.message %@": {
+      "comment": "Rückfrage vor dem Löschen einer Unteraufgabe, mit ihrem Titel.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ wird gelöscht. Das lässt sich nicht rückgängig machen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” will be deleted. This can't be undone."
+          }
+        }
+      }
+    },
+    "tasks.subtask.delete.title": {
+      "comment": "Titel der Rückfrage vor dem Löschen einer Unteraufgabe.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Unteraufgabe löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this subtask?"
+          }
+        }
+      }
+    },
     "tasks.title": {
       "extractionState": "manual",
       "localizations": {

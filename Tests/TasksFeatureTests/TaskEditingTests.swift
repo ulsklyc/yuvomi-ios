@@ -217,30 +217,32 @@ import YuvomiCore
         await checking.value
     }
 
-    /// Ein Ankreuzen, das bestätigt wird, während die Antwort aufs Sichern unterwegs ist, bleibt
-    /// stehen, wenn das Formular die Beschreibung nicht geändert hat (Codex-Review F3).
-    @Test func aConfirmedTickSurvivesTheAnswer() async {
+    /// Issue #35: Solange ein Ankreuzen läuft, öffnet „Bearbeiten“ nichts. Sonst überschriebe
+    /// seine Antwort eine gerade gesicherte Beschreibung.
+    @Test func editingWaitsForARunningTick() async {
         let detail = await loadedDetail()
         writer.tick.withLock { $0 = .success("- [x] Pack sleeping bags") }
         writer.hold()
         let ticking = Task { await detail.tick(line: 0) }
         await writer.untilWaiting()
+
         detail.startEditing()
-        detail.form?.draft.title = "Pack for the trip"
-        editor.gate.close()
-        let saving = Task { await detail.form?.save() }
-        await editor.gate.untilWaiting()
+        #expect(detail.form == nil)
+
         writer.release()
         await ticking.value
-        editor.gate.open()
-        await saving.value
+        detail.startEditing()
+        #expect(detail.form?.draft.description == "- [x] Pack sleeping bags")
+    }
 
-        guard case .loaded(let task) = detail.state else {
-            Issue.record("nicht geladen")
-            return
-        }
-        #expect(task.title == "Pack for the trip")
-        #expect(task.description == "- [x] Pack sleeping bags")
+    /// Umgekehrt: Bei offenem Formular kreuzt das Detail nichts an.
+    @Test func noTickWhileEditing() async {
+        let detail = await loadedDetail()
+        detail.startEditing()
+
+        await detail.tick(line: 0)
+
+        #expect(writer.calls.withLock { $0.isEmpty })
     }
 
     /// Ein Laden, das beim Löschen noch lief, meldet danach kein „gibt es nicht mehr“
