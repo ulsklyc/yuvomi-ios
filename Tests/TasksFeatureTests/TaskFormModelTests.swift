@@ -75,7 +75,7 @@ import YuvomiCore
         #expect(form.draft.title == "Water the plants")
         #expect(log.outcomes.isEmpty)
 
-        editor.created.withLock { $0 = .success(TaskSummary(id: 27, title: "Water the plants", status: .open, priority: .none, due: nil, dueTime: nil, assignees: [])) }
+        editor.created.withLock { $0 = .success(task(27)) }
         await form.save()
 
         #expect(editor.creates.withLock { $0.map(\.key) } == ["key-1", "key-1"])
@@ -174,7 +174,7 @@ import YuvomiCore
         await form.loadOptions()
 
         #expect(form.options == FakeEditor.household)
-        #expect(form.showsAssignees)
+        #expect(form.assignablePeople == FakeEditor.household.people)
     }
 
     /// Q10: Bei einer Person allein gibt es nichts zuzuweisen.
@@ -183,7 +183,7 @@ import YuvomiCore
         let form = form()
         await form.loadOptions()
 
-        #expect(!form.showsAssignees)
+        #expect(form.assignablePeople == nil)
     }
 
     /// Ohne Optionen bleibt das Formular nutzbar: Titel und der Rest gehen auch so.
@@ -193,7 +193,7 @@ import YuvomiCore
         await form.loadOptions()
 
         #expect(form.options == nil)
-        #expect(!form.showsAssignees)
+        #expect(form.assignablePeople == nil)
     }
 
     @Test func optionsForbiddenFinishesReadOnly() async {
@@ -220,6 +220,20 @@ import YuvomiCore
         #expect(form.draft.due == nil)
         #expect(form.draft.dueTime == nil)
         #expect(!form.hasTime)
+    }
+
+    /// Die Wähler rechnen in derselben Zeitzone wie der Vorschlag.
+    @Test func pickersRoundTripInTheModelsTimeZone() {
+        let form = form()
+        form.hasDue = true
+        form.hasTime = true
+
+        let day = form.dueDate, time = form.dueTimeDate
+        form.dueDate = day
+        form.dueTimeDate = time
+
+        #expect(form.draft.due == today)
+        #expect(form.draft.dueTime == "15:00")
     }
 
     /// Nach 23 Uhr gibt es keine nächste Stunde mehr am selben Tag.

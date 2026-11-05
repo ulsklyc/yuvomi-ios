@@ -30,12 +30,10 @@ public final class TaskFormModel: Identifiable {
     private let onUnauthorized: @MainActor () -> Void
     private let onFinished: @MainActor (Outcome) async -> Void
 
-    /// Je Sheet ein Schlüssel (Q14). Ein zweiter Versuch mit derselben Anfrage schickt ihn
-    /// wieder, so legt der Server nicht doppelt an.
-    private var key: String
-    /// Was der letzte Versuch geschickt hat. Weicht die nächste Anfrage davon ab, braucht sie
-    /// einen neuen Schlüssel: Mit dem alten antwortete der Server 24 Stunden lang 409.
-    private var attempted: TaskChanges?
+    /// Der letzte Versuch und sein Schlüssel (Q14). Dieselbe Anfrage schickt denselben Schlüssel
+    /// wieder, so legt der Server nicht doppelt an. Eine andere braucht einen neuen: Mit dem
+    /// alten antwortete der Server 24 Stunden lang 409.
+    private var attempt: (changes: TaskChanges, key: String)?
 
     /// - Parameters:
     ///   - now: Für den Vorschlag bei Datum und Uhrzeit; in Tests fest.
@@ -54,18 +52,20 @@ public final class TaskFormModel: Identifiable {
         self.makeKey = makeKey
         self.onUnauthorized = onUnauthorized
         self.onFinished = onFinished
-        self.key = makeKey()
     }
 
     public var hasChanges: Bool { !draft.changes(from: base).isEmpty }
     public var canSave: Bool { hasChanges && draft.problems.isEmpty && !isSaving }
-    /// Bei einer Person allein gibt es nichts zuzuweisen (Q10).
-    public var showsAssignees: Bool { (options?.people.count ?? 0) > 1 }
+    /// Wem sich die Aufgabe zuweisen lässt. `nil` bei einer Person allein (Q10) oder ohne Optionen.
+    public var assignablePeople: [TaskOptions.Person]? {
+        guard let people = options?.people, people.count > 1 else { return nil }
+        return people
+    }
 
     /// Ab 4500 Zeichen die Zahl für den Zähler, gezählt wie am Server (Q18).
     public var descriptionCount: Int? {
-        let count = draft.description.trimmingCharacters(in: .whitespacesAndNewlines).utf16.count
-        return count >= 4500 ? count : nil
+        let count = draft.descriptionLength
+        return count >= TaskDraft.descriptionCounterFrom ? count : nil
     }
 
     /// Schalter „Datum“ (Q17): an mit heute, aus nimmt die Uhrzeit mit.
@@ -87,10 +87,29 @@ public final class TaskFormModel: Identifiable {
                 draft.dueTime = nil
                 return
             }
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = timeZone
-            let hour = calendar.component(.hour, from: now()) + 1
+            let hour = CalendarDay.gregorian(timeZone).component(.hour, from: now()) + 1
             draft.dueTime = hour > 23 ? "23:59" : String(format: "%02d:00", hour)
+        }
+    }
+
+    /// Der Tag für den Datumswähler, Mitternacht in der Zeitzone des Modells.
+    public var dueDate: Date {
+        get { draft.due?.start(timeZone: timeZone) ?? now() }
+        set { draft.due = CalendarDay(newValue, timeZone: timeZone) }
+    }
+
+    /// `HH:MM` für den Zeitwähler. Nur Stunde und Minute zählen.
+    public var dueTimeDate: Date {
+        get {
+            let calendar = CalendarDay.gregorian(timeZone)
+            let parts = (draft.dueTime ?? "").split(separator: ":").compactMap { Int($0) }
+            let day = calendar.startOfDay(for: now())
+            guard parts.count == 2 else { return day }
+            return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: day) ?? day
+        }
+        set {
+            let parts = CalendarDay.gregorian(timeZone).dateComponents([.hour, .minute], from: newValue)
+            draft.dueTime = String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
         }
     }
 
@@ -118,8 +137,8 @@ public final class TaskFormModel: Identifiable {
     public func save() async {
         guard canSave else { return }
         let changes = draft.changes(from: base)
-        if let attempted, attempted != changes { key = makeKey() }
-        attempted = changes
+        let key = attempt.flatMap { $0.changes == changes ? $0.key : nil } ?? makeKey()
+        attempt = (changes, key)
         isSaving = true
         notice = nil
         defer { isSaving = false }

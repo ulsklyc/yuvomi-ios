@@ -45,7 +45,7 @@ public struct TaskListView<Banner: View>: View {
                 }
         }
         .sheet(item: $model.form) { form in
-            TaskFormView(model: form) { model.form = nil }
+            TaskFormView(model: form)
         }
         .task { await model.load() }
     }
@@ -183,11 +183,12 @@ extension TaskListModel.Problem {
 }
 
 #Preview("Fixtures") {
+    let api = YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport())
     TaskListView(
         model: TaskListModel(
-            tasks: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
-            writer: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
-            editor: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
+            tasks: api,
+            writer: api,
+            editor: api,
             permissions: YuvomiMemberPermissions(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             today: { CalendarDay(year: 2026, month: 11, day: 3) },
             onUnauthorized: {}

@@ -42,7 +42,8 @@ public struct CalendarDay: Hashable, Sendable, Comparable {
         Self.gregorian(timeZone).date(from: DateComponents(year: year, month: month, day: day))
     }
 
-    private static func gregorian(_ timeZone: TimeZone) -> Calendar {
+    /// Der gregorianische Kalender in `timeZone`, nie `Calendar.current` (siehe oben).
+    public static func gregorian(_ timeZone: TimeZone) -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         return calendar
@@ -63,6 +64,9 @@ public enum TaskStatus: Hashable, Sendable {
 /// statt ihn als dringend oder unwichtig zu deuten.
 public enum TaskPriority: Hashable, Sendable {
     case none, low, medium, high, urgent, unknown
+
+    /// Was die App setzen kann. `.unknown` kommt nur vom Server.
+    public static let settable: [TaskPriority] = [.none, .low, .medium, .high, .urgent]
 }
 
 /// Eine Aufgabe, so weit die Liste sie zeigt.

@@ -8,8 +8,8 @@ import YuvomiFixtures
 /// sich nicht wegwischen, und „Abbrechen“ fragt nach.
 struct TaskFormView: View {
     @Bindable var model: TaskFormModel
-    let onCancel: () -> Void
 
+    @Environment(\.dismiss) private var dismiss
     @State private var confirmsDiscard = false
     @FocusState private var titleFocused: Bool
 
@@ -21,7 +21,7 @@ struct TaskFormView: View {
                 }
                 titleSection
                 dateSection
-                if model.showsAssignees, let people = model.options?.people {
+                if let people = model.assignablePeople {
                     assigneeSection(people)
                 }
                 detailsSection
@@ -60,14 +60,14 @@ struct TaskFormView: View {
                 Label { Text("tasks.form.date", bundle: .module) } icon: { Image(systemName: "calendar") }
             }
             if model.hasDue {
-                DatePicker(selection: dueDate, displayedComponents: .date) {
+                DatePicker(selection: $model.dueDate, displayedComponents: .date) {
                     Text("tasks.form.date", bundle: .module)
                 }
                 Toggle(isOn: $model.hasTime.animation()) {
                     Label { Text("tasks.form.time", bundle: .module) } icon: { Image(systemName: "clock") }
                 }
                 if model.hasTime {
-                    DatePicker(selection: dueTime, displayedComponents: .hourAndMinute) {
+                    DatePicker(selection: $model.dueTimeDate, displayedComponents: .hourAndMinute) {
                         Text("tasks.form.time", bundle: .module)
                     }
                 }
@@ -116,7 +116,7 @@ struct TaskFormView: View {
     private var detailsSection: some View {
         Section {
             Picker(selection: $model.draft.priority) {
-                ForEach(TaskPriority.choices, id: \.self) { priority in
+                ForEach(TaskPriority.settable, id: \.self) { priority in
                     Text(priority.choiceLabel, bundle: .module).tag(priority)
                 }
             } label: {
@@ -125,7 +125,7 @@ struct TaskFormView: View {
             if let categories = model.options?.categories, !categories.isEmpty {
                 Picker(selection: $model.draft.category) {
                     ForEach(categories) { category in
-                        Text(verbatim: category.title(Self.translateCategory)).tag(category.key)
+                        Text(verbatim: category.localizedTitle).tag(category.key)
                     }
                 } label: {
                     Label { Text("tasks.form.category", bundle: .module) } icon: { Image(systemName: "folder") }
@@ -154,13 +154,13 @@ struct TaskFormView: View {
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button {
-                if model.hasChanges { confirmsDiscard = true } else { onCancel() }
+                if model.hasChanges { confirmsDiscard = true } else { dismiss() }
             } label: {
                 Text("tasks.form.cancel", bundle: .module)
             }
             .disabled(model.isSaving)
             .confirmationDialog(Text("tasks.form.discard.title", bundle: .module), isPresented: $confirmsDiscard) {
-                Button(role: .destructive, action: onCancel) { Text("tasks.form.discard", bundle: .module) }
+                Button(role: .destructive) { dismiss() } label: { Text("tasks.form.discard", bundle: .module) }
                 Button(role: .cancel) {} label: { Text("tasks.form.keepEditing", bundle: .module) }
             }
         }
@@ -174,35 +174,11 @@ struct TaskFormView: View {
             }
         }
     }
+}
 
-    // MARK: Datum und Uhrzeit
-
-    /// Der Tag als `Date` für den Picker, Mitternacht in der Zeitzone des Geräts.
-    private var dueDate: Binding<Date> {
-        Binding {
-            model.draft.due?.start() ?? .now
-        } set: { date in
-            model.draft.due = CalendarDay(date)
-        }
-    }
-
-    /// `HH:MM` als `Date` für den Picker. Nur Stunde und Minute zählen.
-    private var dueTime: Binding<Date> {
-        Binding {
-            let parts = (model.draft.dueTime ?? "").split(separator: ":").compactMap { Int($0) }
-            let midnight = Calendar.current.startOfDay(for: .now)
-            guard parts.count == 2 else { return midnight }
-            return Calendar.current.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: midnight) ?? midnight
-        } set: { date in
-            let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
-            model.draft.dueTime = String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
-        }
-    }
-
-    // MARK: Kategorien
-
+extension TaskCategory {
     /// Die acht eingebauten Kategorien haben eigene Texte (Q8). Der Rest zeigt `name` oder Key.
-    private static let categoryKeys: [String: String.LocalizationValue] = [
+    private static let builtIn: [String: String.LocalizationValue] = [
         "tasks.categoryHousehold": "tasks.category.household",
         "tasks.categorySchool": "tasks.category.school",
         "tasks.categoryShopping": "tasks.category.shopping",
@@ -213,15 +189,12 @@ struct TaskFormView: View {
         "tasks.categoryMisc": "tasks.category.misc",
     ]
 
-    static func translateCategory(_ labelKey: String) -> String? {
-        categoryKeys[labelKey].map { String(localized: $0, bundle: .module) }
+    var localizedTitle: String {
+        title { Self.builtIn[$0].map { String(localized: $0, bundle: .module) } }
     }
 }
 
 extension TaskPriority {
-    /// Was das Formular anbietet. `.unknown` kann die App nicht setzen.
-    static let choices: [TaskPriority] = [.none, .low, .medium, .high, .urgent]
-
     var choiceLabel: LocalizedStringKey {
         label ?? "tasks.detail.priority.none"
     }
@@ -232,7 +205,6 @@ extension TaskPriority {
         model: TaskFormModel(
             editor: YuvomiTasks(server: URL(string: "https://yuvomi.example.com")!, credential: "preview", transport: FixtureTransport()),
             onUnauthorized: {}, onFinished: { _ in }
-        ),
-        onCancel: {}
+        )
     )
 }

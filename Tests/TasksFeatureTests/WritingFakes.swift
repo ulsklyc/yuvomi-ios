@@ -104,9 +104,7 @@ final class FakeEditor: TaskEditing, Sendable {
     )
 
     let options = Mutex<Result<TaskOptions, APIError>>(.success(household))
-    let created = Mutex<Result<TaskSummary, APIError>>(
-        .success(TaskSummary(id: 27, title: "Water the plants", status: .open, priority: .none, due: nil, dueTime: nil, assignees: []))
-    )
+    let created = Mutex<Result<TaskSummary, APIError>>(.success(task(27)))
     /// Je `create` der Entwurf, der Elternteil und der Schlüssel.
     let creates = Mutex<[(draft: TaskDraft, parent: Int?, key: String)]>([])
     let gate = Gate()
