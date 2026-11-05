@@ -182,6 +182,7 @@ public final class TaskListModel {
     /// fragt beim Neuzeichnen erneut, und das Detail soll nicht jedes Mal neu laden.
     public func detail(for id: Int) -> TaskDetailModel {
         if let model = details[id] { return model }
+        let made = WeakDetail()
         let model = TaskDetailModel(
             taskID: id, tasks: tasks, writer: writer,
             mayWrite: { [weak self] in self?.canWrite ?? false },
@@ -190,11 +191,18 @@ public final class TaskListModel {
             onStatusChanged: { [weak self] in
                 guard let self else { return }
                 onStatusChanged()
-                Task { await self.load() }
+                // Inzwischen zu und wieder offen: Das neue Detail lud womöglich vor dem Wechsel
+                // (Codex-Review E3).
+                let reopened = details[id].flatMap { $0 === made.model ? nil : $0 }
+                Task {
+                    await self.load()
+                    await reopened?.load()
+                }
             },
             onForbidden: { [weak self] in self?.canWrite = false },
             onGone: { [weak self] in self?.close(id) }
         )
+        made.model = model
         details[id] = model
         return model
     }
@@ -231,4 +239,10 @@ private func dueFirst(_ lhs: TaskSummary, _ rhs: TaskSummary) -> Bool {
     case (nil, _), (_, nil): false
     default: (lhs.dueTime ?? "") < (rhs.dueTime ?? "")
     }
+}
+
+/// Ein schwacher Verweis, mit dem der Rückruf eines Details sich von einem neueren derselben
+/// Aufgabe unterscheidet. Schwach, sonst hielte das Detail sich über den Rückruf selbst fest.
+@MainActor private final class WeakDetail {
+    weak var model: TaskDetailModel?
 }

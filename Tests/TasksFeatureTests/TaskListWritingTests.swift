@@ -227,6 +227,32 @@ import YuvomiCore
         #expect(list.state == .loaded([TaskSection(kind: .noDate, tasks: [task(2)])]))
     }
 
+    /// Abhaken im Detail, zurück zur Liste und wieder hinein, bevor der Server antwortet: Das
+    /// neue Detail lud womöglich vorher und lädt nach dem Wechsel neu (Codex-Review E3).
+    @Test func aReopenedDetailRefreshesAfterTheEarlierWrite() async {
+        let list = await loadedList([task(24), task(2)])
+        list.path = [24]
+        let first = list.detail(for: 24)
+        await first.load()
+        writer.hold()
+        let writing = Task { await first.toggleStatus() }
+        await writer.untilWaiting()
+
+        list.path = []
+        list.path = [24]
+        let second = list.detail(for: 24)
+        await second.load()
+        var done = packing
+        done.status = .done
+        reading.detail = done
+        writer.release()
+        await writing.value
+        for _ in 0..<100 where second.state != .loaded(done) { await Task.yield() }
+
+        #expect(second !== first)
+        #expect(second.state == .loaded(done))
+    }
+
     @Test func aForbiddenDetailMakesTheListReadOnly() async {
         let list = await loadedList([task(24)])
         list.path = [24]
