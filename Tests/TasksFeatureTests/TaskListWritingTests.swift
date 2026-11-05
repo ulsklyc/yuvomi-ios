@@ -278,6 +278,32 @@ import YuvomiCore
         #expect(second.state == .loaded(ticked))
     }
 
+    /// Ankreuzen läuft je Aufgabe nur einmal, auch über ein neu geöffnetes Detail hinweg: Jede
+    /// Antwort ist die ganze Beschreibung (Codex-Review E3, Issue #23).
+    @Test func aReopenedDetailWaitsForTheEarlierTick() async {
+        reading.detail = TaskDetail(id: 24, title: "x", status: .open, priority: .none, description: "- [ ] A\n- [ ] B")
+        writer.tick.withLock { $0 = .success("- [x] A\n- [ ] B") }
+        let list = await loadedList([task(24), task(2)])
+        list.path = [24]
+        let first = list.detail(for: 24)
+        await first.load()
+        writer.hold()
+        let ticking = Task { await first.tick(line: 0) }
+        await writer.untilWaiting()
+        list.path = []
+        list.path = [24]
+        let second = list.detail(for: 24)
+        await second.load()
+        #expect(second.isTickLocked)
+
+        await second.tick(line: 1)
+        writer.release()
+        await ticking.value
+
+        #expect(writer.calls.withLock { $0 } == ["tick 24 0 true - [ ] A"])
+        #expect(!second.isTickLocked)
+    }
+
     /// Liste und Detail teilen, was gerade geschrieben wird: Läuft das Abhaken aus der Liste,
     /// zeigt das Detail es und schreibt nicht ein zweites Mal dazwischen (Codex-Review E3).
     @Test func theDetailWaitsForTheListsWriteOfTheSameTask() async {
