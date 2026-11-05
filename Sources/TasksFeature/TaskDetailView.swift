@@ -21,7 +21,7 @@ public struct TaskDetailView: View {
                 if model.canEdit {
                     ToolbarItem(placement: .primaryAction) {
                         Button { model.startEditing() } label: { Text("tasks.detail.edit", bundle: .module) }
-                            .disabled(model.isDeleting)
+                            .disabled(model.isDeleting || model.isTickLocked)
                     }
                 }
             }
@@ -89,21 +89,96 @@ struct TaskDetailList: View {
                     Text("tasks.detail.section.description", bundle: .module)
                 }
             }
-            if !task.subtasks.isEmpty {
-                Section {
-                    ForEach(task.subtasks) { subtask in
-                        SubtaskRow(subtask: subtask, canWrite: model.canWrite, isBusy: model.writingStatus.contains(subtask.id)) {
-                            Task { await model.toggleSubtask(subtask.id) }
-                        }
-                    }
-                } header: {
-                    Text("tasks.detail.section.subtasks", bundle: .module)
-                }
+            if !task.subtasks.isEmpty || model.canEdit {
+                SubtasksSection(task: task, model: model)
             }
             TaskFacts(task: task, category: model.category(for: task.category).localizedTitle)
             if model.canEdit {
                 DeleteSection(task: task, model: model)
             }
+        }
+    }
+}
+
+/// Die Unteraufgaben, dazu die Zeile „Unteraufgabe hinzufügen“ und Löschen per Wischen mit
+/// Rückfrage (Q5). Beides nur, wenn die Person die Aufgabe ändern darf (Q7).
+struct SubtasksSection: View {
+    let task: TaskDetail
+    @Bindable var model: TaskDetailModel
+    @State private var confirming: TaskSummary?
+    @FocusState private var isTyping: Bool
+
+    var body: some View {
+        Section {
+            ForEach(task.subtasks) { subtask in
+                SubtaskRow(
+                    subtask: subtask, canWrite: model.canWrite,
+                    isBusy: model.writingStatus.contains(subtask.id) || model.deletingSubtasks.contains(subtask.id)
+                ) {
+                    Task { await model.toggleSubtask(subtask.id) }
+                }
+                .swipeActions {
+                    if model.canEdit {
+                        // Ohne `role: .destructive`: Die Zeile verschwindet erst nach der Rückfrage.
+                        Button { confirming = subtask } label: {
+                            Label { Text("tasks.subtask.delete", bundle: .module) } icon: { Image(systemName: "trash") }
+                        }
+                        .tint(.red)
+                    }
+                }
+            }
+            if model.canEdit {
+                addRow
+            }
+        } header: {
+            Text("tasks.detail.section.subtasks", bundle: .module)
+        }
+        .confirmationDialog(
+            Text("tasks.subtask.delete.title", bundle: .module), isPresented: isConfirming,
+            titleVisibility: .visible, presenting: confirming
+        ) { subtask in
+            Button(role: .destructive) { Task { await model.deleteSubtask(subtask.id) } } label: {
+                Text("tasks.delete.confirm", bundle: .module)
+            }
+            Button(role: .cancel) {} label: { Text("tasks.form.cancel", bundle: .module) }
+        } message: { subtask in
+            Text("tasks.subtask.delete.message \(subtask.title)", bundle: .module)
+        }
+    }
+
+    private var isConfirming: Binding<Bool> {
+        Binding { confirming != nil } set: { if !$0 { confirming = nil } }
+    }
+
+    private var addRow: some View {
+        HStack {
+            TextField(text: $model.newSubtaskTitle, prompt: Text("tasks.subtask.add", bundle: .module)) {
+                Text("tasks.subtask.add", bundle: .module)
+            }
+                .focused($isTyping)
+                .submitLabel(.done)
+                .onSubmit(add)
+                .disabled(model.isAddingSubtask)
+            if model.isAddingSubtask {
+                ProgressView()
+                    .accessibilityLabel(Text("tasks.subtask.adding", bundle: .module))
+            } else {
+                Button(action: add) {
+                    Image(systemName: "plus.circle.fill")
+                        .imageScale(.large)
+                }
+                .buttonStyle(.borderless)
+                .disabled(!model.canAddSubtask)
+                .accessibilityLabel(Text("tasks.subtask.add", bundle: .module))
+            }
+        }
+    }
+
+    private func add() {
+        Task {
+            await model.addSubtask()
+            // Gleich die nächste: Nach dem Erfolg bleibt die Tastatur offen.
+            if model.newSubtaskTitle.isEmpty { isTyping = true }
         }
     }
 }

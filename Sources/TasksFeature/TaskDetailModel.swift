@@ -64,7 +64,28 @@ public final class TaskDetailModel {
     /// Kategorien aus `meta/options`, für den Namen einer eigenen Kategorie (Q8).
     public private(set) var options: TaskOptions?
 
-    /// Wie in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt.
+    /// Die Eingabe der Zeile „Unteraufgabe hinzufügen“ (Q5).
+    public var newSubtaskTitle = ""
+    public private(set) var isAddingSubtask = false
+    /// Unteraufgaben, deren Löschen gerade läuft.
+    public private(set) var deletingSubtasks: Set<Int> = []
+    /// Der letzte Versuch und sein Schlüssel, wie im Formular (Q14): Derselbe Titel schickt
+    /// denselben Schlüssel wieder, ein anderer bekommt einen neuen.
+    @ObservationIgnored private var subtaskAttempt: (title: String, key: String)?
+
+    /// Unteraufgaben gibt es nur, wo die Aufgabe sich ändern lässt (Q7).
+    public var canAddSubtask: Bool {
+        canEdit && !isAddingSubtask && !isDeleting && subtaskDraft.problems.isEmpty
+    }
+
+    /// Nur der Titel, der Rest kommt vom Server (Q5).
+    private var subtaskDraft: TaskDraft {
+        var draft = TaskDraft()
+        draft.title = newSubtaskTitle
+        return draft
+    }
+
+    /// Wie in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt. in `TaskListModel`: Nur die Antwort des jüngsten Ladevorgangs zählt.
     private var generation = 0
     private let tasks: any TaskReading
     private let writer: any TaskWriting
@@ -213,7 +234,7 @@ public final class TaskDetailModel {
     /// Jede Antwort ist die ganze Beschreibung, eine ältere Antwort überschriebe sonst einen später
     /// gesetzten Haken (Codex-Review E3, Issue #23).
     public func tick(line: Int) async {
-        guard mayWrite(), let task = loaded,
+        guard mayWrite(), form == nil, let task = loaded,
               let point = Checklist(description: task.description).items.first(where: { $0.index == line })
         else { return }
         // Zuletzt: Ab hier gibt das defer die Sperre wieder frei.
@@ -299,26 +320,21 @@ public final class TaskDetailModel {
     }
 
     /// „Bearbeiten“: das Formular mit dem gespeicherten Stand (Q2, Q9).
+    /// Solange ein Ankreuzen läuft, öffnet sich nichts: Seine Antwort ist die ganze Beschreibung
+    /// und überschriebe sonst eine gerade gesicherte (Issue #35). Bei offenem Formular kreuzt
+    /// `tick` nichts an.
     public func startEditing() {
-        guard canEdit, let task = loaded else { return }
+        guard canEdit, !isTickLocked, let task = loaded else { return }
         // Was davor schon lief oder danach bestätigt wird, kennt die Antwort aufs Sichern womöglich nicht.
         let mark = overlay.mark
-        let ticks = tickCount
         form = TaskFormModel(
             editing: task, options: options, editor: editor, onUnauthorized: onUnauthorized,
-            onFinished: { [weak self] outcome in
-                await self?.finishEditing(outcome, since: mark, ticks: ticks, description: task.description)
-            }
+            onFinished: { [weak self] outcome in await self?.finishEditing(outcome, since: mark) }
         )
     }
 
     /// Sheet zu, dann die Folgen nach Q11 und Q13.
-    /// - Parameters:
-    ///   - ticks, description: Stand beim Öffnen. Ein seitdem bestätigtes Ankreuzen ist neuer als
-    ///     die Antwort, solange das Formular die Beschreibung nicht geändert hat (Codex-Review F3).
-    private func finishEditing(
-        _ outcome: TaskFormModel.Outcome, since mark: Int, ticks: Int, description: String?
-    ) async {
+    private func finishEditing(_ outcome: TaskFormModel.Outcome, since mark: Int) async {
         form = nil
         switch outcome {
         case .saved(let saved):
@@ -326,9 +342,6 @@ public final class TaskDetailModel {
             generation += 1
             if var task = saved {
                 overlaid(&task, since: mark)
-                if let ticked = tickedDescription, ticked.count > ticks, task.description == description {
-                    task.description = ticked.text
-                }
                 state = .loaded(task)
             }
             refreshProblem = nil
@@ -358,6 +371,61 @@ public final class TaskDetailModel {
         // Ein Laden, das noch läuft, meldete sonst die eigene Löschung als 404 (Codex-Review F3).
         generation += 1
         onDeleted()
+    }
+
+    /// „Unteraufgabe hinzufügen“ (Q5): nur der Titel, mit der Aufgabe als Elternteil. Danach
+    /// hängt die Zeile sich an, das Feld leert sich, die Liste lädt neu (Q11).
+    public func addSubtask() async {
+        guard canAddSubtask else { return }
+        let title = newSubtaskTitle
+        let key = subtaskAttempt.flatMap { $0.title == title ? $0.key : nil } ?? UUID().uuidString
+        subtaskAttempt = (title, key)
+        isAddingSubtask = true
+        notice = nil
+        defer { isAddingSubtask = false }
+        do throws(APIError) {
+            let subtask = try await editor.create(subtaskDraft, parent: taskID, idempotencyKey: key)
+            subtaskAttempt = nil
+            // Nur leeren, wenn die Person währenddessen nichts Neues getippt hat.
+            if newSubtaskTitle == title { newSubtaskTitle = "" }
+            // Ein Laden, das davor begann, kennt die neue Unteraufgabe nicht.
+            generation += 1
+            update { $0.subtasks.append(subtask) }
+            onStatusChanged()
+        } catch .unauthorized {
+            onUnauthorized()
+        } catch .conflict {
+            notice = .stillRunning
+        } catch {
+            // 404: Die Aufgabe selbst ist weg. 403 `task_locked`: inzwischen gesperrt (Q5, Q13).
+            await failEditing(error)
+        }
+    }
+
+    /// Eine Unteraufgabe löschen, nach der Rückfrage der View (Q5). Wie beim Löschen der Aufgabe
+    /// gilt 404 als Erfolg.
+    public func deleteSubtask(_ id: Int) async {
+        guard canEdit, !isDeleting, !deletingSubtasks.contains(id),
+              loaded?.subtasks.contains(where: { $0.id == id }) == true
+        else { return }
+        deletingSubtasks.insert(id)
+        notice = nil
+        defer { deletingSubtasks.remove(id) }
+        do throws(APIError) {
+            try await editor.delete(task: id)
+        } catch .notFound {
+            // Schon weg: gilt als gelöscht.
+        } catch .unauthorized {
+            onUnauthorized()
+            return
+        } catch {
+            await failEditing(error)
+            return
+        }
+        // Auch ein Laden, das davor begann, bringt sie nicht zurück (wie Issue #24).
+        overlay.markGone(id)
+        update { $0.subtasks.removeAll { $0.id == id } }
+        onStatusChanged()
     }
 
     /// Wie `fail`. Ist die Aufgabe inzwischen gesperrt, lädt das Detail neu und blendet dann
