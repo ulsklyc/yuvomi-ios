@@ -44,12 +44,16 @@ Push-Relay.
   QR-Code, als Link, der die App öffnet, oder zum Abtippen. Das klappt auch in Haushalten, die sich
   nur per Single Sign-on anmelden. Jedes angemeldete Telefon erscheint in der Web-App und lässt sich
   dort abmelden.
-- **Eure Aufgaben**, so wie sie auf dem Server stehen, mit Priorität und Fälligkeit.
+- **Eure Aufgaben, zum Lesen und Ändern.** Eine Aufgabe öffnet sich mit allem: Beschreibung,
+  Checkliste, Unteraufgaben, Zuständige, Wiederholung und Punkte. Abhaken oder wieder öffnen,
+  Punkte der Checkliste ankreuzen und neue Aufgaben mit "+" anlegen. "Bearbeiten" im Detail ändert,
+  was nötig ist, Unteraufgaben kommen dort dazu und gehen per Wischen weg, und gelöscht wird eine
+  Aufgabe erst nach einer Rückfrage. Ein Konto mit Nur-lesen sieht alles und ändert nichts.
 - **Erinnerungen auf dem Telefon.** Kommende Erinnerungen an Aufgaben und Termine plant das Gerät
   selbst; sie kommen auch an, wenn die App geschlossen oder das Telefon gesperrt ist. Die App
   frischt sie im Hintergrund auf, ein Schalter stellt sie nur für dieses Telefon ab.
-- **Direkt an der Mitteilung antworten.** Antippen oder Wegwischen verwirft die Erinnerung auf dem
-  Server; "Erledigt" an einer Aufgaben-Erinnerung hakt die Aufgabe ab, ohne die App zu öffnen.
+- **Direkt an der Mitteilung antworten.** Antippen öffnet die Aufgabe, Wegwischen verwirft die
+  Erinnerung auf dem Server; "Erledigt" an einer Aufgaben-Erinnerung hakt die Aufgabe ab, ohne die App zu öffnen.
   Ohne Verbindung merkt sich das Telefon das und schickt es später.
 
 Die PWA bleibt das vollständige Yuvomi. Die App wächst Schritt für Schritt, und was sie noch nicht

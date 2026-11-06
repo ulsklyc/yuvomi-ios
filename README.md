@@ -43,13 +43,17 @@ that the phone schedules itself, so they arrive on time without a push relay.
   link that opens the app, or something to type in. That also works for households that only sign
   in with single sign-on. Every signed-in phone shows up in the web app and can be signed out
   from there.
-- **Your tasks**, read from the server as they are, with priorities and due dates.
+- **Your tasks, to read and to change.** Open a task for its full detail: description, checklist,
+  subtasks, assignees, repeat and points. Check it off or reopen it, tick checklist items, and add
+  new tasks with "+". "Edit" in the detail changes what you need, subtasks are added and swiped
+  away right there, and a task is deleted with one question first. A read-only account sees
+  everything and changes nothing.
 - **Reminders on the phone.** Upcoming reminders for tasks and events are scheduled on the device
   and arrive even while the app is closed or the phone is locked. The app refreshes them in the
   background; a switch turns them off for this phone only.
-- **Answer a reminder right from the notification.** Tapping or swiping it away dismisses the
-  reminder on the server; "Mark as Done" on a task reminder checks the task off without opening
-  the app. Without a connection the phone remembers it and sends it later.
+- **Answer a reminder right from the notification.** Tapping it opens the task, swiping it away
+  dismisses the reminder on the server; "Mark as Done" on a task reminder checks the task off
+  without opening the app. Without a connection the phone remembers it and sends it later.
 
 The PWA stays the full Yuvomi. The app grows step by step, and anything it cannot do yet is one
 tap away in the browser.
