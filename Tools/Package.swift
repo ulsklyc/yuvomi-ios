@@ -10,7 +10,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     dependencies: [
         // Version aus dem Spike vom 02.11.2026 (Server-Regel S5).
-        .package(url: "https://github.com/apple/swift-openapi-generator", exact: "1.14.3"),
+        .package(url: "https://github.com/apple/swift-openapi-generator", exact: "1.14.4"),
     ],
     targets: []
 )
