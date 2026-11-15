@@ -284,6 +284,8 @@ internal struct Client: APIProtocol {
     ///
     /// Second step after POST /auth/login answered with `twoFactorRequired`. Accepts either the six-digit TOTP code or one of the recovery codes; the response says which one was used. The pending sign-in expires after five minutes.
     ///
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `two_factor_no_pending_sign_in` (401, no sign-in is waiting for a code, or it has expired), `account_cannot_sign_in` (403, the account is deactivated or may not sign in).
+    ///
     /// - Remark: HTTP `POST /api/v1/auth/2fa/verify`.
     /// - Remark: Generated from `#/paths//api/v1/auth/2fa/verify/post(verifySecondFactor)`.
     internal func verifySecondFactor(_ input: Operations.VerifySecondFactor.Input) async throws -> Operations.VerifySecondFactor.Output {
@@ -2030,7 +2032,7 @@ internal struct Client: APIProtocol {
     ///
     /// On a locked task (`locked: 1`) only the creator and administrators may change the definition - title, description, category, priority, dates, recurrence, points, visibility, tags, sync target, the lock itself, and assigning other members. Everyone else may still send the full body as long as the outcome differs only in `status` or in their own entry in `assigned_to`; anything else answers 403. The comparison is against the stored values, not against which fields were sent. Rotation fields follow the rule of the rest of the body: absent means untouched; `rotation_mode: null` clears mode, pool and pointer together. Sending only `rotation_pool` re-deals the pool positions but keeps the pointer, so an edited order continues the rotation from where it stands instead of resetting it; changing the mode starts the round fresh. Returns `{ data: Task }`; the task additionally carries `next_due_date` (YYYY-MM-DD) under the same rule as PATCH /tasks/{id}/status: the due date of the next occurrence still pending and visible to the caller when this call moved a recurring task into `done`, and `null` in every other case - no status change, a change that is not a transition into `done`, a task without recurrence, a series that has ended, or a next occurrence the caller cannot see.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `task_foreign_series` (409, the task repeats in another app with a rule Yuvomi cannot follow - it is in `external_rrule` - and is ticked off there, #2506).
     ///
     /// - Remark: HTTP `PUT /api/v1/tasks/{id}`.
     /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)`.
@@ -2182,6 +2184,28 @@ internal struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .notFound(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.UpdateTask.Output.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ApiError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
                 case 500:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.InternalServerError.Body
@@ -2379,7 +2403,7 @@ internal struct Client: APIProtocol {
     ///
     /// Body: { status, done_by_user_id? }. Sending `archived` files the task away without touching its status - use PATCH /archive instead. Deliberately open on a locked task: ticking one off is the interaction the lock exists to preserve. `done_by_user_id` names who actually did the task (#1205), which is not necessarily the caller - on a shared tablet it rarely is. It has to be a household member (400 otherwise), it only applies to the transition into `done` and is ignored on any other status change, and it decides where the points go: a named member who takes part in rewards receives them instead of the assignees, a named member who does not take part means no points at all rather than crediting someone who did not do it. Omit it and nothing changes: the history shows the caller and the assignees rule applies. The naming is as idempotent as the completion itself - correcting it means reopening the task and ticking it off again. A paired wall display reaches this route too, and only this one of the writing routes (#1209): for it the field is required rather than optional, only the transition into `done` is allowed, and the task has to be visible to the whole household, which answers 404 rather than 403 so an invisible task is not confirmed to exist. Returns `{ data: { id, status, archived_at, next_due_date } }`. `next_due_date` (YYYY-MM-DD) is the due date of the next occurrence still pending - not done and not archived, so one that is `in_progress` counts - when this call completed a recurring task, and `null` in every other case: a task without recurrence, a series that has ended, a status change that is not a transition into `done`, and the `archived` shortcut, which omits the field.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `display_action` (403, a paired display can only tick a task off).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `display_action` (403, a paired display can only tick a task off), `task_foreign_series` (409, the task repeats in another app with a rule Yuvomi cannot follow - it is in `external_rrule` - and is ticked off there, #2506).
     ///
     /// - Remark: HTTP `PATCH /api/v1/tasks/{id}/status`.
     /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)`.
@@ -2531,6 +2555,28 @@ internal struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .notFound(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.UpdateTaskStatus.Output.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ApiError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
                 case 500:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.InternalServerError.Body
