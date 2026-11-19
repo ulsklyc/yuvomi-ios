@@ -41,6 +41,49 @@ extension Components {
             internal var params: Components.Schemas.ApiError.ParamsPayload?
             /// - Remark: Generated from `#/components/schemas/ApiError/storage_code`.
             internal var storageCode: Components.Schemas.DocumentStorageErrorCode?
+            /// - Remark: Generated from `#/components/schemas/ApiError/FieldsPayload`.
+            internal struct FieldsPayloadPayload: Codable, Hashable, Sendable {
+                /// Place and pointer, e.g. `body/title`, `query/limit`, `path/id`; for a missing property its name is appended. Cut to 120 characters.
+                ///
+                /// - Remark: Generated from `#/components/schemas/ApiError/FieldsPayload/path`.
+                internal var path: Swift.String
+                /// The JSON Schema keyword that failed, e.g. `type`, `required`, `maxLength`, `enum`, `format`.
+                ///
+                /// - Remark: Generated from `#/components/schemas/ApiError/FieldsPayload/rule`.
+                internal var rule: Swift.String
+                /// The documented `reason` of the operation for this rule, when its schema names one (annotation `x-reason`); absent otherwise.
+                ///
+                /// - Remark: Generated from `#/components/schemas/ApiError/FieldsPayload/reason`.
+                internal var reason: Swift.String?
+                /// Creates a new `FieldsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - path: Place and pointer, e.g. `body/title`, `query/limit`, `path/id`; for a missing property its name is appended. Cut to 120 characters.
+                ///   - rule: The JSON Schema keyword that failed, e.g. `type`, `required`, `maxLength`, `enum`, `format`.
+                ///   - reason: The documented `reason` of the operation for this rule, when its schema names one (annotation `x-reason`); absent otherwise.
+                internal init(
+                    path: Swift.String,
+                    rule: Swift.String,
+                    reason: Swift.String? = nil
+                ) {
+                    self.path = path
+                    self.rule = rule
+                    self.reason = reason
+                }
+                internal enum CodingKeys: String, CodingKey {
+                    case path
+                    case rule
+                    case reason
+                }
+            }
+            /// Only on a refusal against the schema of the operation: what the request got wrong, at most ten entries. The `reason` beside it is the first entry's own `reason`, or `"validation"` when that entry has none. Never carries a value of the request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ApiError/fields`.
+            internal typealias FieldsPayload = [Components.Schemas.ApiError.FieldsPayloadPayload]
+            /// Only on a refusal against the schema of the operation: what the request got wrong, at most ten entries. The `reason` beside it is the first entry's own `reason`, or `"validation"` when that entry has none. Never carries a value of the request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ApiError/fields`.
+            internal var fields: Components.Schemas.ApiError.FieldsPayload?
             /// Creates a new `ApiError`.
             ///
             /// - Parameters:
@@ -49,18 +92,21 @@ extension Components {
             ///   - reason:
             ///   - params: Only next to a `reason` whose cause carries a number (waste import and URL sources): the limit or status itself, e.g. `{ "limit_mb": 5 }`, so a client can put it into its own sentence instead of parsing `error`.
             ///   - storageCode:
+            ///   - fields: Only on a refusal against the schema of the operation: what the request got wrong, at most ten entries. The `reason` beside it is the first entry's own `reason`, or `"validation"` when that entry has none. Never carries a value of the request.
             internal init(
                 error: Swift.String? = nil,
                 code: Swift.Int? = nil,
                 reason: Swift.String? = nil,
                 params: Components.Schemas.ApiError.ParamsPayload? = nil,
-                storageCode: Components.Schemas.DocumentStorageErrorCode? = nil
+                storageCode: Components.Schemas.DocumentStorageErrorCode? = nil,
+                fields: Components.Schemas.ApiError.FieldsPayload? = nil
             ) {
                 self.error = error
                 self.code = code
                 self.reason = reason
                 self.params = params
                 self.storageCode = storageCode
+                self.fields = fields
             }
             internal enum CodingKeys: String, CodingKey {
                 case error
@@ -68,6 +114,7 @@ extension Components {
                 case reason
                 case params
                 case storageCode = "storage_code"
+                case fields
             }
         }
         /// A person assigned to a task or an event.
@@ -295,6 +342,10 @@ extension Components {
             internal var externalCalendarId: Swift.String?
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/external_object_url`.
             internal var externalObjectUrl: Swift.String?
+            /// The event status an ICS subscription, CalDAV or iCloud reports: `TENTATIVE`, `CONFIRMED` or `CANCELLED`, null when the provider sends none and for every other event. A `CANCELLED` event stays in the calendar answers but reminds no one and is left out of `GET /calendar/upcoming`, the dashboard and the countdowns.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CalendarEvent/provider_status`.
+            internal var providerStatus: Swift.String?
             /// The ICS subscription the event came from.
             ///
             /// - Remark: Generated from `#/components/schemas/CalendarEvent/subscription_id`.
@@ -481,6 +532,7 @@ extension Components {
             ///   - externalSource: Where the event lives. `local` also for one sent to a provider that has not come back from the sync yet, and for an imported one.
             ///   - externalCalendarId:
             ///   - externalObjectUrl:
+            ///   - providerStatus: The event status an ICS subscription, CalDAV or iCloud reports: `TENTATIVE`, `CONFIRMED` or `CANCELLED`, null when the provider sends none and for every other event. A `CANCELLED` event stays in the calendar answers but reminds no one and is left out of `GET /calendar/upcoming`, the dashboard and the countdowns.
             ///   - subscriptionId: The ICS subscription the event came from.
             ///   - calendarRefId: The synced calendar the event came from.
             ///   - caldavAccountId:
@@ -553,6 +605,7 @@ extension Components {
                 externalSource: Swift.String? = nil,
                 externalCalendarId: Swift.String? = nil,
                 externalObjectUrl: Swift.String? = nil,
+                providerStatus: Swift.String? = nil,
                 subscriptionId: Swift.Int? = nil,
                 calendarRefId: Swift.Int? = nil,
                 caldavAccountId: Swift.Int? = nil,
@@ -625,6 +678,7 @@ extension Components {
                 self.externalSource = externalSource
                 self.externalCalendarId = externalCalendarId
                 self.externalObjectUrl = externalObjectUrl
+                self.providerStatus = providerStatus
                 self.subscriptionId = subscriptionId
                 self.calendarRefId = calendarRefId
                 self.caldavAccountId = caldavAccountId
@@ -698,6 +752,7 @@ extension Components {
                 case externalSource = "external_source"
                 case externalCalendarId = "external_calendar_id"
                 case externalObjectUrl = "external_object_url"
+                case providerStatus = "provider_status"
                 case subscriptionId = "subscription_id"
                 case calendarRefId = "calendar_ref_id"
                 case caldavAccountId = "caldav_account_id"
@@ -3042,6 +3097,10 @@ extension Components {
             internal var externalAccountId: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/DashboardTask/external_object_url`.
             internal var externalObjectUrl: Swift.String?
+            /// RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DashboardTask/external_rrule`.
+            internal var externalRrule: Swift.String?
             /// The reminder list a local task is sent to.
             ///
             /// - Remark: Generated from `#/components/schemas/DashboardTask/target_caldav_account_id`.
@@ -3114,6 +3173,7 @@ extension Components {
             ///   - externalUid:
             ///   - externalAccountId:
             ///   - externalObjectUrl:
+            ///   - externalRrule: RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
             ///   - targetCaldavAccountId: The reminder list a local task is sent to.
             ///   - targetCaldavListUrl:
             ///   - outboundDirty: Bookkeeping of the sync; says nothing a client acts on.
@@ -3155,6 +3215,7 @@ extension Components {
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
+                externalRrule: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
                 outboundDirty: Swift.Int? = nil,
@@ -3196,6 +3257,7 @@ extension Components {
                 self.externalUid = externalUid
                 self.externalAccountId = externalAccountId
                 self.externalObjectUrl = externalObjectUrl
+                self.externalRrule = externalRrule
                 self.targetCaldavAccountId = targetCaldavAccountId
                 self.targetCaldavListUrl = targetCaldavListUrl
                 self.outboundDirty = outboundDirty
@@ -3238,6 +3300,7 @@ extension Components {
                 case externalUid = "external_uid"
                 case externalAccountId = "external_account_id"
                 case externalObjectUrl = "external_object_url"
+                case externalRrule = "external_rrule"
                 case targetCaldavAccountId = "target_caldav_account_id"
                 case targetCaldavListUrl = "target_caldav_list_url"
                 case outboundDirty = "outbound_dirty"
@@ -5113,6 +5176,10 @@ extension Components {
             internal var externalAccountId: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/Task/external_object_url`.
             internal var externalObjectUrl: Swift.String?
+            /// RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
+            ///
+            /// - Remark: Generated from `#/components/schemas/Task/external_rrule`.
+            internal var externalRrule: Swift.String?
             /// The reminder list a local task is sent to.
             ///
             /// - Remark: Generated from `#/components/schemas/Task/target_caldav_account_id`.
@@ -5201,6 +5268,7 @@ extension Components {
             ///   - externalUid:
             ///   - externalAccountId:
             ///   - externalObjectUrl:
+            ///   - externalRrule: RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
             ///   - targetCaldavAccountId: The reminder list a local task is sent to.
             ///   - targetCaldavListUrl:
             ///   - outboundDirty: Bookkeeping of the sync; says nothing a client acts on.
@@ -5246,6 +5314,7 @@ extension Components {
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
+                externalRrule: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
                 outboundDirty: Swift.Int? = nil,
@@ -5291,6 +5360,7 @@ extension Components {
                 self.externalUid = externalUid
                 self.externalAccountId = externalAccountId
                 self.externalObjectUrl = externalObjectUrl
+                self.externalRrule = externalRrule
                 self.targetCaldavAccountId = targetCaldavAccountId
                 self.targetCaldavListUrl = targetCaldavListUrl
                 self.outboundDirty = outboundDirty
@@ -5337,6 +5407,7 @@ extension Components {
                 case externalUid = "external_uid"
                 case externalAccountId = "external_account_id"
                 case externalObjectUrl = "external_object_url"
+                case externalRrule = "external_rrule"
                 case targetCaldavAccountId = "target_caldav_account_id"
                 case targetCaldavListUrl = "target_caldav_list_url"
                 case outboundDirty = "outbound_dirty"
@@ -5568,6 +5639,10 @@ extension Components {
             internal var externalAccountId: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/TaskDetail/external_object_url`.
             internal var externalObjectUrl: Swift.String?
+            /// RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskDetail/external_rrule`.
+            internal var externalRrule: Swift.String?
             /// The reminder list a local task is sent to.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskDetail/target_caldav_account_id`.
@@ -5666,6 +5741,7 @@ extension Components {
             ///   - externalUid:
             ///   - externalAccountId:
             ///   - externalObjectUrl:
+            ///   - externalRrule: RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
             ///   - targetCaldavAccountId: The reminder list a local task is sent to.
             ///   - targetCaldavListUrl:
             ///   - outboundDirty: Bookkeeping of the sync; says nothing a client acts on.
@@ -5714,6 +5790,7 @@ extension Components {
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
+                externalRrule: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
                 outboundDirty: Swift.Int? = nil,
@@ -5762,6 +5839,7 @@ extension Components {
                 self.externalUid = externalUid
                 self.externalAccountId = externalAccountId
                 self.externalObjectUrl = externalObjectUrl
+                self.externalRrule = externalRrule
                 self.targetCaldavAccountId = targetCaldavAccountId
                 self.targetCaldavListUrl = targetCaldavListUrl
                 self.outboundDirty = outboundDirty
@@ -5811,6 +5889,7 @@ extension Components {
                 case externalUid = "external_uid"
                 case externalAccountId = "external_account_id"
                 case externalObjectUrl = "external_object_url"
+                case externalRrule = "external_rrule"
                 case targetCaldavAccountId = "target_caldav_account_id"
                 case targetCaldavListUrl = "target_caldav_list_url"
                 case outboundDirty = "outbound_dirty"
@@ -6009,6 +6088,10 @@ extension Components {
             internal var externalAccountId: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/TaskListItem/external_object_url`.
             internal var externalObjectUrl: Swift.String?
+            /// RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskListItem/external_rrule`.
+            internal var externalRrule: Swift.String?
             /// The reminder list a local task is sent to.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskListItem/target_caldav_account_id`.
@@ -6107,6 +6190,7 @@ extension Components {
             ///   - externalUid:
             ///   - externalAccountId:
             ///   - externalObjectUrl:
+            ///   - externalRrule: RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
             ///   - targetCaldavAccountId: The reminder list a local task is sent to.
             ///   - targetCaldavListUrl:
             ///   - outboundDirty: Bookkeeping of the sync; says nothing a client acts on.
@@ -6156,6 +6240,7 @@ extension Components {
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
+                externalRrule: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
                 outboundDirty: Swift.Int? = nil,
@@ -6205,6 +6290,7 @@ extension Components {
                 self.externalUid = externalUid
                 self.externalAccountId = externalAccountId
                 self.externalObjectUrl = externalObjectUrl
+                self.externalRrule = externalRrule
                 self.targetCaldavAccountId = targetCaldavAccountId
                 self.targetCaldavListUrl = targetCaldavListUrl
                 self.outboundDirty = outboundDirty
@@ -6255,6 +6341,7 @@ extension Components {
                 case externalUid = "external_uid"
                 case externalAccountId = "external_account_id"
                 case externalObjectUrl = "external_object_url"
+                case externalRrule = "external_rrule"
                 case targetCaldavAccountId = "target_caldav_account_id"
                 case targetCaldavListUrl = "target_caldav_list_url"
                 case outboundDirty = "outbound_dirty"
@@ -6656,6 +6743,10 @@ extension Components {
             internal var externalAccountId: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/external_object_url`.
             internal var externalObjectUrl: Swift.String?
+            /// RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
+            ///
+            /// - Remark: Generated from `#/components/schemas/TaskUpdated/external_rrule`.
+            internal var externalRrule: Swift.String?
             /// The reminder list a local task is sent to.
             ///
             /// - Remark: Generated from `#/components/schemas/TaskUpdated/target_caldav_account_id`.
@@ -6750,6 +6841,7 @@ extension Components {
             ///   - externalUid:
             ///   - externalAccountId:
             ///   - externalObjectUrl:
+            ///   - externalRrule: RRULE of a series another app owns (iOS Reminders, Tasks.org), as that app wrote it; null otherwise. A rule Yuvomi can follow also arrives as `is_recurring`/`recurrence_rule`, and ticking the task off then moves the series on in that app. Otherwise ticking it off answers 409 `task_foreign_series` (#2506, #2515).
             ///   - targetCaldavAccountId: The reminder list a local task is sent to.
             ///   - targetCaldavListUrl:
             ///   - outboundDirty: Bookkeeping of the sync; says nothing a client acts on.
@@ -6797,6 +6889,7 @@ extension Components {
                 externalUid: Swift.String? = nil,
                 externalAccountId: Swift.Int? = nil,
                 externalObjectUrl: Swift.String? = nil,
+                externalRrule: Swift.String? = nil,
                 targetCaldavAccountId: Swift.Int? = nil,
                 targetCaldavListUrl: Swift.String? = nil,
                 outboundDirty: Swift.Int? = nil,
@@ -6844,6 +6937,7 @@ extension Components {
                 self.externalUid = externalUid
                 self.externalAccountId = externalAccountId
                 self.externalObjectUrl = externalObjectUrl
+                self.externalRrule = externalRrule
                 self.targetCaldavAccountId = targetCaldavAccountId
                 self.targetCaldavListUrl = targetCaldavListUrl
                 self.outboundDirty = outboundDirty
@@ -6892,6 +6986,7 @@ extension Components {
                 case externalUid = "external_uid"
                 case externalAccountId = "external_account_id"
                 case externalObjectUrl = "external_object_url"
+                case externalRrule = "external_rrule"
                 case targetCaldavAccountId = "target_caldav_account_id"
                 case targetCaldavListUrl = "target_caldav_list_url"
                 case outboundDirty = "outbound_dirty"
