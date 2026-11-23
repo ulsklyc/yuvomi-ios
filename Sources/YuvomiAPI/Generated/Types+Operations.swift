@@ -270,7 +270,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/login/post(signInWithPassword)/responses/400`.
             ///
@@ -431,6 +431,8 @@ internal enum Operations {
     /// Complete sign-in with a second factor
     ///
     /// Second step after POST /auth/login answered with `twoFactorRequired`. Accepts either the six-digit TOTP code or one of the recovery codes; the response says which one was used. The pending sign-in expires after five minutes.
+    ///
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `two_factor_no_pending_sign_in` (401, no sign-in is waiting for a code, or it has expired), `account_cannot_sign_in` (403, the account is deactivated or may not sign in).
     ///
     /// - Remark: HTTP `POST /api/v1/auth/2fa/verify`.
     /// - Remark: Generated from `#/paths//api/v1/auth/2fa/verify/post(verifySecondFactor)`.
@@ -1268,7 +1270,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/devices/post(addSignedInDevice)/responses/400`.
             ///
@@ -1672,7 +1674,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/devices/{id}/delete(signOutDevice)/responses/400`.
             ///
@@ -1924,7 +1926,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/devices/pair/redeem/post(redeemPairingCode)/responses/400`.
             ///
@@ -2082,7 +2084,7 @@ internal enum Operations {
                 internal enum AudiencePayload: String, Codable, Hashable, Sendable, CaseIterable {
                     case household = "household"
                 }
-                /// `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version.
+                /// `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version; for a paired display its task parts (`urgentTasks`, the task counts, `memberTodayTasks`, `tasksDoneToday` and the task countdowns) still hold only tasks with visibility `all` and its event parts (`upcomingEvents`, `weekEvents`, `familyEvents` and the event countdowns) only the appointments of this audience (the wall rule), even one that names the display as an assignee.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/audience`.
                 internal var audience: Operations.GetDashboard.Input.Query.AudiencePayload?
@@ -2127,7 +2129,7 @@ internal enum Operations {
                 /// - Parameters:
                 ///   - notesCategory: Limit pinned notes to those carrying every selected category (AND). Repeatable positive category IDs, deduplicated and capped at 50. Omitted or empty means all visible pinned notes. Only household categories and the caller's own personal categories may match; another user's personal category cannot reveal notes.
                 ///   - tasksCategory: Limit tasks to these categories. Repeatable; several values combine with OR. Omitted or empty means every category.
-                ///   - audience: `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version.
+                ///   - audience: `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version; for a paired display its task parts (`urgentTasks`, the task counts, `memberTodayTasks`, `tasksDoneToday` and the task countdowns) still hold only tasks with visibility `all` and its event parts (`upcomingEvents`, `weekEvents`, `familyEvents` and the event countdowns) only the appointments of this audience (the wall rule), even one that names the display as an assignee.
                 ///   - eventsScope: `mine` limits appointments to those assigned to the calling user - among the assignees, so an unassigned event is not "mine" (same reading as the calendar module). A paired display has no assignments of its own, so for it `mine` reads as all appointments. Anything else means all appointments.
                 ///   - eventsBirthdays: `hide` drops appointments that belong to a birthday entry from `upcomingEvents` and `weekEvents`, so a household that already shows the Birthdays tile does not read them twice. Applied before the cap (`events_limit`), so the freed rows are filled with the next real appointments. Anything else keeps them - birthdays are in by default.
                 ///   - shoppingList: Which lists the shopping tile shows. Repeatable positive list IDs, deduplicated and capped at 50. The selection applies to the tile only: with it the response carries an extra field `shoppingTile` = `{ lists, openCount, listCount }` - the selected lists (at most three, also those without open items, lists with open items first, each with up to six open items), the open items within the selection, and how many selected lists exist. `shoppingLists`, `shoppingOpenCount` and `shoppingOpenLists` are never affected and keep counting across all lists. IDs of lists that do not exist are dropped; when none of the IDs exists, or the value is not an ID, the request answers like one without the parameter and `shoppingTile` is absent. A caller without access to shopping gets the empty shopping payload and no `shoppingTile`.
@@ -2658,7 +2660,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/post(createTask)/responses/400`.
             ///
@@ -3302,7 +3304,7 @@ internal enum Operations {
     ///
     /// On a locked task (`locked: 1`) only the creator and administrators may change the definition - title, description, category, priority, dates, recurrence, points, visibility, tags, sync target, the lock itself, and assigning other members. Everyone else may still send the full body as long as the outcome differs only in `status` or in their own entry in `assigned_to`; anything else answers 403. The comparison is against the stored values, not against which fields were sent. Rotation fields follow the rule of the rest of the body: absent means untouched; `rotation_mode: null` clears mode, pool and pointer together. Sending only `rotation_pool` re-deals the pool positions but keeps the pointer, so an edited order continues the rotation from where it stands instead of resetting it; changing the mode starts the round fresh. Returns `{ data: Task }`; the task additionally carries `next_due_date` (YYYY-MM-DD) under the same rule as PATCH /tasks/{id}/status: the due date of the next occurrence still pending and visible to the caller when this call moved a recurring task into `done`, and `null` in every other case - no status change, a change that is not a transition into `done`, a task without recurrence, a series that has ended, or a next occurrence the caller cannot see.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `task_foreign_series` (409, the task repeats in another app with a rule Yuvomi cannot follow - it is in `external_rrule` - and is ticked off there, #2506).
     ///
     /// - Remark: HTTP `PUT /api/v1/tasks/{id}`.
     /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)`.
@@ -3419,7 +3421,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)/responses/400`.
             ///
@@ -3562,6 +3564,57 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/PUT/responses/409/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/PUT/responses/409/content/application\/json`.
+                    case json(Components.Schemas.ApiError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ApiError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.UpdateTask.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.UpdateTask.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// The task repeats in another app with a rule Yuvomi cannot follow (reason `task_foreign_series`, rule in `external_rrule`, no `is_recurring` here): ticking it off here would end the series there, so it is ticked off in that app (#2506). Other changes stay allowed.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.UpdateTask.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            internal var conflict: Operations.UpdateTask.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
                             response: self
                         )
                     }
@@ -3916,7 +3969,7 @@ internal enum Operations {
     ///
     /// Body: { status, done_by_user_id? }. Sending `archived` files the task away without touching its status - use PATCH /archive instead. Deliberately open on a locked task: ticking one off is the interaction the lock exists to preserve. `done_by_user_id` names who actually did the task (#1205), which is not necessarily the caller - on a shared tablet it rarely is. It has to be a household member (400 otherwise), it only applies to the transition into `done` and is ignored on any other status change, and it decides where the points go: a named member who takes part in rewards receives them instead of the assignees, a named member who does not take part means no points at all rather than crediting someone who did not do it. Omit it and nothing changes: the history shows the caller and the assignees rule applies. The naming is as idempotent as the completion itself - correcting it means reopening the task and ticking it off again. A paired wall display reaches this route too, and only this one of the writing routes (#1209): for it the field is required rather than optional, only the transition into `done` is allowed, and the task has to be visible to the whole household, which answers 404 rather than 403 so an invisible task is not confirmed to exist. Returns `{ data: { id, status, archived_at, next_due_date } }`. `next_due_date` (YYYY-MM-DD) is the due date of the next occurrence still pending - not done and not archived, so one that is `in_progress` counts - when this call completed a recurring task, and `null` in every other case: a task without recurrence, a series that has ended, a status change that is not a transition into `done`, and the `archived` shortcut, which omits the field.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `display_action` (403, a paired display can only tick a task off).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `display_action` (403, a paired display can only tick a task off), `task_foreign_series` (409, the task repeats in another app with a rule Yuvomi cannot follow - it is in `external_rrule` - and is ticked off there, #2506).
     ///
     /// - Remark: HTTP `PATCH /api/v1/tasks/{id}/status`.
     /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)`.
@@ -4033,7 +4086,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)/responses/400`.
             ///
@@ -4148,6 +4201,57 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/status/PATCH/responses/409/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/status/PATCH/responses/409/content/application\/json`.
+                    case json(Components.Schemas.ApiError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ApiError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.UpdateTaskStatus.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.UpdateTaskStatus.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// The task repeats in another app with a rule Yuvomi cannot follow (reason `task_foreign_series`, rule in `external_rrule`, no `is_recurring` here): ticking it off here would end the series there, so it is ticked off in that app (#2506). Other changes stay allowed.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.UpdateTaskStatus.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            internal var conflict: Operations.UpdateTaskStatus.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
                             response: self
                         )
                     }
@@ -4328,7 +4432,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/check/patch(checkTaskItem)/responses/400`.
             ///
@@ -4817,7 +4921,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/post(createShoppingList)/responses/400`.
             ///
@@ -5273,6 +5377,29 @@ internal enum Operations {
                     }
                 }
             }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/shopping/suggestions/get(listShoppingSuggestions)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Authentication required or invalid credentials/token
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/suggestions/get(listShoppingSuggestions)/responses/401`.
@@ -5567,14 +5694,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/GET/path`.
             internal struct Path: Sendable, Hashable {
-                /// List ID
+                /// List ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/GET/path/listId`.
                 internal var listId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - listId: List ID
+                ///   - listId: List ID, plain decimal digits.
                 internal init(listId: Swift.Int) {
                     self.listId = listId
                 }
@@ -5652,6 +5779,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/shopping/{listId}/items/get(listShoppingItems)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -5819,14 +5969,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/POST/path`.
             internal struct Path: Sendable, Hashable {
-                /// List ID
+                /// List ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/POST/path/listId`.
                 internal var listId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - listId: List ID
+                ///   - listId: List ID, plain decimal digits.
                 internal init(listId: Swift.Int) {
                     self.listId = listId
                 }
@@ -5934,7 +6084,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/{listId}/items/post(createShoppingItem)/responses/400`.
             ///
@@ -6170,14 +6320,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/PATCH/path`.
             internal struct Path: Sendable, Hashable {
-                /// Item ID
+                /// Item ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/PATCH/path/itemId`.
                 internal var itemId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - itemId: Item ID
+                ///   - itemId: Item ID, plain decimal digits.
                 internal init(itemId: Swift.Int) {
                     self.itemId = itemId
                 }
@@ -6278,7 +6428,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/items/{itemId}/patch(updateShoppingItem)/responses/400`.
             ///
@@ -6463,14 +6613,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/DELETE/path`.
             internal struct Path: Sendable, Hashable {
-                /// Item ID
+                /// Item ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/DELETE/path/itemId`.
                 internal var itemId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - itemId: Item ID
+                ///   - itemId: Item ID, plain decimal digits.
                 internal init(itemId: Swift.Int) {
                     self.itemId = itemId
                 }
@@ -6557,6 +6707,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/shopping/items/{itemId}/delete(deleteShoppingItem)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -6726,14 +6899,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/checked/DELETE/path`.
             internal struct Path: Sendable, Hashable {
-                /// List ID
+                /// List ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/checked/DELETE/path/listId`.
                 internal var listId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - listId: List ID
+                ///   - listId: List ID, plain decimal digits.
                 internal init(listId: Swift.Int) {
                     self.listId = listId
                 }
@@ -6834,7 +7007,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/{listId}/items/checked/delete(deleteCheckedShoppingItems)/responses/400`.
             ///
@@ -7010,7 +7183,7 @@ internal enum Operations {
     }
     /// List calendar events
     ///
-    /// Events generated from the birthdays module carry `birthday_name` and `birthday_date` (null for a birthday whose year is unknown, `year_unknown` on the birthday). Their `title` is stored in the household data language (see `language` in `/preferences`), so API consumers, the ICS feed and calendar sync all read the same wording; clients that display in a different language can re-render the title from `birthday_name`. While the household has the birthdays module switched off (`disabled_modules` in `/preferences`), these events are left out of this list, of `/calendar/upcoming`, of `/calendar/search` and of the ICS feed; a single one stays reachable by id, and the birthdays routes keep answering. A series comes as one row per occurrence in the range, all with the `id` of the series; `series_id` and `recurrence_id` tell them apart.
+    /// Events generated from the birthdays module carry `birthday_name` and `birthday_date` (null for a birthday whose year is unknown, `year_unknown` on the birthday). Their `title` is stored in the household data language (see `language` in `/preferences`), so API consumers, the ICS feed and calendar sync all read the same wording; clients that display in a different language can re-render the title from `birthday_name`. While the household has the birthdays module switched off (`disabled_modules` in `/preferences`), these events are left out of this list, of `/calendar/upcoming`, of `/calendar/search` and of the ICS feed; a single one stays reachable by id, and the birthdays routes keep answering. A paired display reads this list, `/calendar/upcoming`, `/calendar/search`, a single event and the event count of `/calendar/calendars` under the wall rule: only events with visibility `all`, from ICS subscriptions only shared ones, even one that names the display as an assignee; a hidden event by id answers the same 404 as an unknown one. A series comes as one row per occurrence in the range, all with the `id` of the series; `series_id` and `recurrence_id` tell them apart.
     ///
     /// - Remark: HTTP `GET /api/v1/calendar`.
     /// - Remark: Generated from `#/paths//api/v1/calendar/get(listCalendarEvents)`.
@@ -7139,7 +7312,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/get(listCalendarEvents)/responses/400`.
             ///
@@ -7349,7 +7522,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/post(createCalendarEvent)/responses/400`.
             ///
@@ -8277,7 +8450,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/put(updateCalendarEvent)/responses/400`.
             ///
@@ -8830,11 +9003,11 @@ internal enum Operations {
                 /// Start of the window, included. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/from`.
-                internal var from: Foundation.Date
+                internal var from: Swift.String
                 /// End of the window, included. At most 14 days after `from`. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/to`.
-                internal var to: Foundation.Date
+                internal var to: Swift.String
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/TypesPayload`.
                 internal enum TypesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
                     case task = "task"
@@ -8860,26 +9033,22 @@ internal enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/types`.
                 internal var types: Operations.ListUpcomingReminders.Input.Query.TypesPayload?
-                /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/audience`.
-                internal enum AudiencePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case household = "household"
-                }
-                /// `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`.
+                /// `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`. Anything else means the personal version.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/audience`.
-                internal var audience: Operations.ListUpcomingReminders.Input.Query.AudiencePayload?
+                internal var audience: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - from: Start of the window, included. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///   - to: End of the window, included. At most 14 days after `from`. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///   - types: Comma-separated origins to keep, for example `task,event`. It only narrows: an origin the caller may not read stays out, and an unknown value answers 400. Without it, every origin the caller may read comes back.
-                ///   - audience: `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`.
+                ///   - audience: `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`. Anything else means the personal version.
                 internal init(
-                    from: Foundation.Date,
-                    to: Foundation.Date,
+                    from: Swift.String,
+                    to: Swift.String,
                     types: Operations.ListUpcomingReminders.Input.Query.TypesPayload? = nil,
-                    audience: Operations.ListUpcomingReminders.Input.Query.AudiencePayload? = nil
+                    audience: Swift.String? = nil
                 ) {
                     self.from = from
                     self.to = to
@@ -8965,7 +9134,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/reminders/upcoming/get(listUpcomingReminders)/responses/400`.
             ///
@@ -9099,19 +9268,15 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/reminders/pending/GET/query`.
             internal struct Query: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/api/v1/reminders/pending/GET/query/audience`.
-                internal enum AudiencePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case household = "household"
-                }
                 /// `household` asks for the version for a shared surface; it carries no reminders. Anything else means the personal version.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/pending/GET/query/audience`.
-                internal var audience: Operations.ListPendingReminders.Input.Query.AudiencePayload?
+                internal var audience: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - audience: `household` asks for the version for a shared surface; it carries no reminders. Anything else means the personal version.
-                internal init(audience: Operations.ListPendingReminders.Input.Query.AudiencePayload? = nil) {
+                internal init(audience: Swift.String? = nil) {
                     self.audience = audience
                 }
             }
@@ -9188,6 +9353,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/reminders/pending/get(listPendingReminders)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -9403,7 +9591,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/reminders/{id}/dismiss/patch(dismissReminder)/responses/400`.
             ///
