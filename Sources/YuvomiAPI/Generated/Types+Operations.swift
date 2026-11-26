@@ -270,7 +270,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/login/post(signInWithPassword)/responses/400`.
             ///
@@ -432,6 +432,8 @@ internal enum Operations {
     ///
     /// Second step after POST /auth/login answered with `twoFactorRequired`. Accepts either the six-digit TOTP code or one of the recovery codes; the response says which one was used. The pending sign-in expires after five minutes.
     ///
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `two_factor_no_pending_sign_in` (401, no sign-in is waiting for a code, or it has expired), `account_cannot_sign_in` (403, the account is deactivated or may not sign in).
+    ///
     /// - Remark: HTTP `POST /api/v1/auth/2fa/verify`.
     /// - Remark: Generated from `#/paths//api/v1/auth/2fa/verify/post(verifySecondFactor)`.
     internal enum VerifySecondFactor {
@@ -524,13 +526,13 @@ internal enum Operations {
                 /// Creates a new `BadRequest`.
                 internal init() {}
             }
-            /// The code is longer than 64 characters
+            /// The body does not match the documented schema, for example a code that is not text or longer than 64 characters (`reason: "validation"`)
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/2fa/verify/post(verifySecondFactor)/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Operations.VerifySecondFactor.Output.BadRequest)
-            /// The code is longer than 64 characters
+            /// The body does not match the documented schema, for example a code that is not text or longer than 64 characters (`reason: "validation"`)
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/2fa/verify/post(verifySecondFactor)/responses/400`.
             ///
@@ -1167,7 +1169,7 @@ internal enum Operations {
     }
     /// Add a signed-in device
     ///
-    /// Exchanges a sign-in for a device credential, the bearer a native client uses from then on. A device acts as the person, with less reach than a browser session: an administrator is an ordinary member on it, and of `/api/v1/auth` it reaches only `GET /me`, `GET /users`, `GET /oidc/config`, `POST /logout`, `GET /devices` and `DELETE /devices/{id}`; anything else answers 403 with `reason: device_credential`. It ends after 90 days without use, and with everything that ends a session. The same `device_id` replaces the earlier credential.
+    /// Exchanges a sign-in for a device credential, the bearer a native client uses from then on. A device acts as the person, with less reach than a browser session: an administrator is an ordinary member on it, and of `/api/v1/auth` it reaches only `GET /me`, `GET /users`, `GET /oidc/config`, `POST /logout`, `GET /devices` and `DELETE /devices/{id}`; anything else answers 403 with `reason: device_credential`. It ends after 90 days without use, and with everything that ends a session. The same `device_id` replaces the earlier credential. Only from a sign-in: an API token gets 403 (`reason: session_required`) whatever the body.
     ///
     /// A refusal a user can reach carries a `reason` next to `error` (#1909): `device_credential` (403, a device cannot add another device), `session_required` (403, an API token cannot add a device), `not_a_household_member` (403, the account is no household member).
     ///
@@ -1268,7 +1270,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/devices/post(addSignedInDevice)/responses/400`.
             ///
@@ -1672,7 +1674,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/devices/{id}/delete(signOutDevice)/responses/400`.
             ///
@@ -1924,7 +1926,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/auth/devices/pair/redeem/post(redeemPairingCode)/responses/400`.
             ///
@@ -2073,32 +2075,159 @@ internal enum Operations {
                 /// Limit pinned notes to those carrying every selected category (AND). Repeatable positive category IDs, deduplicated and capped at 50. Omitted or empty means all visible pinned notes. Only household categories and the caller's own personal categories may match; another user's personal category cannot reveal notes.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/notes_category`.
-                internal var notesCategory: [Swift.Int]?
-                /// Limit tasks to these categories. Repeatable; several values combine with OR. Omitted or empty means every category.
+                internal var notesCategory: [Swift.String]?
+                /// Limit tasks to these categories. Repeatable; several values combine with OR, at most 50 count. Omitted or empty means every category.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/tasks_category`.
                 internal var tasksCategory: [Swift.String]?
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/audience`.
-                internal enum AudiencePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case household = "household"
+                internal struct AudiencePayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/audience/value1`.
+                    internal var value1: Swift.String?
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/audience/value2`.
+                    internal var value2: [Swift.String]?
+                    /// Creates a new `AudiencePayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    ///   - value2:
+                    internal init(
+                        value1: Swift.String? = nil,
+                        value2: [Swift.String]? = nil
+                    ) {
+                        self.value1 = value1
+                        self.value2 = value2
+                    }
+                    internal init(from decoder: any Swift.Decoder) throws {
+                        var errors: [any Swift.Error] = []
+                        do {
+                            self.value1 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        do {
+                            self.value2 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                            [
+                                self.value1,
+                                self.value2
+                            ],
+                            type: Self.self,
+                            codingPath: decoder.codingPath,
+                            errors: errors
+                        )
+                    }
+                    internal func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                            self.value1,
+                            self.value2
+                        ])
+                    }
                 }
-                /// `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version.
+                /// `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version; for a paired display its task parts (`urgentTasks`, the task counts, `memberTodayTasks`, `tasksDoneToday` and the task countdowns) still hold only tasks with visibility `all` and its event parts (`upcomingEvents`, `weekEvents`, `familyEvents` and the event countdowns) only the appointments of this audience (the wall rule), even one that names the display as an assignee.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/audience`.
                 internal var audience: Operations.GetDashboard.Input.Query.AudiencePayload?
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_scope`.
-                internal enum EventsScopePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case all = "all"
-                    case mine = "mine"
+                internal struct EventsScopePayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_scope/value1`.
+                    internal var value1: Swift.String?
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_scope/value2`.
+                    internal var value2: [Swift.String]?
+                    /// Creates a new `EventsScopePayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    ///   - value2:
+                    internal init(
+                        value1: Swift.String? = nil,
+                        value2: [Swift.String]? = nil
+                    ) {
+                        self.value1 = value1
+                        self.value2 = value2
+                    }
+                    internal init(from decoder: any Swift.Decoder) throws {
+                        var errors: [any Swift.Error] = []
+                        do {
+                            self.value1 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        do {
+                            self.value2 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                            [
+                                self.value1,
+                                self.value2
+                            ],
+                            type: Self.self,
+                            codingPath: decoder.codingPath,
+                            errors: errors
+                        )
+                    }
+                    internal func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                            self.value1,
+                            self.value2
+                        ])
+                    }
                 }
                 /// `mine` limits appointments to those assigned to the calling user - among the assignees, so an unassigned event is not "mine" (same reading as the calendar module). A paired display has no assignments of its own, so for it `mine` reads as all appointments. Anything else means all appointments.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_scope`.
                 internal var eventsScope: Operations.GetDashboard.Input.Query.EventsScopePayload?
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_birthdays`.
-                internal enum EventsBirthdaysPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case show = "show"
-                    case hide = "hide"
+                internal struct EventsBirthdaysPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_birthdays/value1`.
+                    internal var value1: Swift.String?
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_birthdays/value2`.
+                    internal var value2: [Swift.String]?
+                    /// Creates a new `EventsBirthdaysPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    ///   - value2:
+                    internal init(
+                        value1: Swift.String? = nil,
+                        value2: [Swift.String]? = nil
+                    ) {
+                        self.value1 = value1
+                        self.value2 = value2
+                    }
+                    internal init(from decoder: any Swift.Decoder) throws {
+                        var errors: [any Swift.Error] = []
+                        do {
+                            self.value1 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        do {
+                            self.value2 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                            [
+                                self.value1,
+                                self.value2
+                            ],
+                            type: Self.self,
+                            codingPath: decoder.codingPath,
+                            errors: errors
+                        )
+                    }
+                    internal func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                            self.value1,
+                            self.value2
+                        ])
+                    }
                 }
                 /// `hide` drops appointments that belong to a birthday entry from `upcomingEvents` and `weekEvents`, so a household that already shows the Birthdays tile does not read them twice. Applied before the cap (`events_limit`), so the freed rows are filled with the next real appointments. Anything else keeps them - birthdays are in by default.
                 ///
@@ -2107,18 +2236,59 @@ internal enum Operations {
                 /// Which lists the shopping tile shows. Repeatable positive list IDs, deduplicated and capped at 50. The selection applies to the tile only: with it the response carries an extra field `shoppingTile` = `{ lists, openCount, listCount }` - the selected lists (at most three, also those without open items, lists with open items first, each with up to six open items), the open items within the selection, and how many selected lists exist. `shoppingLists`, `shoppingOpenCount` and `shoppingOpenLists` are never affected and keep counting across all lists. IDs of lists that do not exist are dropped; when none of the IDs exists, or the value is not an ID, the request answers like one without the parameter and `shoppingTile` is absent. A caller without access to shopping gets the empty shopping payload and no `shoppingTile`.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/shopping_list`.
-                internal var shoppingList: [Swift.Int]?
+                internal var shoppingList: [Swift.String]?
                 /// Which calendars the appointments come from, under the keys of the calendar module: `local:<id>` for an own calendar, `cal:<id>` for a synced one (CalDAV, Google), `sub:<id>` for an ICS subscription - the `key` values of `sources` from `GET /calendar/calendars`, the catalogue the selection is checked against. Repeatable, deduplicated and capped at 50; a value of any other shape is dropped. Applies to `upcomingEvents` and `weekEvents` before the cap (`events_limit`), not to `familyEvents`. Appointments that belong to no calendar (birthdays, housekeeping visits) always pass; birthdays have `events_birthdays`. Keys the caller cannot choose (a deleted calendar, a removed subscription, a disconnected account, another member's private subscription) are dropped; when none is left the request answers like one without the parameter, never with an empty list.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_calendar`.
                 internal var eventsCalendar: [Swift.String]?
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_limit`.
-                internal enum EventsLimitPayload: Int, Codable, Hashable, Sendable, CaseIterable {
-                    case _5 = 5
-                    case _8 = 8
-                    case _12 = 12
+                internal struct EventsLimitPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_limit/value1`.
+                    internal var value1: Swift.String?
+                    /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_limit/value2`.
+                    internal var value2: [Swift.String]?
+                    /// Creates a new `EventsLimitPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    ///   - value2:
+                    internal init(
+                        value1: Swift.String? = nil,
+                        value2: [Swift.String]? = nil
+                    ) {
+                        self.value1 = value1
+                        self.value2 = value2
+                    }
+                    internal init(from decoder: any Swift.Decoder) throws {
+                        var errors: [any Swift.Error] = []
+                        do {
+                            self.value1 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        do {
+                            self.value2 = try decoder.decodeFromSingleValueContainer()
+                        } catch {
+                            errors.append(error)
+                        }
+                        try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                            [
+                                self.value1,
+                                self.value2
+                            ],
+                            type: Self.self,
+                            codingPath: decoder.codingPath,
+                            errors: errors
+                        )
+                    }
+                    internal func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeFirstNonNilValueToSingleValueContainer([
+                            self.value1,
+                            self.value2
+                        ])
+                    }
                 }
-                /// How many upcoming appointments `upcomingEvents` lists: `5`, `8` or `12`. The value is matched against exactly these three; anything else - omitted, empty, repeated, `7`, `500` - means `5`. Appointments of today that have already ended come on top and do not count against it. `weekEvents` and `familyEvents` are not affected.
+                /// How many upcoming appointments `upcomingEvents` lists: `5`, `8`, `12`. The value is matched against exactly these; anything else - omitted, empty, repeated, `7`, `500` - means `5`. Appointments of today that have already ended come on top and do not count against it. `weekEvents` and `familyEvents` are not affected.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/dashboard/GET/query/events_limit`.
                 internal var eventsLimit: Operations.GetDashboard.Input.Query.EventsLimitPayload?
@@ -2126,20 +2296,20 @@ internal enum Operations {
                 ///
                 /// - Parameters:
                 ///   - notesCategory: Limit pinned notes to those carrying every selected category (AND). Repeatable positive category IDs, deduplicated and capped at 50. Omitted or empty means all visible pinned notes. Only household categories and the caller's own personal categories may match; another user's personal category cannot reveal notes.
-                ///   - tasksCategory: Limit tasks to these categories. Repeatable; several values combine with OR. Omitted or empty means every category.
-                ///   - audience: `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version.
+                ///   - tasksCategory: Limit tasks to these categories. Repeatable; several values combine with OR, at most 50 count. Omitted or empty means every category.
+                ///   - audience: `household` asks for the version for a shared surface (wall mode): an allowlist. The response then carries only the keys a wall draws: `users`, `upcomingEvents`, `birthdays`, `urgentTasks`, `tasksDoneToday`, `wallTasks`, `todayMeals`, `shoppingOpenCount`, `wastePickups`, of `pantryExpiring` the fields `todayItems` and `todayCount`, and of `housekeeping` the fields `present`, `presentSince` and `workerName`. Tasks and appointments in them are those the whole household may see - visibility `all`, appointments from ICS subscriptions only from shared ones - whoever the caller is, creator and assignees included; `events_scope=mine` is ignored. Every other key keeps its place in the same empty form as for a caller without the module - notes, `budget`, `splitBalance`, `quicklinks`, `countdowns`, the counters and week/family slices of tasks and calendar, `housekeeping.unpaidAmount`, and what belongs to the caller alone (`health`, `fasting`, `nutrition`, `myShiftsToday`, `rewards`); `shoppingTile` is absent. A key added to this response later is empty for this audience until it is put on the list. The parameter only narrows the response, so it needs no scope of its own. Anything else means the personal version; for a paired display its task parts (`urgentTasks`, the task counts, `memberTodayTasks`, `tasksDoneToday` and the task countdowns) still hold only tasks with visibility `all` and its event parts (`upcomingEvents`, `weekEvents`, `familyEvents` and the event countdowns) only the appointments of this audience (the wall rule), even one that names the display as an assignee.
                 ///   - eventsScope: `mine` limits appointments to those assigned to the calling user - among the assignees, so an unassigned event is not "mine" (same reading as the calendar module). A paired display has no assignments of its own, so for it `mine` reads as all appointments. Anything else means all appointments.
                 ///   - eventsBirthdays: `hide` drops appointments that belong to a birthday entry from `upcomingEvents` and `weekEvents`, so a household that already shows the Birthdays tile does not read them twice. Applied before the cap (`events_limit`), so the freed rows are filled with the next real appointments. Anything else keeps them - birthdays are in by default.
                 ///   - shoppingList: Which lists the shopping tile shows. Repeatable positive list IDs, deduplicated and capped at 50. The selection applies to the tile only: with it the response carries an extra field `shoppingTile` = `{ lists, openCount, listCount }` - the selected lists (at most three, also those without open items, lists with open items first, each with up to six open items), the open items within the selection, and how many selected lists exist. `shoppingLists`, `shoppingOpenCount` and `shoppingOpenLists` are never affected and keep counting across all lists. IDs of lists that do not exist are dropped; when none of the IDs exists, or the value is not an ID, the request answers like one without the parameter and `shoppingTile` is absent. A caller without access to shopping gets the empty shopping payload and no `shoppingTile`.
                 ///   - eventsCalendar: Which calendars the appointments come from, under the keys of the calendar module: `local:<id>` for an own calendar, `cal:<id>` for a synced one (CalDAV, Google), `sub:<id>` for an ICS subscription - the `key` values of `sources` from `GET /calendar/calendars`, the catalogue the selection is checked against. Repeatable, deduplicated and capped at 50; a value of any other shape is dropped. Applies to `upcomingEvents` and `weekEvents` before the cap (`events_limit`), not to `familyEvents`. Appointments that belong to no calendar (birthdays, housekeeping visits) always pass; birthdays have `events_birthdays`. Keys the caller cannot choose (a deleted calendar, a removed subscription, a disconnected account, another member's private subscription) are dropped; when none is left the request answers like one without the parameter, never with an empty list.
-                ///   - eventsLimit: How many upcoming appointments `upcomingEvents` lists: `5`, `8` or `12`. The value is matched against exactly these three; anything else - omitted, empty, repeated, `7`, `500` - means `5`. Appointments of today that have already ended come on top and do not count against it. `weekEvents` and `familyEvents` are not affected.
+                ///   - eventsLimit: How many upcoming appointments `upcomingEvents` lists: `5`, `8`, `12`. The value is matched against exactly these; anything else - omitted, empty, repeated, `7`, `500` - means `5`. Appointments of today that have already ended come on top and do not count against it. `weekEvents` and `familyEvents` are not affected.
                 internal init(
-                    notesCategory: [Swift.Int]? = nil,
+                    notesCategory: [Swift.String]? = nil,
                     tasksCategory: [Swift.String]? = nil,
                     audience: Operations.GetDashboard.Input.Query.AudiencePayload? = nil,
                     eventsScope: Operations.GetDashboard.Input.Query.EventsScopePayload? = nil,
                     eventsBirthdays: Operations.GetDashboard.Input.Query.EventsBirthdaysPayload? = nil,
-                    shoppingList: [Swift.Int]? = nil,
+                    shoppingList: [Swift.String]? = nil,
                     eventsCalendar: [Swift.String]? = nil,
                     eventsLimit: Operations.GetDashboard.Input.Query.EventsLimitPayload? = nil
                 ) {
@@ -2319,44 +2489,26 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query`.
             internal struct Query: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/status`.
-                internal enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case open = "open"
-                    case inProgress = "in_progress"
-                    case done = "done"
-                    case archived = "archived"
-                }
-                /// Repeatable; several values are OR-ed. "archived" is not a status but the separate archive axis and behaves like the `archived` parameter.
+                /// Repeatable; several values are OR-ed. `open`, `in_progress`, `done`; "archived" is not a status but the separate archive axis and behaves like the `archived` parameter. An unknown value matches no task.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/status`.
-                internal var status: Operations.ListTasks.Input.Query.StatusPayload?
-                /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/archived`.
-                internal enum ArchivedPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case _1 = "1"
-                    case only = "only"
-                }
-                /// Archived tasks are hidden by default. `1` includes them, `only` returns just the archive. A task keeps its own status while archived.
+                internal var status: [Swift.String]?
+                /// Archived tasks are hidden by default. `1` (or `true`) includes them, `only` returns just the archive; any other value is the default. A task keeps its own status while archived.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/archived`.
-                internal var archived: Operations.ListTasks.Input.Query.ArchivedPayload?
+                internal var archived: Swift.String?
+                /// Repeatable; several values are OR-ed. `none`, `low`, `medium`, `high`, `urgent`; an unknown value matches no task.
+                ///
                 /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/priority`.
-                internal enum PriorityPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case none = "none"
-                    case low = "low"
-                    case medium = "medium"
-                    case high = "high"
-                    case urgent = "urgent"
-                }
-                /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/priority`.
-                internal var priority: Operations.ListTasks.Input.Query.PriorityPayload?
-                /// Family member ID.
+                internal var priority: [Swift.String]?
+                /// Family member ID. Repeatable; several values are OR-ed.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/assigned_to`.
-                internal var assignedTo: Swift.Int?
-                /// Task category key.
+                internal var assignedTo: [Swift.Int]?
+                /// Task category key. Repeatable; several values are OR-ed.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/category`.
-                internal var category: Swift.String?
+                internal var category: [Swift.String]?
                 /// Repeat once per tag (?tag=a&tag=b). Each occurrence is one literal tag, never a comma-separated list, so a tag containing a comma survives.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/tasks/GET/query/tag`.
@@ -2368,19 +2520,19 @@ internal enum Operations {
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - status: Repeatable; several values are OR-ed. "archived" is not a status but the separate archive axis and behaves like the `archived` parameter.
-                ///   - archived: Archived tasks are hidden by default. `1` includes them, `only` returns just the archive. A task keeps its own status while archived.
-                ///   - priority:
-                ///   - assignedTo: Family member ID.
-                ///   - category: Task category key.
+                ///   - status: Repeatable; several values are OR-ed. `open`, `in_progress`, `done`; "archived" is not a status but the separate archive axis and behaves like the `archived` parameter. An unknown value matches no task.
+                ///   - archived: Archived tasks are hidden by default. `1` (or `true`) includes them, `only` returns just the archive; any other value is the default. A task keeps its own status while archived.
+                ///   - priority: Repeatable; several values are OR-ed. `none`, `low`, `medium`, `high`, `urgent`; an unknown value matches no task.
+                ///   - assignedTo: Family member ID. Repeatable; several values are OR-ed.
+                ///   - category: Task category key. Repeatable; several values are OR-ed.
                 ///   - tag: Repeat once per tag (?tag=a&tag=b). Each occurrence is one literal tag, never a comma-separated list, so a tag containing a comma survives.
                 ///   - includeFuture: Any non-empty value also returns tasks whose start date lies in the future.
                 internal init(
-                    status: Operations.ListTasks.Input.Query.StatusPayload? = nil,
-                    archived: Operations.ListTasks.Input.Query.ArchivedPayload? = nil,
-                    priority: Operations.ListTasks.Input.Query.PriorityPayload? = nil,
-                    assignedTo: Swift.Int? = nil,
-                    category: Swift.String? = nil,
+                    status: [Swift.String]? = nil,
+                    archived: Swift.String? = nil,
+                    priority: [Swift.String]? = nil,
+                    assignedTo: [Swift.Int]? = nil,
+                    category: [Swift.String]? = nil,
                     tag: [Swift.String]? = nil,
                     includeFuture: Swift.String? = nil
                 ) {
@@ -2466,6 +2618,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/get(listTasks)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -2658,7 +2833,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/post(createTask)/responses/400`.
             ///
@@ -3170,6 +3345,29 @@ internal enum Operations {
                     }
                 }
             }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/get(getTask)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Authentication required or invalid credentials/token
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/get(getTask)/responses/401`.
@@ -3302,7 +3500,7 @@ internal enum Operations {
     ///
     /// On a locked task (`locked: 1`) only the creator and administrators may change the definition - title, description, category, priority, dates, recurrence, points, visibility, tags, sync target, the lock itself, and assigning other members. Everyone else may still send the full body as long as the outcome differs only in `status` or in their own entry in `assigned_to`; anything else answers 403. The comparison is against the stored values, not against which fields were sent. Rotation fields follow the rule of the rest of the body: absent means untouched; `rotation_mode: null` clears mode, pool and pointer together. Sending only `rotation_pool` re-deals the pool positions but keeps the pointer, so an edited order continues the rotation from where it stands instead of resetting it; changing the mode starts the round fresh. Returns `{ data: Task }`; the task additionally carries `next_due_date` (YYYY-MM-DD) under the same rule as PATCH /tasks/{id}/status: the due date of the next occurrence still pending and visible to the caller when this call moved a recurring task into `done`, and `null` in every other case - no status change, a change that is not a transition into `done`, a task without recurrence, a series that has ended, or a next occurrence the caller cannot see.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `task_foreign_series` (409, the task repeats in another app with a rule Yuvomi cannot follow - it is in `external_rrule` - and is ticked off there, #2506).
     ///
     /// - Remark: HTTP `PUT /api/v1/tasks/{id}`.
     /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)`.
@@ -3419,7 +3617,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)/responses/400`.
             ///
@@ -3562,6 +3760,57 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/PUT/responses/409/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/PUT/responses/409/content/application\/json`.
+                    case json(Components.Schemas.ApiError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ApiError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.UpdateTask.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.UpdateTask.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// The task repeats in another app with a rule Yuvomi cannot follow (reason `task_foreign_series`, rule in `external_rrule`, no `is_recurring` here): ticking it off here would end the series there, so it is ticked off in that app (#2506). Other changes stay allowed.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/put(updateTask)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.UpdateTask.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            internal var conflict: Operations.UpdateTask.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
                             response: self
                         )
                     }
@@ -3728,6 +3977,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/delete(deleteTask)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -3916,7 +4188,7 @@ internal enum Operations {
     ///
     /// Body: { status, done_by_user_id? }. Sending `archived` files the task away without touching its status - use PATCH /archive instead. Deliberately open on a locked task: ticking one off is the interaction the lock exists to preserve. `done_by_user_id` names who actually did the task (#1205), which is not necessarily the caller - on a shared tablet it rarely is. It has to be a household member (400 otherwise), it only applies to the transition into `done` and is ignored on any other status change, and it decides where the points go: a named member who takes part in rewards receives them instead of the assignees, a named member who does not take part means no points at all rather than crediting someone who did not do it. Omit it and nothing changes: the history shows the caller and the assignees rule applies. The naming is as idempotent as the completion itself - correcting it means reopening the task and ticking it off again. A paired wall display reaches this route too, and only this one of the writing routes (#1209): for it the field is required rather than optional, only the transition into `done` is allowed, and the task has to be visible to the whole household, which answers 404 rather than 403 so an invisible task is not confirmed to exist. Returns `{ data: { id, status, archived_at, next_due_date } }`. `next_due_date` (YYYY-MM-DD) is the due date of the next occurrence still pending - not done and not archived, so one that is `in_progress` counts - when this call completed a recurring task, and `null` in every other case: a task without recurrence, a series that has ended, a status change that is not a transition into `done`, and the `archived` shortcut, which omits the field.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `display_action` (403, a paired display can only tick a task off).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `tasks_task_not_found` (404, the task does not exist or is not visible to you - deleted, or made private), `display_action` (403, a paired display can only tick a task off), `task_foreign_series` (409, the task repeats in another app with a rule Yuvomi cannot follow - it is in `external_rrule` - and is ticked off there, #2506).
     ///
     /// - Remark: HTTP `PATCH /api/v1/tasks/{id}/status`.
     /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)`.
@@ -4033,7 +4305,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)/responses/400`.
             ///
@@ -4148,6 +4420,57 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/status/PATCH/responses/409/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/tasks/{id}/status/PATCH/responses/409/content/application\/json`.
+                    case json(Components.Schemas.ApiError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ApiError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.UpdateTaskStatus.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.UpdateTaskStatus.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// The task repeats in another app with a rule Yuvomi cannot follow (reason `task_foreign_series`, rule in `external_rrule`, no `is_recurring` here): ticking it off here would end the series there, so it is ticked off in that app (#2506). Other changes stay allowed.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/status/patch(updateTaskStatus)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.UpdateTaskStatus.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            internal var conflict: Operations.UpdateTaskStatus.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
                             response: self
                         )
                     }
@@ -4328,7 +4651,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/tasks/{id}/check/patch(checkTaskItem)/responses/400`.
             ///
@@ -4817,7 +5140,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/post(createShoppingList)/responses/400`.
             ///
@@ -5273,6 +5596,29 @@ internal enum Operations {
                     }
                 }
             }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/shopping/suggestions/get(listShoppingSuggestions)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Authentication required or invalid credentials/token
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/suggestions/get(listShoppingSuggestions)/responses/401`.
@@ -5567,14 +5913,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/GET/path`.
             internal struct Path: Sendable, Hashable {
-                /// List ID
+                /// List ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/GET/path/listId`.
                 internal var listId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - listId: List ID
+                ///   - listId: List ID, plain decimal digits.
                 internal init(listId: Swift.Int) {
                     self.listId = listId
                 }
@@ -5652,6 +5998,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/shopping/{listId}/items/get(listShoppingItems)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -5819,14 +6188,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/POST/path`.
             internal struct Path: Sendable, Hashable {
-                /// List ID
+                /// List ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/POST/path/listId`.
                 internal var listId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - listId: List ID
+                ///   - listId: List ID, plain decimal digits.
                 internal init(listId: Swift.Int) {
                     self.listId = listId
                 }
@@ -5934,7 +6303,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/{listId}/items/post(createShoppingItem)/responses/400`.
             ///
@@ -6170,14 +6539,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/PATCH/path`.
             internal struct Path: Sendable, Hashable {
-                /// Item ID
+                /// Item ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/PATCH/path/itemId`.
                 internal var itemId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - itemId: Item ID
+                ///   - itemId: Item ID, plain decimal digits.
                 internal init(itemId: Swift.Int) {
                     self.itemId = itemId
                 }
@@ -6278,7 +6647,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/items/{itemId}/patch(updateShoppingItem)/responses/400`.
             ///
@@ -6463,14 +6832,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/DELETE/path`.
             internal struct Path: Sendable, Hashable {
-                /// Item ID
+                /// Item ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/items/{itemId}/DELETE/path/itemId`.
                 internal var itemId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - itemId: Item ID
+                ///   - itemId: Item ID, plain decimal digits.
                 internal init(itemId: Swift.Int) {
                     self.itemId = itemId
                 }
@@ -6557,6 +6926,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/shopping/items/{itemId}/delete(deleteShoppingItem)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -6726,14 +7118,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/checked/DELETE/path`.
             internal struct Path: Sendable, Hashable {
-                /// List ID
+                /// List ID, plain decimal digits.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/shopping/{listId}/items/checked/DELETE/path/listId`.
                 internal var listId: Swift.Int
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - listId: List ID
+                ///   - listId: List ID, plain decimal digits.
                 internal init(listId: Swift.Int) {
                     self.listId = listId
                 }
@@ -6834,7 +7226,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/shopping/{listId}/items/checked/delete(deleteCheckedShoppingItems)/responses/400`.
             ///
@@ -7010,7 +7402,7 @@ internal enum Operations {
     }
     /// List calendar events
     ///
-    /// Events generated from the birthdays module carry `birthday_name` and `birthday_date` (null for a birthday whose year is unknown, `year_unknown` on the birthday). Their `title` is stored in the household data language (see `language` in `/preferences`), so API consumers, the ICS feed and calendar sync all read the same wording; clients that display in a different language can re-render the title from `birthday_name`. While the household has the birthdays module switched off (`disabled_modules` in `/preferences`), these events are left out of this list, of `/calendar/upcoming`, of `/calendar/search` and of the ICS feed; a single one stays reachable by id, and the birthdays routes keep answering. A series comes as one row per occurrence in the range, all with the `id` of the series; `series_id` and `recurrence_id` tell them apart.
+    /// Events generated from the birthdays module carry `birthday_name` and `birthday_date` (null for a birthday whose year is unknown, `year_unknown` on the birthday). Their `title` is stored in the household data language (see `language` in `/preferences`), so API consumers, the ICS feed and calendar sync all read the same wording; clients that display in a different language can re-render the title from `birthday_name`. While the household has the birthdays module switched off (`disabled_modules` in `/preferences`), these events are left out of this list, of `/calendar/upcoming`, of `/calendar/search` and of the ICS feed; a single one stays reachable by id, and the birthdays routes keep answering. A paired display reads this list, `/calendar/upcoming`, `/calendar/search`, a single event and the event count of `/calendar/calendars` under the wall rule: only events with visibility `all`, from ICS subscriptions only shared ones, even one that names the display as an assignee; a hidden event by id answers the same 404 as an unknown one. A series comes as one row per occurrence in the range, all with the `id` of the series; `series_id` and `recurrence_id` tell them apart.
     ///
     /// - Remark: HTTP `GET /api/v1/calendar`.
     /// - Remark: Generated from `#/paths//api/v1/calendar/get(listCalendarEvents)`.
@@ -7031,29 +7423,22 @@ internal enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/calendar/GET/query/assigned_to`.
                 internal var assignedTo: Swift.Int?
-                /// - Remark: Generated from `#/paths/api/v1/calendar/GET/query/source`.
-                internal enum SourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case local = "local"
-                    case google = "google"
-                    case apple = "apple"
-                    case ics = "ics"
-                }
-                /// Only events with this `external_source`. Any other value is ignored, `caldav` included.
+                /// Only events with this `external_source`: `local`, `google`, `apple`, `ics`. Any other value is ignored, `caldav` included.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/calendar/GET/query/source`.
-                internal var source: Operations.ListCalendarEvents.Input.Query.SourcePayload?
+                internal var source: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - from: `YYYY-MM-DD`, first day of the range. Defaults to the first day of the current month in the household.
                 ///   - to: `YYYY-MM-DD`, last day of the range. Defaults to the last day of the current month in the household.
                 ///   - assignedTo: Only events this member is assigned to.
-                ///   - source: Only events with this `external_source`. Any other value is ignored, `caldav` included.
+                ///   - source: Only events with this `external_source`: `local`, `google`, `apple`, `ics`. Any other value is ignored, `caldav` included.
                 internal init(
                     from: Swift.String? = nil,
                     to: Swift.String? = nil,
                     assignedTo: Swift.Int? = nil,
-                    source: Operations.ListCalendarEvents.Input.Query.SourcePayload? = nil
+                    source: Swift.String? = nil
                 ) {
                     self.from = from
                     self.to = to
@@ -7139,7 +7524,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/get(listCalendarEvents)/responses/400`.
             ///
@@ -7241,7 +7626,7 @@ internal enum Operations {
     }
     /// Create calendar event
     ///
-    /// Supports optional document-storage attachments via `attachment_name`, `attachment_mime`, `attachment_size`, and `attachment_data` (base64 data URL). New attachments are linked through `attachment_document_id`; legacy events may still return `attachment_data`. Set `target_caldav_account_id` and `target_caldav_calendar_url` to push the event to a CalDAV calendar (omit or null for a local-only event). A new attachment creates a document in the Documents module and therefore needs write access there (member right, for API tokens a `documents:write` scope); without it any non-empty `attachment_data` is refused with 403 before the event is looked up. Replacing or removing an attachment needs read access to the Documents module and sight of the stored document; otherwise the same 403, and the attachment stays. The 403 bodies carry `reason` `ATTACHMENT_UPLOAD_REFUSED` or `ATTACHMENT_CHANGE_REFUSED`. Saving an event carries its visibility and assignees over to the attachment's document only when the save changes who sees the event (its visibility, or the assignees of an event for assignees); a save of the title, time or other fields leaves the document's visibility and shares alone. It opens the document further only for a caller with write access to documents who can see it and may manage it (its creator - for an attachment the event creator - or an admin); otherwise the document keeps the visibility and shares its owner set, so the save neither opens nor narrows it and removes no share. A new attachment uploaded in the same save to an event the caller did not create is only narrowed to the event, never opened further. The default-assignee sync of connected calendars never changes document rights, with one exception: when the event is visible to its assignees and the document is already shared with selected members, the new assignee is added to those shares. Otherwise nothing changes - no document becomes visible to the family, none is opened, narrowed or made private, and no share is removed. A copy made on split or detach belongs to the owner of its source document. A split or a detach copies the attachment for the new series or event only for such a caller; otherwise the new one has no attachment and the original stays on the original series. `start_datetime` and `end_datetime` take the forms of `CalendarDateOrDateTimeInput`: a value without offset is household wall-clock time, a value with `Z` or a numeric offset is read as an instant and converted into the household time zone (`2026-09-21T16:00:00Z` in a Europe/Berlin household is stored as `2026-09-21T18:00`). For an all-day event only the date of such a value counts. Up to v2.68.0 the offset was dropped and its digits kept as wall-clock time. A `recurrence_rule` whose `UNTIL` day lies before the start day is rejected with 400 (`recurrence_rule: the series ends before the start date.`, `reason: calendar_series_ends_before_start`); an `UNTIL` on the start day is a series with one occurrence and is accepted. PUT checks this only when the request changes the rule or the start day, so an imported series that already carries such a rule stays editable; the start day is compared as the household calendar day, so sending the wall-clock form of a stored instant is not a change. For an event with a time zone of its own, whose stored UTC day differs from its local day, only a changed rule is checked, and only an `UNTIL` before both days is rejected. ICS import and calendar sync do not reject it.
+    /// Supports optional document-storage attachments via `attachment_name`, `attachment_mime`, `attachment_size`, and `attachment_data` (base64 data URL). New attachments are linked through `attachment_document_id`; legacy events may still return `attachment_data`. Set `target_caldav_account_id` and `target_caldav_calendar_url` to push the event to a CalDAV calendar (omit or null for a local-only event). A new attachment creates a document in the Documents module and therefore needs write access there (member right, for API tokens a `documents:write` scope); without it any non-empty `attachment_data` is refused with 403 before the event is looked up. Replacing or removing an attachment needs read access to the Documents module and sight of the stored document; otherwise the same 403, and the attachment stays. The 403 bodies carry `reason` `ATTACHMENT_UPLOAD_REFUSED` or `ATTACHMENT_CHANGE_REFUSED`. Saving an event carries its visibility and assignees over to the attachment's document only when the save changes who sees the event (its visibility, or the assignees of an event for assignees); a save of the title, time or other fields leaves the document's visibility and shares alone. It opens the document further only for a caller with write access to documents who can see it and may manage it (its creator - for an attachment the event creator - or an admin); otherwise the document keeps the visibility and shares its owner set, so the save neither opens nor narrows it and removes no share. A new attachment uploaded in the same save to an event the caller did not create is only narrowed to the event, never opened further. The default-assignee sync of connected calendars never changes document rights, with one exception: when the event is visible to its assignees and the document is already shared with selected members, the new assignee is added to those shares. Otherwise nothing changes - no document becomes visible to the family, none is opened, narrowed or made private, and no share is removed. A copy made on split or detach belongs to the owner of its source document. A split or a detach copies the attachment for the new series or event only for such a caller; otherwise the new one has no attachment and the original stays on the original series. `start_datetime` and `end_datetime` take the forms of `CalendarDateOrDateTimeInput`: a value without offset is household wall-clock time, a value with `Z` or a numeric offset is read as an instant and converted into the household time zone (`2026-09-21T16:00:00Z` in a Europe/Berlin household is stored as `2026-09-21T18:00`). For an all-day event only the date of such a value counts. Up to v2.68.0 the offset was dropped and its digits kept as wall-clock time. A `recurrence_rule` whose `UNTIL` day lies before the start day is rejected with 400 (`recurrence_rule: the series ends before the start date.`, `reason: calendar_series_ends_before_start`); an `UNTIL` on the start day is a series with one occurrence and is accepted. PUT checks this only when the request changes the rule or the start day, so an imported series that already carries such a rule stays editable; the start day is compared as the household calendar day, so sending the wall-clock form of a stored instant is not a change. For an event with a time zone of its own, whose stored UTC day differs from its local day, only a changed rule is checked, and only an `UNTIL` before both days is rejected. ICS import and calendar sync do not reject it. An assignee id without an account is rejected with 400 (`An assigned person no longer exists.`). So is an `attachment_data` the route cannot take, with one sentence per case: text that is no base64 data URL (`attachment_data must be a base64 data URL.`), a type off the list (`attachment_data: this file type is not allowed.`), no bytes (`attachment_data: the file is empty.`), more than the upload limit (`attachment_data: the file may be at most 5 MB.`, the number follows `MAX_UPLOAD_MB`) and bytes that do not match the type (`attachment_data: the content does not match the declared file type.`). Nothing is written or uploaded.
     ///
     /// A refusal a user can reach carries a `reason` next to `error` (#1909): `calendar_selected_calendar_not_found` (400, the `local_calendar_id` names a local calendar that no longer exists), `calendar_series_no_occurrence` (400, the `recurrence_rule` has no occurrence on or after the start date), `calendar_series_ends_before_start` (400, its `UNTIL` lies before the start day).
     ///
@@ -7349,7 +7734,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/post(createCalendarEvent)/responses/400`.
             ///
@@ -7474,7 +7859,7 @@ internal enum Operations {
                     self.body = body
                 }
             }
-            /// Idempotency-Key conflict: reused for a different request, or the first attempt is still running
+            /// The the document storage settings changed while an attachment was uploaded (`storage_code` `DOCUMENT_STORAGE_CONFIG_CHANGED`); nothing is saved, the uploaded file is removed again and the request may be sent again
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/post(createCalendarEvent)/responses/409`.
             ///
@@ -7562,14 +7947,14 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/calendar/upcoming/GET/query`.
             internal struct Query: Sendable, Hashable {
-                /// At most 20; a larger value is cut to 20 without an error.
+                /// How many events, 5 by default. At most 20; a larger value is cut to 20 without an error.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/calendar/upcoming/GET/query/limit`.
                 internal var limit: Swift.Int?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - limit: At most 20; a larger value is cut to 20 without an error.
+                ///   - limit: How many events, 5 by default. At most 20; a larger value is cut to 20 without an error.
                 internal init(limit: Swift.Int? = nil) {
                     self.limit = limit
                 }
@@ -7647,6 +8032,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/calendar/upcoming/get(listUpcomingCalendarEvents)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -8044,6 +8452,29 @@ internal enum Operations {
                     }
                 }
             }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/get(getCalendarEvent)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Authentication required or invalid credentials/token
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/get(getCalendarEvent)/responses/401`.
@@ -8158,9 +8589,9 @@ internal enum Operations {
     }
     /// Update calendar event
     ///
-    /// Supports document-storage attachments. Omit attachment fields to preserve the current attachment, send new `attachment_data` to create and link a document, or set `remove_attachment` to true to unlink it without deleting the library document. Legacy events may still return `attachment_data`. A recurrence-rule or anchor change that would orphan linked replacements returns 409 with `calendar_override_orphans` and the exact `orphaned_override_count`; retry with the same value in `confirmed_orphan_count` to preserve those replacements as standalone events. The same confirmation is required before assigning an outbound target to a series with linked replacements. Changing a mirrored field (title, description, location, color, all-day, start/end, recurrence) of an event synced to Google pushes the change there, and switching `target_google_calendar_id` moves it to the other Google calendar. The remote call runs after the response and is retried by the next sync run if it fails. PUT stores the validated start and end, exactly as POST does; up to v2.68.0 it wrote the raw request value. `start_datetime` may be omitted to keep it, but an empty or null start is rejected with 400; an empty or null `end_datetime` clears the end. A new attachment creates a document in the Documents module and therefore needs write access there (member right, for API tokens a `documents:write` scope); without it any non-empty `attachment_data` is refused with 403 before the event is looked up. Replacing or removing an attachment needs read access to the Documents module and sight of the stored document; otherwise the same 403, and the attachment stays. The 403 bodies carry `reason` `ATTACHMENT_UPLOAD_REFUSED` or `ATTACHMENT_CHANGE_REFUSED`. Saving an event carries its visibility and assignees over to the attachment's document only when the save changes who sees the event (its visibility, or the assignees of an event for assignees); a save of the title, time or other fields leaves the document's visibility and shares alone. It opens the document further only for a caller with write access to documents who can see it and may manage it (its creator - for an attachment the event creator - or an admin); otherwise the document keeps the visibility and shares its owner set, so the save neither opens nor narrows it and removes no share. A new attachment uploaded in the same save to an event the caller did not create is only narrowed to the event, never opened further. The default-assignee sync of connected calendars never changes document rights, with one exception: when the event is visible to its assignees and the document is already shared with selected members, the new assignee is added to those shares. Otherwise nothing changes - no document becomes visible to the family, none is opened, narrowed or made private, and no share is removed. A copy made on split or detach belongs to the owner of its source document. A split or a detach copies the attachment for the new series or event only for such a caller; otherwise the new one has no attachment and the original stays on the original series. `start_datetime` and `end_datetime` take the forms of `CalendarDateOrDateTimeInput`: a value without offset is household wall-clock time, a value with `Z` or a numeric offset is read as an instant and converted into the household time zone (`2026-09-21T16:00:00Z` in a Europe/Berlin household is stored as `2026-09-21T18:00`). For an all-day event only the date of such a value counts. Up to v2.68.0 the offset was dropped and its digits kept as wall-clock time. A `recurrence_rule` whose `UNTIL` day lies before the start day is rejected with 400 (`recurrence_rule: the series ends before the start date.`, `reason: calendar_series_ends_before_start`); an `UNTIL` on the start day is a series with one occurrence and is accepted. PUT checks this only when the request changes the rule or the start day, so an imported series that already carries such a rule stays editable; the start day is compared as the household calendar day, so sending the wall-clock form of a stored instant is not a change. For an event with a time zone of its own, whose stored UTC day differs from its local day, only a changed rule is checked, and only an `UNTIL` before both days is rejected. ICS import and calendar sync do not reject it.
+    /// Supports document-storage attachments. Omit attachment fields to preserve the current attachment, send new `attachment_data` to create and link a document, or set `remove_attachment` to true to unlink it without deleting the library document. Legacy events may still return `attachment_data`. A recurrence-rule or anchor change that would orphan linked replacements returns 409 with `calendar_override_orphans` and the exact `orphaned_override_count`; retry with the same value in `confirmed_orphan_count` to preserve those replacements as standalone events. The same confirmation is required before assigning an outbound target to a series with linked replacements. Changing a mirrored field (title, description, location, color, all-day, start/end, recurrence) of an event synced to Google pushes the change there, and switching `target_google_calendar_id` moves it to the other Google calendar. The remote call runs after the response and is retried by the next sync run if it fails. PUT stores the validated start and end, exactly as POST does; up to v2.68.0 it wrote the raw request value. `start_datetime` may be omitted to keep it, but an empty or null start is rejected with 400; an empty or null `end_datetime` clears the end. A new attachment creates a document in the Documents module and therefore needs write access there (member right, for API tokens a `documents:write` scope); without it any non-empty `attachment_data` is refused with 403 before the event is looked up. Replacing or removing an attachment needs read access to the Documents module and sight of the stored document; otherwise the same 403, and the attachment stays. The 403 bodies carry `reason` `ATTACHMENT_UPLOAD_REFUSED` or `ATTACHMENT_CHANGE_REFUSED`. Saving an event carries its visibility and assignees over to the attachment's document only when the save changes who sees the event (its visibility, or the assignees of an event for assignees); a save of the title, time or other fields leaves the document's visibility and shares alone. It opens the document further only for a caller with write access to documents who can see it and may manage it (its creator - for an attachment the event creator - or an admin); otherwise the document keeps the visibility and shares its owner set, so the save neither opens nor narrows it and removes no share. A new attachment uploaded in the same save to an event the caller did not create is only narrowed to the event, never opened further. The default-assignee sync of connected calendars never changes document rights, with one exception: when the event is visible to its assignees and the document is already shared with selected members, the new assignee is added to those shares. Otherwise nothing changes - no document becomes visible to the family, none is opened, narrowed or made private, and no share is removed. A copy made on split or detach belongs to the owner of its source document. A split or a detach copies the attachment for the new series or event only for such a caller; otherwise the new one has no attachment and the original stays on the original series. `start_datetime` and `end_datetime` take the forms of `CalendarDateOrDateTimeInput`: a value without offset is household wall-clock time, a value with `Z` or a numeric offset is read as an instant and converted into the household time zone (`2026-09-21T16:00:00Z` in a Europe/Berlin household is stored as `2026-09-21T18:00`). For an all-day event only the date of such a value counts. Up to v2.68.0 the offset was dropped and its digits kept as wall-clock time. A `recurrence_rule` whose `UNTIL` day lies before the start day is rejected with 400 (`recurrence_rule: the series ends before the start date.`, `reason: calendar_series_ends_before_start`); an `UNTIL` on the start day is a series with one occurrence and is accepted. PUT checks this only when the request changes the rule or the start day, so an imported series that already carries such a rule stays editable; the start day is compared as the household calendar day, so sending the wall-clock form of a stored instant is not a change. For an event with a time zone of its own, whose stored UTC day differs from its local day, only a changed rule is checked, and only an `UNTIL` before both days is rejected. ICS import and calendar sync do not reject it. An assignee id without an account is rejected with 400 (`An assigned person no longer exists.`). So is an `attachment_data` the route cannot take, with one sentence per case: text that is no base64 data URL (`attachment_data must be a base64 data URL.`), a type off the list (`attachment_data: this file type is not allowed.`), no bytes (`attachment_data: the file is empty.`), more than the upload limit (`attachment_data: the file may be at most 5 MB.`, the number follows `MAX_UPLOAD_MB`) and bytes that do not match the type (`attachment_data: the content does not match the declared file type.`). Nothing is written or uploaded.
     ///
-    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `not_owner` (403, without the module's `*_edit_others` capability only events you created or are assigned to can be changed or deleted - R23), `calendar_event_not_found` (404, the event does not exist or is not visible to the caller), `calendar_selected_calendar_not_found` (400, the `local_calendar_id` names a local calendar that no longer exists), `calendar_series_no_occurrence` (400, the `recurrence_rule` has no occurrence on or after the start date), `calendar_series_ends_before_start` (400, its `UNTIL` lies before the start day).
+    /// A refusal a user can reach carries a `reason` next to `error` (#1909): `not_owner` (403, without the module's `*_edit_others` capability only events you created or are assigned to can be changed or deleted - R23), `calendar_event_not_found` (404, the event does not exist or is not visible to the caller), `calendar_selected_calendar_not_found` (400, the `local_calendar_id` names a local calendar that no longer exists), `calendar_series_no_occurrence` (400, the `recurrence_rule` has no occurrence on or after the start date), `calendar_series_ends_before_start` (400, its `UNTIL` lies before the start day), `calendar_series_changed` (409, the series changed several times while attachment copies were uploaded; nothing is saved, the request may be sent again).
     ///
     /// - Remark: HTTP `PUT /api/v1/calendar/{id}`.
     /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/put(updateCalendarEvent)`.
@@ -8277,7 +8708,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/put(updateCalendarEvent)/responses/400`.
             ///
@@ -8437,7 +8868,7 @@ internal enum Operations {
                     self.body = body
                 }
             }
-            /// Linked occurrence replacements require exact-count orphan confirmation
+            /// Linked occurrence replacements require exact-count orphan confirmation, or the document storage settings changed while an attachment was uploaded (`storage_code` `DOCUMENT_STORAGE_CONFIG_CHANGED`); nothing is saved, the uploaded file is removed again and the request may be sent again, or the series changed several times while the attachment copies for its linked replacements were uploaded (reason `calendar_series_changed`); nothing is saved, the copies are removed again and the request may be sent again
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/put(updateCalendarEvent)/responses/409`.
             ///
@@ -8638,7 +9069,7 @@ internal enum Operations {
                     self.body = body
                 }
             }
-            /// A linked occurrence of a series; it goes through the occurrence routes (reason `calendar_occurrence_route_required`).
+            /// A linked occurrence of a series; it goes through the occurrence routes (reason `calendar_occurrence_route_required`), or a path id that is not plain digits (reason `validation`).
             ///
             /// - Remark: Generated from `#/paths//api/v1/calendar/{id}/delete(deleteCalendarEvent)/responses/400`.
             ///
@@ -8830,11 +9261,11 @@ internal enum Operations {
                 /// Start of the window, included. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/from`.
-                internal var from: Foundation.Date
+                internal var from: Swift.String
                 /// End of the window, included. At most 14 days after `from`. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/to`.
-                internal var to: Foundation.Date
+                internal var to: Swift.String
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/TypesPayload`.
                 internal enum TypesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
                     case task = "task"
@@ -8860,26 +9291,22 @@ internal enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/types`.
                 internal var types: Operations.ListUpcomingReminders.Input.Query.TypesPayload?
-                /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/audience`.
-                internal enum AudiencePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case household = "household"
-                }
-                /// `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`.
+                /// `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`. Anything else means the personal version.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/upcoming/GET/query/audience`.
-                internal var audience: Operations.ListUpcomingReminders.Input.Query.AudiencePayload?
+                internal var audience: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - from: Start of the window, included. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///   - to: End of the window, included. At most 14 days after `from`. Without `Z` or an offset the value is UTC, as in `remind_at`; a date alone is midnight UTC; fractions of a second are dropped. Percent-encode a `+` in an offset (`%2B`): unencoded it reads as a space and answers 400.
                 ///   - types: Comma-separated origins to keep, for example `task,event`. It only narrows: an origin the caller may not read stays out, and an unknown value answers 400. Without it, every origin the caller may read comes back.
-                ///   - audience: `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`.
+                ///   - audience: `household` asks for the version for a shared surface; it carries no reminders, as in `GET /reminders/pending`. Anything else means the personal version.
                 internal init(
-                    from: Foundation.Date,
-                    to: Foundation.Date,
+                    from: Swift.String,
+                    to: Swift.String,
                     types: Operations.ListUpcomingReminders.Input.Query.TypesPayload? = nil,
-                    audience: Operations.ListUpcomingReminders.Input.Query.AudiencePayload? = nil
+                    audience: Swift.String? = nil
                 ) {
                     self.from = from
                     self.to = to
@@ -8965,7 +9392,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/reminders/upcoming/get(listUpcomingReminders)/responses/400`.
             ///
@@ -9099,19 +9526,15 @@ internal enum Operations {
         internal struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/reminders/pending/GET/query`.
             internal struct Query: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/api/v1/reminders/pending/GET/query/audience`.
-                internal enum AudiencePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case household = "household"
-                }
                 /// `household` asks for the version for a shared surface; it carries no reminders. Anything else means the personal version.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/reminders/pending/GET/query/audience`.
-                internal var audience: Operations.ListPendingReminders.Input.Query.AudiencePayload?
+                internal var audience: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - audience: `household` asks for the version for a shared surface; it carries no reminders. Anything else means the personal version.
-                internal init(audience: Operations.ListPendingReminders.Input.Query.AudiencePayload? = nil) {
+                internal init(audience: Swift.String? = nil) {
                     self.audience = audience
                 }
             }
@@ -9188,6 +9611,29 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/reminders/pending/get(listPendingReminders)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            internal var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }
@@ -9403,7 +9849,7 @@ internal enum Operations {
                     }
                 }
             }
-            /// Bad request
+            /// Bad request. A request outside the schema of its operation carries `fields`; its `reason` is the documented reason of the operation when the failing rule names one, else `validation`.
             ///
             /// - Remark: Generated from `#/paths//api/v1/reminders/{id}/dismiss/patch(dismissReminder)/responses/400`.
             ///
